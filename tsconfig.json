@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/domain" },
+    { "path": "packages/application" },
+    { "path": "packages/catalog" },
+    { "path": "packages/compiler" },
+    { "path": "packages/installer" },
+    { "path": "packages/presentation" },
+    { "path": "packages/testing" },
+    { "path": "targets/opencode" },
+    { "path": "apps/cli" }
+  ]
+}

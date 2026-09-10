@@ -1,0 +1,22 @@
+{
+  "name": "skynex-v2",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Canonical configuration compiler and installer for AI coding engines",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.15.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "check": "tsc -b --pretty false",
+    "clean": "tsc -b --clean",
+    "dev": "pnpm --filter @skynex-internal/cli dev",
+    "start": "pnpm --filter @skynex-internal/cli start"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "7.1.0-dev.20260910.1"
+  }
+}
