@@ -14,6 +14,7 @@ export const exists = (path) => lstat(path).then(() => true).catch((error) => {
 export const fail = (action, message) => assert.rejects(action, (error) =>
   error instanceof Error && error.message.includes(message));
 export async function fresh(name) {
+  await mkdir("/tmp/opencode", { recursive: true });
   const root = await mkdtemp(`/tmp/opencode/skynex-proof-${name}-`);
   fixtures.push(root);
   return root;
