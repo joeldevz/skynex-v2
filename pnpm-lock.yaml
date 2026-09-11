@@ -20,22 +20,69 @@ importers:
       '@clack/prompts':
         specifier: ^0.11.0
         version: 0.11.0
+      '@skynex-internal/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@skynex-internal/installer':
+        specifier: workspace:*
+        version: link:../../packages/installer
+      '@skynex-internal/target-opencode':
+        specifier: workspace:*
+        version: link:../../targets/opencode
 
-  packages/application: {}
+  packages/application:
+    dependencies:
+      '@skynex-internal/domain':
+        specifier: workspace:*
+        version: link:../domain
 
-  packages/catalog: {}
+  packages/catalog:
+    dependencies:
+      '@skynex-internal/domain':
+        specifier: workspace:*
+        version: link:../domain
 
-  packages/compiler: {}
+  packages/compiler:
+    dependencies:
+      '@skynex-internal/catalog':
+        specifier: workspace:*
+        version: link:../catalog
+      '@skynex-internal/domain':
+        specifier: workspace:*
+        version: link:../domain
 
   packages/domain: {}
 
-  packages/installer: {}
+  packages/installer:
+    dependencies:
+      '@skynex-internal/application':
+        specifier: workspace:*
+        version: link:../application
+      '@skynex-internal/domain':
+        specifier: workspace:*
+        version: link:../domain
 
   packages/presentation: {}
 
   packages/testing: {}
 
-  targets/opencode: {}
+  targets/opencode:
+    dependencies:
+      '@skynex-internal/application':
+        specifier: workspace:*
+        version: link:../../packages/application
+      '@skynex-internal/catalog':
+        specifier: workspace:*
+        version: link:../../packages/catalog
+      '@skynex-internal/compiler':
+        specifier: workspace:*
+        version: link:../../packages/compiler
+      '@skynex-internal/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      jsonc-parser:
+        specifier: ^3.3.1
+        version: 3.3.1
 
 packages:
 
@@ -90,6 +137,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  jsonc-parser@3.3.1:
+    resolution: {integrity: sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==}
+
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
@@ -141,6 +191,8 @@ snapshots:
 
   '@typescript/typescript-win32-x64@7.1.0-dev.20260910.1':
     optional: true
+
+  jsonc-parser@3.3.1: {}
 
   picocolors@1.1.1: {}
 

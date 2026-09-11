@@ -6,14 +6,17 @@
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.15.1",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "build": "tsc -b",
     "check": "tsc -b --pretty false",
     "clean": "tsc -b --clean",
     "dev": "pnpm --filter @skynex-internal/cli dev",
-    "start": "pnpm --filter @skynex-internal/cli start"
+    "start": "pnpm --filter @skynex-internal/cli start",
+    "verify:installer": "node scripts/verify-installer.mjs",
+    "verify:opencode": "node scripts/verify-opencode2.mjs",
+    "pack:cli": "pnpm --filter @skynex-internal/cli pack --pack-destination /tmp/opencode/skynex-pack"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

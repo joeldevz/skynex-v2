@@ -1,0 +1,4 @@
+export function assertDigest(value: string): string { if (!/^[a-f0-9]{64}$/.test(value)) throw new Error(`Invalid SHA-256 digest: ${value}`); return value; }
+export function assertRelativePosixPath(value: string): string { if (!value || value.includes("\0") || value.startsWith("/") || value.split("/").includes("..") || value.includes("\\")) throw new Error(`Invalid relative POSIX path: ${value}`); return value; }
+export function assertUnique(values: readonly string[], label: string): void { if (new Set(values).size !== values.length) throw new Error(`Duplicate ${label}`); }
+export function assertDecision(value: unknown): asserts value is "accept-upstream" | "keep-local" | "resolve-conflict" | "skip" { if (!["accept-upstream", "keep-local", "resolve-conflict", "skip"].includes(String(value))) throw new Error("Explicit update decision required"); }

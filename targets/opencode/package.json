@@ -3,5 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": "./dist/index.js"
+  "exports": "./dist/index.js",
+  "dependencies": {
+    "@skynex-internal/catalog": "workspace:*",
+    "@skynex-internal/compiler": "workspace:*",
+    "@skynex-internal/application": "workspace:*",
+    "@skynex-internal/domain": "workspace:*",
+    "jsonc-parser": "^3.3.1"
+  }
 }

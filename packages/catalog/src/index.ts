@@ -1,2 +1,2 @@
-/** Canonical resource loading and validation will live here. */
-export const catalogBoundary = "catalog" as const;
+export * from "./schema.js";
+export * from "./load-catalog.js";

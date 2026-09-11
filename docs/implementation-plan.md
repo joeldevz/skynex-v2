@@ -8,7 +8,7 @@ behavior exists, but no step requires red-first evidence.
 
 ### Step 0.1 — Establish repository
 
-**How:** Create the private GitHub repository and local pnpm workspace; select Node 22,
+**How:** Create the private GitHub repository and local pnpm workspace; select Node 24,
 TypeScript 7, ESM, Apache-2.0, and private provisional package names.
 
 **Done when:** dependency installation, type checking, build, and CLI help succeed.

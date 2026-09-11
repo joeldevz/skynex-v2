@@ -1,2 +1,2 @@
-/** Pure canonical-to-target transformation will live here. */
-export const compilerBoundary = "compiler" as const;
+export * from "./contracts.js";
+export * from "./compile.js";

@@ -6,7 +6,7 @@ Accepted.
 
 ## Decision
 
-Use one pnpm monorepo on Node.js LTS with TypeScript 7 and ESM. Workspace packages remain private
+Use one pnpm monorepo on Node.js 24 LTS with TypeScript 7 and ESM. Workspace packages remain private
 under a provisional internal scope until product naming and publication are decided.
 
 ## Consequences

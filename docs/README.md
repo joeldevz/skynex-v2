@@ -9,3 +9,4 @@ Read these documents in order:
 5. [`implementation-plan.md`](implementation-plan.md) — ordered delivery plan.
 6. [`future-task-graph.md`](future-task-graph.md) — constraints reserved for the future graph.
 7. [`adr/`](adr/) — durable architectural decisions.
+8. [`security-model.md`](security-model.md) — installer trust boundary and native-code consent.
