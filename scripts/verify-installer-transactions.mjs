@@ -27,6 +27,15 @@ export async function verify(test) {
   const leasePath = join(roots.stateRoot, ".installer.lock");
   let replacementLock;
 
+  await test("api-project-default-plan-is-scope-aware", async () => {
+    const api = await fixture("api-project-default");
+    const projectRoots = { ...api.roots, scope: "project" };
+    const defaultPlan = await createInstallPlan(openCodeTarget, projectRoots, undefined, { configPreference: "jsonc" });
+    assert.deepEqual(defaultPlan.selectedComponents, ["configuration", "agents", "skills"]);
+    assert.equal(defaultPlan.operations.some((item) => item.artifact.component === "plugins" || item.artifact.component === "commands"), false);
+    await fail(() => createInstallPlan(openCodeTarget, projectRoots, ["plugins"], { configPreference: "jsonc" }), "only be installed globally");
+  });
+
   await test("transaction-lease-exact-restore-and-reverse", async () => {
     await writeFile(target("managed.txt"), "old");
     const previousLock = '{"unrelated":"preserve","resources":[]}\n';
@@ -200,6 +209,7 @@ export async function verify(test) {
   });
   await test("real-install-metadata-absent-lock-restore-partial-ownership", async () => {
     const real = await fixture("real-api");
+    real.roots.scope = "global";
     const initial = '{\n  // Keep comment\n  "unrelated": "preserve-me",\n  "plugins": ["external-plugin"]\n}\n';
     await writeFile(real.target("opencode.jsonc"), initial);
     const initialFiles = await snapshot(real.roots.targetRoot, false);
@@ -236,14 +246,15 @@ export async function verify(test) {
     }
     assert.deepEqual(await snapshot(real.roots.targetRoot, false), installedFiles);
   });
-  // Use the actual catalog's safe-install identity, but forge its persisted path
+  // Use an actual catalog skill identity, but forge its persisted path
   // and digest to point at an unrelated local file. The independent map is built
   // before reading the lock and is never derived from the forged resources.
   async function forgedUninstallFixture() {
     const api = await fixture("forged-uninstall");
-    const artifacts = await openCodeTarget.desiredArtifacts(api.roots);
+    const artifacts = await openCodeTarget.desiredArtifacts(api.roots, ["configuration", "agents", "skills", "commands"]);
     const allowedResources = new Map(artifacts.map((item) => [item.resource.id, item.relativePath]));
-    assert.equal(allowedResources.get("safe-install"), "skills/safe-install/SKILL.md");
+    const representativeId = "skills.diagnose";
+    assert.equal(allowedResources.get(representativeId), "skills/diagnose/SKILL.md");
     await applyInstallPlan(await createInstallPlan(openCodeTarget, api.roots, ["skills"]));
     const validLock = await readInstallLock(api.roots, allowedResources);
     const validPlan = createUninstallPlan({ roots: api.roots, lock: validLock, allowedResources });
@@ -251,7 +262,7 @@ export async function verify(test) {
     const unrelatedBytes = Buffer.from("Unmanaged local notes must survive.\n");
     await writeFile(api.target(unrelatedPath), unrelatedBytes);
     const forgedLock = structuredClone(validLock);
-    const resource = forgedLock.resources.find((item) => item.id === "safe-install");
+    const resource = forgedLock.resources.find((item) => item.id === representativeId);
     assert(resource);
     resource.relativePath = unrelatedPath;
     resource.installedDigest = sha(unrelatedBytes);
@@ -261,14 +272,14 @@ export async function verify(test) {
     // Raw state parsing is not ownership authorization and may return this lock.
     assert.deepEqual(await readInstallLock(api.roots), forgedLock);
     const forgedEntries = [...allowedResources].map(([id, relativePath]) => ({
-      id, relativePath: id === "safe-install" ? unrelatedPath : relativePath,
+      id, relativePath: id === representativeId ? unrelatedPath : relativePath,
     }));
     const forgedPlan = { ...validPlan, allowedResources: forgedEntries, operations: [{
       kind: "remove", artifact: { resource, component: "skills", relativePath: unrelatedPath, content: "" },
       relativePath: unrelatedPath, destination: api.target(unrelatedPath),
       currentDigest: sha(unrelatedBytes), desiredDigest: "", expectedPriorDigest: sha(unrelatedBytes),
     }] };
-    return { ...api, allowedResources, forgedLock, badLockBytes, forgedPlan, validPlan, unrelatedPath, unrelatedBytes };
+    return { ...api, representativeId, allowedResources, forgedLock, badLockBytes, forgedPlan, validPlan, unrelatedPath, unrelatedBytes };
   }
   async function assertUninstallRefused(api, action, message) {
     const before = await snapshot(api.root);
@@ -282,7 +293,7 @@ export async function verify(test) {
     const api = await forgedUninstallFixture();
     await assertUninstallRefused(api, async () => createUninstallPlan({
       roots: api.roots, lock: api.forgedLock, allowedResources: api.allowedResources,
-    }), "Lock resource identity/path does not match the installed catalog: safe-install");
+    }), `Lock resource identity/path does not match the installed catalog: ${api.representativeId}`);
   });
   await test("uninstall-apply-forged-plan-map-independent-catalog-refused", async () => {
     const api = await forgedUninstallFixture();
@@ -293,7 +304,7 @@ export async function verify(test) {
     const api = await forgedUninstallFixture();
     const plan = { ...api.forgedPlan, allowedResources: api.validPlan.allowedResources };
     await assertUninstallRefused(api, () => applyUninstallPlan(plan, api.allowedResources),
-      "Resource ownership mismatch: safe-install");
+      `Resource ownership mismatch: ${api.representativeId}`);
   });
   await test("uninstall-apply-valid-plan-forged-current-lock-refused", async () => {
     const api = await forgedUninstallFixture();

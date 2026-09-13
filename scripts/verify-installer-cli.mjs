@@ -5,7 +5,7 @@ import { parse } from "../targets/opencode/node_modules/jsonc-parser/lib/umd/mai
 import { assert, fresh, readFile, join, sha, snapshot, exists } from "./verify-installer-support.mjs";
 
 const cli = resolve("apps/cli/dist/index.js");
-const managed = (item) => item?.package === "./skynex/plugins/runtime" && item?.options?.managedBy === "skynex";
+const nonPluginComponents = ["configuration", "agents", "skills"];
 function configValue(text) {
   const errors = [];
   const value = parse(text, errors);
@@ -41,7 +41,8 @@ async function setup(name, formats = []) {
     return result;
   }
   const args = (command, explicit) => [command, "--project", project, "--state-dir", state,
-    "--yes", ...(explicit ? ["--config", explicit] : [])];
+    "--yes", ...(command === "install" || command === "update" ? ["--components", nonPluginComponents.join(",")] : []),
+    ...(explicit ? ["--config", explicit] : [])];
   return { root, project, target, state, run, args, lockPath: join(state, "lock.json") };
 }
 export async function verify(test) {
@@ -57,22 +58,29 @@ export async function verify(test) {
       for (const format of formats.filter((item) => item !== selected)) {
         nonselected.set(`opencode.${format}`, await readFile(join(f.target, `opencode.${format}`)));
       }
-      f.run([...f.args("install", explicit), "--allow-executable-plugins"]);
+      f.run(f.args("install", explicit));
       const installedText = await readFile(selectedPath, "utf8");
-      assert.equal(configValue(installedText).plugins.filter(managed).length, 1);
+      assert.equal(configValue(installedText).plugins, undefined);
       if (selected === "jsonc") assert(installedText.includes("original root comment"));
       // These edits happen AFTER installation, so uninstall cannot simply restore its backup.
       const external = { package: "external-plugin", options: { nested: [1, 2], enabled: true } };
       let edited = installedText.replace("{", '{\n  "addedAfterInstall": { "keep": [true, "value", 3] },');
       edited = edited.replace('"before"', '"after"');
-      assert.match(edited, /"plugins"\s*:\s*\[/);
-      edited = edited.replace(/("plugins"\s*:\s*\[)/, `$1${selected === "jsonc" ? "\n // inside-before-external\n" : ""}${JSON.stringify(external)},${selected === "jsonc" ? "\n /* inside-after-external */\n" : ""}`);
+      edited = edited.replace(/}\s*$/, `${selected === "jsonc" ? ",\n // inside-before-external\n" : ","}"plugins":[${JSON.stringify(external)}${selected === "jsonc" ? "\n /* inside-after-external */\n" : ""}]\n}`);
       await writeFile(selectedPath, edited);
       const expectedConfig = configValue(edited);
       assert.equal(expectedConfig.unrelated, "after");
       assert.deepEqual(expectedConfig.addedAfterInstall, { keep: [true, "value", 3] });
-      assert.equal(expectedConfig.plugins.filter(managed).length, 1);
-      expectedConfig.plugins = expectedConfig.plugins.filter((item) => !managed(item));
+      assert.deepEqual(expectedConfig.plugins, [external]);
+      // Uninstall owns only the generated mode/permissions leaves. Preserve any
+      // unrelated agent properties, but remove generated-only empty entries.
+      if (expectedConfig.agents) {
+        for (const [id, agent] of Object.entries(expectedConfig.agents)) {
+          delete agent.mode;
+          delete agent.permissions;
+          if (Object.keys(agent).length === 0) delete expectedConfig.agents[id];
+        }
+      }
       const beforeFiles = await snapshot(f.target, false);
       const beforeLock = await readFile(f.lockPath);
       const ownedPaths = JSON.parse(beforeLock).resources.map((item) => item.relativePath);
@@ -116,6 +124,33 @@ export async function verify(test) {
     f.run(f.args("install"), "Both opencode.json and opencode.jsonc exist; pass --config json or --config jsonc");
     assert.deepEqual(await snapshot(f.root), before);
   });
+  await test("cli-project-components-plugins-rejected-full-fixture-no-mutation", async () => {
+    const f = await setup("project-plugins-rejected", ["jsonc"]);
+    const before = await snapshot(f.root);
+    const args = f.args("install");
+    args.splice(args.indexOf("--components"), 2, "--components", "plugins");
+    f.run(args, "Sky Agents plugins can only be installed globally");
+    assert.deepEqual(await snapshot(f.root), before);
+  });
+  await test("cli-project-default-yes-installs-nonempty-nonplugin-components", async () => {
+    const f = await setup("project-default", ["jsonc"]);
+    f.run(["install", "--project", f.project, "--state-dir", f.state, "--yes"]);
+    const lock = JSON.parse(await readFile(f.lockPath));
+    assert.deepEqual(lock.installedComponents, ["configuration", "agents", "skills"]);
+    assert.equal(lock.resources.some((resource) => resource.kind === "command" || resource.kind === "native"), false);
+    assert.equal(configValue(await readFile(join(f.target, "opencode.jsonc"), "utf8")).plugins, undefined);
+  });
+  await test("cli-global-default-yes-includes-both-plugins-and-no-commands", async () => {
+    const f = await setup("global-default");
+    f.run(["install", "--global", "--state-dir", f.state, "--yes", "--allow-executable-plugins"]);
+    const lock = JSON.parse(await readFile(f.lockPath));
+    assert.deepEqual(lock.installedComponents, ["configuration", "agents", "skills", "plugins"]);
+    assert.equal(lock.resources.some((resource) => resource.kind === "command"), false);
+    const configResource = lock.resources.find((resource) => resource.id === "opencode-config");
+    assert(configResource);
+    const plugins = configValue(await readFile(join(f.root, "xdg-config", "opencode", configResource.relativePath), "utf8")).plugins;
+    assert.deepEqual(plugins.map((plugin) => plugin.package), ["./skynex/plugins/runtime", "./skynex/plugins/sky-agents"]);
+  });
   const invalid = [
     ["unknown-flag", ["--not-a-real-flag"], "Unknown flag: --not-a-real-flag"],
     ...["--project", "--state-dir", "--config"].flatMap((flag) => [
@@ -123,6 +158,9 @@ export async function verify(test) {
       [`${flag}-next-flag`, [flag, "--yes"], `Missing value for ${flag}`],
     ]),
     ["config-invalid", ["--project", ".", "--config", "toml", "--yes"], "--config must be json or jsonc"],
+    ["components-empty", ["--project", ".", "--components", "", "--yes"], "Missing value for --components"],
+    ["components-unknown", ["--project", ".", "--components", "agents,nope", "--yes"], "--components must be a nonempty comma-separated list"],
+    ["components-duplicate", ["--project", ".", "--components", "agents,agents", "--yes"], "--components must not contain duplicates"],
     ["scope-conflict", ["--global", "--project", ".", "--yes"], "--global and --project are mutually exclusive"],
   ];
   for (const [name, args, message] of invalid) {
@@ -137,7 +175,7 @@ export async function verify(test) {
     for (const pending of [false, true]) {
       await test(`cli-yes-${format}-${pending ? "pending" : "conflict"}-full-fixture-no-mutation`, async () => {
         const f = await setup("yes-conflict", ["json", "jsonc"]);
-        f.run([...f.args("install", format), "--allow-executable-plugins"]);
+        f.run(f.args("install", format));
         const lock = JSON.parse(await readFile(f.lockPath));
         const item = lock.resources.find((item) => item.kind === "skill");
         assert(item);
@@ -151,7 +189,7 @@ export async function verify(test) {
         }
         await writeFile(f.lockPath, `${JSON.stringify(lock)}\n`);
         const before = await snapshot(f.root);
-        const result = f.run([...f.args("update", format), "--allow-executable-plugins"], "Local changes require an interactive decision");
+        const result = f.run(f.args("update", format), "Local changes require an interactive decision");
         assert((result.stdout + result.stderr).includes(item.relativePath));
         assert.deepEqual(await snapshot(f.root), before);
       });

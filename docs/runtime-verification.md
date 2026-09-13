@@ -1,5 +1,141 @@
 # Isolated OpenCode V2 runtime verification
 
+## Runtime-8 global-root harness closure (2026-09-13)
+
+OpenCode 2.0.3 resolves relative plugin registrations in the global configuration
+against `${XDG_CONFIG_HOME}/opencode`, even while the foreground server location and
+cwd remain a separate isolated project. The harness now stages both plugins and the
+configuration only in that canonical global root; no project `.opencode` is created.
+It accepts fresh `skynex install --global` snapshots from the same location.
+
+Both fixture and fresh installed-snapshot probes passed with the runtime and Sky
+Agents local exports active, authenticated `listProfiles` returning `[]`, the preview
+RPC callable (the deliberately missing profile returns the expected bounded RPC
+failure), mutation RPCs absent, and profile storage rooted at the same isolated
+`${XDG_CONFIG_HOME}/skynex/profiles` used by the CLI. Owned foreground servers exited
+after SIGTERM. The install sentinel outside the managed OpenCode root was unchanged.
+
+Evidence: `/tmp/opencode/skynex-runtime-g2zsGQ/evidence.json` and
+`/tmp/opencode/skynex-runtime-xgTHRR/evidence.json`; fresh global install inputs and
+stdout are under `/tmp/opencode/skynex-runtime8-install-41WlJS`.
+
+## Runtime-7 harness closure (2026-09-13)
+
+Default `pnpm verify:opencode` fixture mode now constructs both current local plugin
+registrations, all 13 policy keys, and the complete self-contained runtime/Sky Agents
+resource set. It passed with both plugins active and `listProfiles` returning `[]`.
+The installed-snapshot gate was not weakened: a separate fresh 58-file CLI install
+also passed the same assertions (13 agents, 10 top-level skills, active runtime and
+Sky server, empty profile list, preview RPC present, mutation RPCs absent, and TUI
+pointing to the CLI confirmation boundary). No interactive TUI/provider operation
+was run.
+
+Evidence: `/tmp/opencode/skynex-runtime-iZz4nz/evidence.json` (fixture mode) and
+`/tmp/opencode/skynex-runtime-SX6x8k/evidence.json` (installed snapshot).
+
+## Runtime-6 installed-artifact result (2026-09-13)
+
+The final mutation-free RPC artifact passed a fresh isolated 58-file installation
+and runtime probe on Node v24.19.0 and OpenCode 0.0.0-beta-19425. Both server plugins
+were active and the authenticated `listProfiles` RPC decoded to exactly `[]`.
+Installed RPC definition and server source expose `previewProfileApply` and contain
+neither `authorizeProfileApply` nor `applyProfile`. The installed TUI likewise
+contains no mutation RPC, has no bare imports, is exported as `./tui`, and directs
+apply actions to `skynex profile apply --name ...`. No interactive TUI or provider
+operation was executed. Evidence:
+`/tmp/opencode/skynex-runtime-9nw7en/evidence.json`.
+
+## Runtime-5 installed-artifact result (2026-09-11)
+
+The final fresh isolated 58-file installation passed on Node v24.21.0 and OpenCode
+0.0.0-beta-19425. Both `skynex.runtime` and `skynex-sky-agents.server` were active,
+with no extra plugin exports. An actual authenticated raw RPC call to
+`/api/rpc/skynex.sky-agents/listProfiles` decoded successfully to exactly `[]`.
+The fixture contained 13 agent policies and 10 top-level skills.
+
+TUI evidence remains intentionally limited: the active server export reports
+`tui: true`, the installed package exports `./tui`, and the installed TUI source has
+no bare imports. No interactive TUI or provider/model operation was executed.
+Evidence: `/tmp/opencode/skynex-runtime-1UgD6u/evidence.json`.
+
+## Runtime-4 installed-artifact result (2026-09-11)
+
+The fresh 58-file install again activated both server plugins, but the required raw
+authenticated RPC call failed. `POST /api/rpc/skynex.sky-agents/listProfiles` with
+the exact isolated `location[directory]` query and body `{"input":{}}` returned HTTP
+500:
+
+```text
+RpcInternalError rpc.invalid_output: Pattern encountered while patterns is set to "error"
+at ["schema"]["items"]["properties"]["name"]["pattern"]
+```
+
+Thus registration is active but actual RPC schema compilation/response decoding is
+not compatible with beta-19425. Evidence is retained at
+`/tmp/opencode/skynex-runtime-6sPaqp/evidence.json`. The response is bounded and
+contains no credential. No production files were changed.
+
+## Runtime-3 installed-artifact result (2026-09-11)
+
+A fresh 58-file installation passed server activation under isolated Node v24.21.0
+and OpenCode 0.0.0-beta-19425. `skynex.runtime` and
+`skynex-sky-agents.server` were the only exports; both were active, and Sky Agents
+advertised `server`, `tui`, and `rpc` features. The installed configuration contained
+13 agent policies and the installation contained 10 top-level skills.
+
+The authenticated HTTP/OpenAPI surface available to this noninteractive probe has no
+custom-RPC invocation operation. Therefore the registered RPC feature is proven, but
+an actual `listProfiles` call returning `[]` is **not** proven. Likewise, no safe
+noninteractive CLI-plugin activation command was found: TUI evidence is limited to
+the active export's `tui: true`, an installed `./tui` package export, and a static
+check that `tui.tsx` has no bare imports. No provider/model operation was called.
+
+Evidence: `/tmp/opencode/skynex-runtime-PRcABt/evidence.json`.
+
+## Runtime-1 installed-artifact result (2026-09-11)
+
+## Runtime-2 installed-artifact result (2026-09-11)
+
+The follow-up artifact still does **not** pass OpenCode beta-19425 runtime
+compatibility. A fresh isolated Node v24.21.0 CLI installation succeeded and wrote
+58 manifest-backed files, including 13 agent policies, 10 top-level `SKILL.md`
+resources, both plugin registrations, and the vendored JSONC parser. The runtime
+plugin activated, but Sky Agents failed while OpenCode built the plugin:
+
+```text
+BuildMessage: Expected ";" but found ")"
+```
+
+The diagnostic is OpenCode log reference `err_1186ea2b`. Evidence is retained at
+`/tmp/opencode/skynex-runtime-Beiunw/evidence.json` and its isolated
+`data/opencode/log/opencode.log`. Because setup did not complete, no custom RPC was
+registered and `listProfiles` could not be called. No TUI activation is claimed;
+the probe failed before its limited static no-bare-import/package-export check.
+Production repair remains outside this harness-only attempt.
+
+The current 50-file installer artifact does **not** pass runtime compatibility.
+Using Node v24.21.0 and OpenCode 0.0.0-beta-19425 in fresh isolated HOME/XDG
+directories, installation succeeded with executable consent, produced 13 agent
+policies, and registered exactly `./skynex/plugins/runtime` and
+`./skynex/plugins/sky-agents`. The runtime export became active, but the Sky Agents
+server export failed before RPC registration:
+
+```text
+Cannot find package '@opencode/plugin' imported from .../skynex/plugins/sky-agents/index.ts
+```
+
+Evidence is retained at `/tmp/opencode/skynex-runtime-4xoiy4/evidence.json` and
+`/tmp/opencode/skynex-runtime-4xoiy4/data/opencode/log/opencode.log`. The owned
+foreground server was terminated. Consequently `skynex.sky-agents.listProfiles`
+was not callable, and TUI runtime loading was not claimed. The installed TUI source
+was copied and hashed by the harness, but its same external package dependency means
+source presence alone is not compatibility evidence.
+
+The harness now requires both server exports to be active and rejects registrations
+other than the runtime and Sky Agents plugins. It also verifies all 13 agent policy
+entries and copies/hashes all installed plugin files. Production repair is outside
+this verification-only attempt.
+
 The runtime probe is deliberately separate from installer/build verification. It
 never uses the shared OpenCode service or the user's configuration/database.
 
@@ -205,3 +341,13 @@ under an additional approved acquisition procedure if required.
 - https://opencode.ai/v2/openapi.json (plugin state/source schemas)
 - https://opencode.ai/v2/docs/troubleshooting
 - https://nodejs.org/dist/latest-v24.x/SHASUMS256.txt
+# Installation scope security
+
+Sky Agents runtime plugins are global-only and must be installed beneath the canonical
+`${XDG_CONFIG_HOME:-$HOME/.config}/opencode` root. Project installations may select agents,
+skills, commands, and configuration, but selecting plugins is rejected before mutation.
+Global install/update defaults include configuration, agents, skills, and both plugins;
+project defaults include configuration, agents, and skills. Empty commands are omitted,
+and additional global resources can be selected later.
+Profiles always live in `${XDG_CONFIG_HOME:-$HOME/.config}/skynex/profiles`; profile apply
+therefore rejects `--state-dir` rather than redirecting that store.

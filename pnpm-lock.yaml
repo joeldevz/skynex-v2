@@ -26,6 +26,9 @@ importers:
       '@skynex-internal/installer':
         specifier: workspace:*
         version: link:../../packages/installer
+      '@skynex-internal/sky-agents':
+        specifier: workspace:*
+        version: link:../../packages/sky-agents
       '@skynex-internal/target-opencode':
         specifier: workspace:*
         version: link:../../targets/opencode
@@ -63,6 +66,15 @@ importers:
         version: link:../domain
 
   packages/presentation: {}
+
+  packages/sky-agents:
+    dependencies:
+      '@skynex-internal/domain':
+        specifier: workspace:*
+        version: link:../domain
+      jsonc-parser:
+        specifier: ^3.3.1
+        version: 3.3.1
 
   packages/testing: {}
 

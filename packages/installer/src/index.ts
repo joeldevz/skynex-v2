@@ -15,7 +15,7 @@ export { listBackups, restoreBackup } from "./backup-service.js";
 export { executeTransaction } from "./transaction.js";
 
 export interface InstallOperation { readonly kind: "create" | "replace" | "unchanged" | "conflict"; readonly artifact: DesiredArtifact; readonly relativePath: string; readonly destination: string; readonly currentDigest: string | null; readonly desiredDigest: string; readonly previous?: ManagedResourceState; readonly decision?: UpdateDecision; }
-export interface InstallPlan { readonly id: string; readonly createdAt: string; readonly target: TargetDetection; readonly operations: readonly InstallOperation[]; readonly allowedResources?: readonly { readonly id: string; readonly relativePath: string }[]; readonly updateMode?: boolean; readonly expectedPreviousLockDigest?: string | null; }
+export interface InstallPlan { readonly id: string; readonly createdAt: string; readonly target: TargetDetection; readonly operations: readonly InstallOperation[]; readonly allowedResources?: readonly { readonly id: string; readonly relativePath: string }[]; readonly selectedComponents?: readonly InstallComponent[]; readonly updateMode?: boolean; readonly expectedPreviousLockDigest?: string | null; }
 export interface ApplyResult { readonly transactionId: string; readonly changed: number; readonly backupRoot: string | null; readonly lockPath: string; }
 const sha256 = (content: string | Buffer): string => createHash("sha256").update(content).digest("hex");
 const exists = async (path: string): Promise<boolean> => lstat(path).then(() => true).catch((e: NodeJS.ErrnoException) => { if (e.code === "ENOENT") return false; throw e; });
@@ -30,10 +30,15 @@ const convergedResource = (resource: ManagedResourceState, item: InstallOperatio
 };
 
 export const createInstallPlan = async (target: TargetAdapter, roots: InstallRoots, components?: readonly InstallComponent[], options?: { readonly configPreference?: "json" | "jsonc" }): Promise<InstallPlan> => {
+  const selected = components ?? (roots.scope === "project" ? ["configuration", "agents", "skills"] : ["configuration", "agents", "skills", "plugins"] satisfies InstallComponent[]);
+  // The OpenCode adapter's default catalog includes the bundled Sky runtime.
+  // Other adapters may omit plugins even when no component filter is supplied.
+  const selectsPlugins = components?.includes("plugins") ?? false;
+  if (roots.scope === "project" && selectsPlugins) throw new Error("Sky Agents plugins can only be installed globally");
   await assertSafeRoot(roots.targetRoot); await assertSafeRoot(roots.stateRoot);
   const detection = await target.detect(roots); const artifacts = await target.desiredArtifacts(roots, components, options);
   // Ownership must come from the complete trusted catalog, not just selected operations.
-  const trustedArtifacts = components === undefined ? artifacts : await target.desiredArtifacts(roots, undefined, options);
+  const trustedArtifacts = components === undefined ? artifacts : await target.desiredArtifacts(roots, roots.scope === "project" ? ["configuration", "agents", "skills"] : undefined, options);
   const allowedIds = new Set<string>(); const allowedPaths = new Set<string>();
   for (const artifact of trustedArtifacts) {
     if (allowedIds.has(artifact.resource.id)) throw new Error(`Duplicate catalog resource: ${artifact.resource.id}`);
@@ -52,7 +57,7 @@ export const createInstallPlan = async (target: TargetAdapter, roots: InstallRoo
     }
     operations.push({ artifact, relativePath: artifact.relativePath, currentDigest, desiredDigest, previous: prior, kind: !current ? "create" : currentDigest === desiredDigest ? "unchanged" : "replace", destination });
   }
-  return { id: randomUUID(), createdAt: new Date().toISOString(), target: detection, operations, allowedResources: trustedArtifacts.map((artifact) => ({ id: artifact.resource.id, relativePath: artifact.relativePath })) };
+  return { id: randomUUID(), createdAt: new Date().toISOString(), target: detection, operations, selectedComponents: selected, allowedResources: trustedArtifacts.map((artifact) => ({ id: artifact.resource.id, relativePath: artifact.relativePath })) };
 };
 
 export const applyInstallPlan = async (plan: InstallPlan): Promise<ApplyResult> => {
@@ -64,7 +69,7 @@ export const applyInstallPlan = async (plan: InstallPlan): Promise<ApplyResult> 
   const installed = prior;
   const planned = new Set(plan.operations.map((item) => item.artifact.relativePath));
   const resources = [...(prior?.resources ?? []).filter((resource) => !planned.has(resource.relativePath)), ...plan.operations.map((item) => item.previous && item.kind === "unchanged" ? (item.currentDigest === item.desiredDigest ? convergedResource(item.previous, item) : item.previous) : ({ ...item.artifact.resource, origin: item.artifact.resource.kind === "native" ? "native" : "canonical", relativePath: item.relativePath, sourceDigest: item.desiredDigest, installedDigest: item.desiredDigest } as ManagedResourceState))];
-  const lock = { schemaVersion: 1 as const, target: "opencode-v2" as const, scope: roots.scope, targetRoot: resolve(roots.targetRoot), stateRoot: resolve(roots.stateRoot), installedAt: new Date().toISOString(), transactionId: plan.id, resources } satisfies InstallLock;
+  const lock = { schemaVersion: 1 as const, target: "opencode-v2" as const, scope: roots.scope, targetRoot: resolve(roots.targetRoot), stateRoot: resolve(roots.stateRoot), installedAt: new Date().toISOString(), transactionId: plan.id, resources, installedComponents: plan.selectedComponents ?? [...new Set(plan.operations.map((operation) => operation.artifact.component))] } satisfies InstallLock;
   for (const item of plan.operations) {
     const owned = installed?.resources.find((resource) => resource.id === item.artifact.resource.id && resource.relativePath === item.relativePath);
     const reviewed = plan.updateMode && ["accept-upstream", "keep-local", "skip", "preserve"].includes(item.decision ?? "");

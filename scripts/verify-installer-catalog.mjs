@@ -81,6 +81,7 @@ export async function verify(test) {
   await test("owned-identical-real-reinstall-remains-unchanged", async () => {
     const f = await fixture("owned-identical-reinstall");
     const options = { configPreference: "jsonc" };
+    f.roots.scope = "global";
     const initialPlan = await createInstallPlan(openCodeTarget, f.roots, undefined, options);
     await applyInstallPlan(initialPlan);
     const priorLock = JSON.parse(await readFile(f.lockPath, "utf8"));
@@ -134,9 +135,10 @@ export async function verify(test) {
       });
     }
   }
-  for (const path of ["commands/skynex-doctor.md", "skynex/plugins/runtime/index.ts", "skynex/plugins/runtime/prompt.ts"]) {
+  for (const path of ["skills/diagnose/SKILL.md", "skynex/plugins/sky-agents/index.ts", "skynex/plugins/sky-agents/core/storage.ts"]) {
     await test(`collision-real-destination-${path}`, async () => {
       const f = await fixture("real-collision");
+      f.roots.scope = "global";
       const artifacts = (await openCodeTarget.desiredArtifacts(f.roots)).filter((item) => item.relativePath === path);
       assert.equal(artifacts.length, 1, `actual catalog destination missing: ${path}`);
       await mkdir(dirname(f.target(path)), { recursive: true });

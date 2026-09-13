@@ -9,6 +9,7 @@
   "references": [
     { "path": "../../packages/domain" },
     { "path": "../../packages/installer" },
+    { "path": "../../packages/sky-agents" },
     { "path": "../../targets/opencode" }
   ]
 }

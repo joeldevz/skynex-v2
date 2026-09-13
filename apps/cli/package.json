@@ -14,6 +14,7 @@
     "@clack/prompts": "^0.11.0",
     "@skynex-internal/domain": "workspace:*",
     "@skynex-internal/installer": "workspace:*",
+    "@skynex-internal/sky-agents": "workspace:*",
     "@skynex-internal/target-opencode": "workspace:*"
   }
 }

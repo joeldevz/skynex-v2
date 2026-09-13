@@ -16,7 +16,7 @@ assert(args.length === 0 || (args.length === 2 && args[0] === "--installed-confi
   "Usage: node scripts/verify-opencode2.mjs [--installed-config-dir /tmp/opencode/.../.opencode]");
 const root = await mkdtemp("/tmp/opencode/skynex-runtime-");
 const project = join(root, "project");
-const configDir = join(project, ".opencode");
+const configDir = join(root, "config", "opencode");
 const env = { PATH: "/usr/bin:/bin", HOME: join(root, "home"),
   XDG_CONFIG_HOME: join(root, "config"), XDG_DATA_HOME: join(root, "data"),
   XDG_STATE_HOME: join(root, "state"), XDG_CACHE_HOME: join(root, "cache"),
@@ -44,6 +44,15 @@ async function request(base, path, method = "GET") {
   return response.status === 204 ? null : response.json();
 }
 
+async function rpcRequest(base, namespace, method, input) {
+  const url = new URL(`/api/rpc/${namespace}/${method}`, base);
+  url.searchParams.set("location[directory]", project);
+  const response = await fetch(url, { method: "POST", headers: { authorization, "content-type": "application/json" }, body: JSON.stringify({ input }), signal: AbortSignal.timeout(10_000), redirect: "error" });
+  const text = await response.text();
+  assert(response.ok, `POST ${url.pathname}: HTTP ${response.status}: ${text.slice(0, 1000)}`);
+  return text ? JSON.parse(text) : null;
+}
+
 try {
   // V2 discovers ancestors all the way to /. Refuse rather than load outside config.
   for (let directory = dirname(root); ; directory = dirname(directory)) {
@@ -60,9 +69,6 @@ try {
   for (const path of [project, configDir, ...Object.values(env).filter((value) => value.startsWith(root))]) {
     await mkdir(path, { recursive: true });
   }
-  await mkdir(join(env.XDG_CONFIG_HOME, "opencode"));
-  // Disable builtins at lower precedence; project config re-enables only this local plugin.
-  await writeFile(join(env.XDG_CONFIG_HOME, "opencode", "opencode.json"), JSON.stringify({ plugins: ["-*"] }));
   const installed = args.length ? await realpath(resolve(args[1])) : null;
   if (installed) assert(installed.startsWith("/tmp/opencode/"), "Only approved isolated installed fixtures are accepted");
   let configName = "opencode.json";
@@ -79,21 +85,31 @@ try {
   }
   const configBytes = installed ? await regularFile(join(installed, configName)) : Buffer.from(JSON.stringify({
     $schema: "https://opencode.ai/config.json",
-    plugins: [{ package: "./skynex/plugins/runtime", options: { managedBy: "skynex" } }],
+    plugins: [
+      { package: "./skynex/plugins/runtime", options: { managedBy: "skynex" } },
+      { package: "./skynex/plugins/sky-agents", options: { managedBy: "skynex" } },
+    ],
+    agents: Object.fromEntries(["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "skynex-orchestrator", "task-classifier", "tech-planner", "test-engineer", "test-reviewer", "verifier"].map((id) => [id, { mode: id === "skynex-orchestrator" ? "all" : "subagent", permissions: [] }])),
   }));
   const parseErrors = [];
   const config = parse(configBytes.toString(), parseErrors);
   assert.equal(parseErrors.length, 0, "Installed JSON/C must parse without errors");
-  assert(Object.keys(config).every((key) => ["$schema", "plugins"].includes(key)), "Use a clean installer fixture config (schema/plugins only)");
-  assert.equal(config.plugins?.length, 1, "Expected exactly the installed runtime registration");
-  assert.equal(typeof config.plugins[0] === "string" ? config.plugins[0] : config.plugins[0].package,
-    "./skynex/plugins/runtime");
+  assert(Object.keys(config).every((key) => ["$schema", "plugins", "agents"].includes(key)), "Use a clean installer fixture config (schema/plugins/agents only)");
+  const registrations = config.plugins?.map((plugin) => typeof plugin === "string" ? plugin : plugin.package);
+  assert.deepEqual(registrations, ["./skynex/plugins/runtime", "./skynex/plugins/sky-agents"],
+    "Expected exactly the installed runtime and sky-agents registrations");
+  assert.equal(Object.keys(config.agents ?? {}).length, 13, "Expected all 13 installed agent policies");
   await writeFile(join(configDir, configName), configBytes);
   evidence.digests.config = digest(configBytes);
   evidence.source = installed ?? join(repo, "targets/opencode/resources");
   evidence.digests.manifest = digest(await readFile(join(repo, "targets/opencode/resources/manifest.json")));
-  for (const [name, source] of [["index.ts", "native/plugins/skynex-runtime.ts"], ["prompt.ts", "native/hooks/prompt.ts"]]) {
-    const relative = `skynex/plugins/runtime/${name}`;
+  const resources = [
+    ["skynex/plugins/runtime/index.ts", "native/plugins/skynex-runtime.ts"],
+    ["skynex/plugins/runtime/prompt.ts", "native/hooks/prompt.ts"],
+    ...["core/catalog.ts", "core/index.ts", "core/profile-apply.ts", "core/profiles.ts", "core/roots.ts", "core/rpc.ts", "core/storage.ts", "index.ts", "package.json", "rpc.ts", "tui.tsx", "vendor/jsonc-parser/impl/edit.js", "vendor/jsonc-parser/impl/format.js", "vendor/jsonc-parser/impl/parser.js", "vendor/jsonc-parser/impl/scanner.js", "vendor/jsonc-parser/impl/string-intern.js", "vendor/jsonc-parser/LICENSE.md", "vendor/jsonc-parser/main.d.ts", "vendor/jsonc-parser/main.js"]
+      .map((name) => [`skynex/plugins/sky-agents/${name}`, `native/plugins/sky-agents/${name}`]),
+  ];
+  for (const [relative, source] of resources) {
     const bytes = await regularFile(installed ? join(installed, relative) : join(evidence.source, source));
     evidence.digests[relative] = digest(bytes);
     await mkdir(dirname(join(configDir, relative)), { recursive: true });
@@ -134,13 +150,43 @@ try {
   const plugins = await request(base, "/api/plugin");
   evidence.plugins = plugins;
   assert.equal(plugins.location.directory, project);
-  const runtime = plugins.data.filter((plugin) => plugin.id === "skynex.runtime");
+   const runtime = plugins.data.filter((plugin) => plugin.id === "skynex.runtime");
   assert.equal(runtime.length, 1, "Expected exactly one actual skynex.runtime export");
   assert.equal(runtime[0].state.status, "active", "Plugin setup must complete successfully");
   assert.equal(runtime[0].features.server, true);
   assert.equal(runtime[0].source.type, "local");
   assert(runtime[0].source.path.startsWith(join(configDir, "skynex/plugins/runtime")), "Plugin must resolve from snapshot");
-  assert(plugins.data.every((plugin) => plugin.id === "skynex.runtime"), "Unexpected plugin activation");
+   const skyAgents = plugins.data.filter((plugin) => plugin.id === "skynex-sky-agents.server");
+   assert.equal(skyAgents.length, 1, "Expected exactly one actual sky-agents server export");
+   assert.equal(skyAgents[0].state.status, "active", "Sky Agents server setup must complete successfully");
+   assert.equal(skyAgents[0].features.server, true);
+   assert(skyAgents[0].source.path.startsWith(join(configDir, "skynex/plugins/sky-agents")), "Sky Agents must resolve from snapshot");
+    const localPlugins = plugins.data.filter((plugin) => plugin.source.type === "local");
+    assert.deepEqual(new Set(localPlugins.map((plugin) => plugin.id)), new Set(["skynex.runtime", "skynex-sky-agents.server"]), "Unexpected local plugin activation");
+   const rpcEnvelope = await rpcRequest(base, "skynex.sky-agents", "listProfiles", {});
+    evidence.rpc = { registered: skyAgents[0].features.rpc === true, listProfiles: { called: true, result: rpcEnvelope.output } };
+   assert.equal(evidence.rpc.registered, true, "Sky Agents RPC feature must be registered");
+    assert.deepEqual(evidence.rpc.listProfiles.result, [], "Fresh isolated profile store must be empty");
+    const previewEnvelope = await rpcRequest(base, "skynex.sky-agents", "previewProfileApply", { name: "missing-profile", config: "jsonc" }).then(
+      (value) => ({ value }),
+      (error) => ({ error: error.message }),
+    );
+    evidence.rpc.previewProfileApply = { called: true, ...previewEnvelope };
+    assert(previewEnvelope.error?.includes("HTTP 500") || previewEnvelope.value, "Preview RPC must be callable");
+    evidence.profileRoot = join(env.XDG_CONFIG_HOME, "skynex", "profiles");
+   const tuiBytes = await regularFile(join(configDir, "skynex/plugins/sky-agents/tui.tsx"));
+   const rpcBytes = await regularFile(join(configDir, "skynex/plugins/sky-agents/rpc.ts"));
+   const serverBytes = await regularFile(join(configDir, "skynex/plugins/sky-agents/index.ts"));
+   const packageJson = JSON.parse((await regularFile(join(configDir, "skynex/plugins/sky-agents/package.json"))).toString());
+   assert(!/(?:from|import\s*)\s*[('][^./]/.test(tuiBytes.toString()), "Installed TUI source must have no bare imports");
+   for (const [label, bytes] of [["RPC definition", rpcBytes], ["server", serverBytes], ["TUI", tuiBytes]]) {
+     assert(!/\b(?:authorizeProfileApply|applyProfile)\b/.test(bytes.toString()), `${label} must not expose mutation RPCs`);
+   }
+   assert(tuiBytes.toString().includes("skynex profile apply --name"), "TUI apply action must point to the confirmed CLI flow");
+   assert(rpcBytes.toString().includes("previewProfileApply:"), "RPC definition must expose previewProfileApply");
+   assert(serverBytes.toString().includes("previewProfileApply:"), "Server must expose previewProfileApply");
+   assert.equal(packageJson.exports?.["./tui"], "./tui.tsx", "Installed package must export its TUI entry");
+   evidence.tuiImport = { covered: "static-limited", bareImports: false, packageExport: packageJson.exports["./tui"], reason: "Foreground server loads server exports only; no noninteractive CLI-plugin activation surface was established." };
   evidence.integrationVerified = true;
 } catch (error) {
   evidence.error = error.message;

@@ -1,0 +1,525 @@
+{
+  "schemaVersion": 1,
+  "inventorySha256": "e77b256d2b992b021eaa12c8e85e35cbf04ef2a69b9d49f8569363fe1f2022f2",
+  "generated": [
+    {
+      "target": "canonical/agents/coder.md",
+      "source": "agents/coder.md",
+      "sourceSha256": "bc330513d8b3fa760b06b69942cf8e10388015ddcee2afe8c3361f5bed1e6714",
+      "generatedSha256": "ffdcea40f2b9c9dee47f32624707610b3f3fedde2914cdf529a6dcb3639e8cf4"
+    },
+    {
+      "target": "canonical/agents/diagnostic-researcher.md",
+      "source": "agents/diagnostic-researcher.md",
+      "sourceSha256": "4d399e88d0f1d2668a566aa78c91f5e3205747124d926653dc1656c6dc537e7c",
+      "generatedSha256": "70f40e4fe7af9645e6bdf1d825929f752503576776d373dc4c250707671b0761"
+    },
+    {
+      "target": "canonical/agents/infrastructure-engineer.md",
+      "source": "agents/infrastructure-engineer.md",
+      "sourceSha256": "af54776386b264088d828c50e856ba7ee196e4143111ef1ede909f8a04f7173c",
+      "generatedSha256": "8a4d695eafe1064840550970810bb63a08aabc8b17979298bd86dd262a018804"
+    },
+    {
+      "target": "canonical/agents/mentor.md",
+      "source": "agents/mentor.md",
+      "sourceSha256": "fa06027932f47681022c1e55c3e7a0c912fc8124756a60a2038d9906f33e548f",
+      "generatedSha256": "9d619b7ddfb7bb735b3a4c6218364c50bbb7b67cc967b46d8a3428cd554bd034"
+    },
+    {
+      "target": "canonical/agents/pr-reviewer.md",
+      "source": "agents/pr-reviewer.md",
+      "sourceSha256": "7c18cf1b2272debeba87088d4e501873b26c432053fa126ad28852a10c9ea568",
+      "generatedSha256": "a7e77de7dd5e3f58d63ea521746a93cce46379d563c4b3b656a431f44a472e67"
+    },
+    {
+      "target": "canonical/agents/security.md",
+      "source": "agents/security.md",
+      "sourceSha256": "6278dfefac859a753ceb564f244d6beb733e481a4543a37822fbf1275c2aa601",
+      "generatedSha256": "16bddeea4aa0cedfde2447143bcc451a4dd9c7474fa1ca788a13351ca050c964"
+    },
+    {
+      "target": "canonical/agents/skill-validator.md",
+      "source": "agents/skill-validator.md",
+      "sourceSha256": "e46be0762de44e0f5b545d9bb0e5547b492de45702ba9ca3def376640deff44d",
+      "generatedSha256": "45ccb69d9a4a26b7fad39d5c17a65e5877758cb4545565f8458b25b11730dd09"
+    },
+    {
+      "target": "canonical/agents/skynex-orchestrator.md",
+      "source": "agents/skynex-orchestrator.md",
+      "sourceSha256": "eb46ce33b0cdc5713b1d42a5f89eec4bd4182e0dbd31acb42d8eba25f5be6170",
+      "generatedSha256": "a5f67a7bea4348d7c4d0bbec6c57e5b5d6aa325a0ebad818f9fbe9243a34c299"
+    },
+    {
+      "target": "canonical/agents/task-classifier.md",
+      "source": "agents/task-classifier.md",
+      "sourceSha256": "7ebea01e1a5189f8e512b786a35ab8360c43783294d578e811af050c8d6f71af",
+      "generatedSha256": "202e1695f1d79b145c362dcefa94118042d53227d4e971b48a444b78e7ea6891"
+    },
+    {
+      "target": "canonical/agents/tech-planner.md",
+      "source": "agents/tech-planner.md",
+      "sourceSha256": "0d47fd9ce841766ac60eedf1fa0496aca85bd18b28a7682d44f8325dec10eacd",
+      "generatedSha256": "8792abc114d26b4208a8b4d796c39f6be8c9b5c0481dbbb3b85917bf83f0498b"
+    },
+    {
+      "target": "canonical/agents/test-engineer.md",
+      "source": "agents/test-engineer.md",
+      "sourceSha256": "87e6b9ba85ccc9830b6f4d0a3a0175cb4546ad5496b39d0c40171e22d485290e",
+      "generatedSha256": "3ff1cb1e8116c6d630b4166db1644acfbddd0920d74d05d7fa13f4dad692188f"
+    },
+    {
+      "target": "canonical/agents/test-reviewer.md",
+      "source": "agents/test-reviewer.md",
+      "sourceSha256": "c30b09d4caa188e7b39501ef8f5512de2975e625164670ec35bbca453a17b32e",
+      "generatedSha256": "bf4b9e2cfe0bcc5b4f79083f69f5810a7493262d441fce59ea49dd5e0dcdafdb"
+    },
+    {
+      "target": "canonical/agents/verifier.md",
+      "source": "agents/verifier.md",
+      "sourceSha256": "f75381cf7aa64e7c1091b8c71fe17765bdd5e298564e285024f2ac8dcb6f4e2b",
+      "generatedSha256": "3212e31c745f565338262f2e8743726854f4acadf74386e2c94d7c12464932e1"
+    },
+    {
+      "target": "canonical/config/managed-agents.json",
+      "source": "generated",
+      "sourceSha256": null,
+      "generatedSha256": "5405a6de1bd3ef0404b2996ee43f260674b6c96c90debecb84adaf3b9b557c78"
+    },
+    {
+      "target": "canonical/skills/_shared/advisor-protocol.md",
+      "source": "skills/_shared/advisor-protocol.md",
+      "sourceSha256": "4fd594d171c6b17b4dd65c5fdd4e497b15cf949e9ef638c283b57907998cfd76",
+      "generatedSha256": "4fd594d171c6b17b4dd65c5fdd4e497b15cf949e9ef638c283b57907998cfd76"
+    },
+    {
+      "target": "canonical/skills/_shared/dispatching-parallel-agents.md",
+      "source": "skills/_shared/dispatching-parallel-agents.md",
+      "sourceSha256": "81677bd562df77c0e0768a49af85d73cabeef15d44b6217d91c1be518ac8dce4",
+      "generatedSha256": "81677bd562df77c0e0768a49af85d73cabeef15d44b6217d91c1be518ac8dce4"
+    },
+    {
+      "target": "canonical/skills/_shared/neurox-protocol.md",
+      "source": "skills/_shared/neurox-protocol.md",
+      "sourceSha256": "cf150bf4da04d1401aed68d4d31efe27dc689070d0516a1ad80d28ed25438763",
+      "generatedSha256": "cf150bf4da04d1401aed68d4d31efe27dc689070d0516a1ad80d28ed25438763"
+    },
+    {
+      "target": "canonical/skills/_shared/return-envelope.md",
+      "source": "skills/_shared/return-envelope.md",
+      "sourceSha256": "d30e2250fc4bea9e403cd9c82d0aec020f3a687f459c451b2fa5dbe4a7b1784a",
+      "generatedSha256": "d30e2250fc4bea9e403cd9c82d0aec020f3a687f459c451b2fa5dbe4a7b1784a"
+    },
+    {
+      "target": "canonical/skills/_shared/skill-resolver.md",
+      "source": "skills/_shared/skill-resolver.md",
+      "sourceSha256": "fec9e03c04ebb5ceead4a175a6a1bd8a92eece4a5c45c4a020c7343a59b4b939",
+      "generatedSha256": "fec9e03c04ebb5ceead4a175a6a1bd8a92eece4a5c45c4a020c7343a59b4b939"
+    },
+    {
+      "target": "canonical/skills/_shared/smart-zone-budget.md",
+      "source": "skills/_shared/smart-zone-budget.md",
+      "sourceSha256": "d577ee85ca32fcef1ef389cd6cbe9b9b2ffd4314d5e51627cb49ebe8f9193cba",
+      "generatedSha256": "d577ee85ca32fcef1ef389cd6cbe9b9b2ffd4314d5e51627cb49ebe8f9193cba"
+    },
+    {
+      "target": "canonical/skills/diagnose/scripts/hitl-loop.template.sh",
+      "source": "skills/diagnose/scripts/hitl-loop.template.sh",
+      "sourceSha256": "b2932630950e5210075bcd6f850e5accf30c101c5367b29eac3a29b4dd8084c8",
+      "generatedSha256": "b2932630950e5210075bcd6f850e5accf30c101c5367b29eac3a29b4dd8084c8"
+    },
+    {
+      "target": "canonical/skills/diagnose/SKILL.md",
+      "source": "skills/diagnose/SKILL.md",
+      "sourceSha256": "28886402bbfa0470248086eab9106a103b964b76ae9496e63ff0c8a6761b6d13",
+      "generatedSha256": "de5836265d1012f6bea5e8c54d3ab059d552362237888c686bf127d2902d1b4e"
+    },
+    {
+      "target": "canonical/skills/grill-me/SKILL.md",
+      "source": "skills/grill-me/SKILL.md",
+      "sourceSha256": "63fd65417afdd2e57e7efb07dbef5ebb40188581d7ae70d824a1683e4fd04cbb",
+      "generatedSha256": "63fd65417afdd2e57e7efb07dbef5ebb40188581d7ae70d824a1683e4fd04cbb"
+    },
+    {
+      "target": "canonical/skills/infrastructure-quality-tooling/SKILL.md",
+      "source": "skills/infrastructure-quality-tooling/SKILL.md",
+      "sourceSha256": "f427ab66a448547523cbce99c112e53a764668a09309d5cb00b888d519a76f09",
+      "generatedSha256": "f427ab66a448547523cbce99c112e53a764668a09309d5cb00b888d519a76f09"
+    },
+    {
+      "target": "canonical/skills/prd/references/prd-workflow.md",
+      "source": "skills/prd/references/prd-workflow.md",
+      "sourceSha256": "a997e6fa015159393b2dde2b78b6bfe403d5172c5d67d32f3f8712389cf9fe8f",
+      "generatedSha256": "a997e6fa015159393b2dde2b78b6bfe403d5172c5d67d32f3f8712389cf9fe8f"
+    },
+    {
+      "target": "canonical/skills/prd/references/schema.md",
+      "source": "skills/prd/references/schema.md",
+      "sourceSha256": "58b690f84e9425e87bc6766f30869ab41f9073fe45c8cdfa6c988e791060b9f4",
+      "generatedSha256": "58b690f84e9425e87bc6766f30869ab41f9073fe45c8cdfa6c988e791060b9f4"
+    },
+    {
+      "target": "canonical/skills/prd/SKILL.md",
+      "source": "skills/prd/SKILL.md",
+      "sourceSha256": "3e969f70c6756573613b1355d7de4708474b0fa5306c2f381f362c18be61bcfe",
+      "generatedSha256": "3e969f70c6756573613b1355d7de4708474b0fa5306c2f381f362c18be61bcfe"
+    },
+    {
+      "target": "canonical/skills/review-pr/SKILL.md",
+      "source": "skills/review-pr/SKILL.md",
+      "sourceSha256": "2469e5fe9bbf532d9e35458ef1fd02ce3f6b8ec30e440414435e3f2367cb65c8",
+      "generatedSha256": "2469e5fe9bbf532d9e35458ef1fd02ce3f6b8ec30e440414435e3f2367cb65c8"
+    },
+    {
+      "target": "canonical/skills/security/SKILL.md",
+      "source": "skills/security/SKILL.md",
+      "sourceSha256": "fd087d21d4f75198bae9eeda49e2b99fea52690b1df6932d3379a624929fd7df",
+      "generatedSha256": "fd087d21d4f75198bae9eeda49e2b99fea52690b1df6932d3379a624929fd7df"
+    },
+    {
+      "target": "canonical/skills/tdd-discipline/SKILL.md",
+      "source": "skills/tdd-discipline/SKILL.md",
+      "sourceSha256": "b69d4b8c19d9ffc06393cc27c4b9b4ec7cae9f6eff2e30b29cc661a398932afc",
+      "generatedSha256": "b69d4b8c19d9ffc06393cc27c4b9b4ec7cae9f6eff2e30b29cc661a398932afc"
+    },
+    {
+      "target": "canonical/skills/triage/AGENT-BRIEF.md",
+      "source": "skills/triage/AGENT-BRIEF.md",
+      "sourceSha256": "1c71c747aa97d938f75ec7a4b8fe87451763b38a3ce6348acf2b222e5819b2e5",
+      "generatedSha256": "1c71c747aa97d938f75ec7a4b8fe87451763b38a3ce6348acf2b222e5819b2e5"
+    },
+    {
+      "target": "canonical/skills/triage/OUT-OF-SCOPE.md",
+      "source": "skills/triage/OUT-OF-SCOPE.md",
+      "sourceSha256": "8ed8cf27833444060c81b3961a83c0e3d8e6cf2fcb2ddf6f8b07c6655cbb0d85",
+      "generatedSha256": "8ed8cf27833444060c81b3961a83c0e3d8e6cf2fcb2ddf6f8b07c6655cbb0d85"
+    },
+    {
+      "target": "canonical/skills/triage/SKILL.md",
+      "source": "skills/triage/SKILL.md",
+      "sourceSha256": "b819f0285e4e5814ac6472d0217f07dc9f23d2fdae3ebb0dd31d98360d8ac029",
+      "generatedSha256": "b819f0285e4e5814ac6472d0217f07dc9f23d2fdae3ebb0dd31d98360d8ac029"
+    },
+    {
+      "target": "canonical/skills/visual-recap/README.md",
+      "source": "skills/visual-recap/README.md",
+      "sourceSha256": "d95833763f9016aab50324bed21f5372a1e550b4d2baac140dde629b2733fc69",
+      "generatedSha256": "d95833763f9016aab50324bed21f5372a1e550b4d2baac140dde629b2733fc69"
+    },
+    {
+      "target": "canonical/skills/visual-recap/references/recap-workflow.md",
+      "source": "skills/visual-recap/references/recap-workflow.md",
+      "sourceSha256": "11a1824c1e1b55f301fc97fd29c44e20afce814e8abc9efab3996936fb54869a",
+      "generatedSha256": "11a1824c1e1b55f301fc97fd29c44e20afce814e8abc9efab3996936fb54869a"
+    },
+    {
+      "target": "canonical/skills/visual-recap/references/wireframe.md",
+      "source": "skills/visual-recap/references/wireframe.md",
+      "sourceSha256": "877692d708dcf88020af4bbfced76fb42215f3aec8aba11c8025c8f83dbb09ad",
+      "generatedSha256": "877692d708dcf88020af4bbfced76fb42215f3aec8aba11c8025c8f83dbb09ad"
+    },
+    {
+      "target": "canonical/skills/visual-recap/SKILL.md",
+      "source": "skills/visual-recap/SKILL.md",
+      "sourceSha256": "641736a819c15a99ec690e64765b7ff0973c49dc42dd09a72459fbbdbd02db2c",
+      "generatedSha256": "641736a819c15a99ec690e64765b7ff0973c49dc42dd09a72459fbbdbd02db2c"
+    },
+    {
+      "target": "canonical/skills/write-a-skill/SKILL.md",
+      "source": "skills/write-a-skill/SKILL.md",
+      "sourceSha256": "be8f20e66309258034b82a7db5040b03798aa40546f9d387662c2bd86be23123",
+      "generatedSha256": "be8f20e66309258034b82a7db5040b03798aa40546f9d387662c2bd86be23123"
+    },
+    {
+      "target": "native/plugins/skynex-runtime.ts",
+      "source": "native/plugins/skynex-runtime.ts",
+      "sourceSha256": "ee2b4d72b4e7f0f859739a963633780a502422f04c300e7759947ad6ff458303",
+      "generatedSha256": "ee2b4d72b4e7f0f859739a963633780a502422f04c300e7759947ad6ff458303",
+      "transformation": "v2-adaptation",
+      "sourceReferences": []
+    },
+    {
+      "target": "native/hooks/prompt.ts",
+      "source": "native/hooks/prompt.ts",
+      "sourceSha256": "831ba19799445754976bc4895e2c7358550272b0f4223db46f218d181943f68d",
+      "generatedSha256": "831ba19799445754976bc4895e2c7358550272b0f4223db46f218d181943f68d",
+      "transformation": "v2-adaptation",
+      "sourceReferences": []
+    },
+    {
+      "target": "native/plugins/sky-agents/package.json",
+      "source": "native/plugins/sky-agents/package.json",
+      "sourceSha256": "04740f2b44243f6f4946562c8f6c4a730d50bde4e9638a644034c5f7b004bf4e",
+      "generatedSha256": "04740f2b44243f6f4946562c8f6c4a730d50bde4e9638a644034c5f7b004bf4e",
+      "transformation": "v2-adaptation",
+      "sourceReferences": []
+    },
+    {
+      "target": "native/plugins/sky-agents/index.ts",
+      "source": "native/plugins/sky-agents/index.ts",
+      "sourceSha256": "f67681dca18983257b210f362b8dd57dcec9dbfdbadde37d3efba51a918f61e6",
+      "generatedSha256": "f67681dca18983257b210f362b8dd57dcec9dbfdbadde37d3efba51a918f61e6",
+      "transformation": "v2-adaptation",
+      "sourceReferences": []
+    },
+    {
+      "target": "native/plugins/sky-agents/tui.tsx",
+      "source": "native/plugins/sky-agents/tui.tsx",
+      "sourceSha256": "5c425f2e33efc24081f0a9c9e6a142af9a6508e47dd5d8b1022dc3e938333433",
+      "generatedSha256": "5c425f2e33efc24081f0a9c9e6a142af9a6508e47dd5d8b1022dc3e938333433",
+      "transformation": "v2-adaptation",
+      "sourceReferences": []
+    },
+    {
+      "target": "native/plugins/sky-agents/rpc.ts",
+      "source": "native/plugins/sky-agents/rpc.ts",
+      "sourceSha256": "9592bc0114016537047cbc94b2ae8e5d45353985988a4219b220d9c21c40e7fb",
+      "generatedSha256": "9592bc0114016537047cbc94b2ae8e5d45353985988a4219b220d9c21c40e7fb",
+      "transformation": "v2-adaptation",
+      "sourceReferences": []
+    },
+    {
+      "target": "native/plugins/sky-agents/vendor/jsonc-parser/main.js",
+      "source": "npm:jsonc-parser@3.3.1/lib/esm/main.js",
+      "sourceSha256": "d09565a36368b66aedf0a800b8556239f86c8571ded62218ff93483cfe965844",
+      "generatedSha256": "d09565a36368b66aedf0a800b8556239f86c8571ded62218ff93483cfe965844",
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/main.js",
+          "sha256": "d09565a36368b66aedf0a800b8556239f86c8571ded62218ff93483cfe965844"
+        }
+      ],
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
+    },
+    {
+      "target": "native/plugins/sky-agents/vendor/jsonc-parser/main.d.ts",
+      "source": "npm:jsonc-parser@3.3.1/lib/esm/main.d.ts",
+      "sourceSha256": "f1d603af05e59e26aae3d9fa7bb0138e744bfbfc9f4793ddeaabe5c85da1d30f",
+      "generatedSha256": "f1d603af05e59e26aae3d9fa7bb0138e744bfbfc9f4793ddeaabe5c85da1d30f",
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/main.d.ts",
+          "sha256": "f1d603af05e59e26aae3d9fa7bb0138e744bfbfc9f4793ddeaabe5c85da1d30f"
+        }
+      ],
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
+    },
+    {
+      "target": "native/plugins/sky-agents/vendor/jsonc-parser/LICENSE.md",
+      "source": "npm:jsonc-parser@3.3.1/LICENSE.md",
+      "sourceSha256": "d0e26984080b12c7830983ef4de2ec522e1aa94047f2753347953b278e9c66e0",
+      "generatedSha256": "d0e26984080b12c7830983ef4de2ec522e1aa94047f2753347953b278e9c66e0",
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/LICENSE.md",
+          "sha256": "d0e26984080b12c7830983ef4de2ec522e1aa94047f2753347953b278e9c66e0"
+        }
+      ],
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
+    },
+    {
+      "target": "native/plugins/sky-agents/vendor/jsonc-parser/impl/edit.js",
+      "source": "npm:jsonc-parser@3.3.1/lib/esm/impl/edit.js",
+      "sourceSha256": "cd0173a9a2947b15c4447b21b184ab438b93e01d605d04352b6d96d468ce18da",
+      "generatedSha256": "cd0173a9a2947b15c4447b21b184ab438b93e01d605d04352b6d96d468ce18da",
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/impl/edit.js",
+          "sha256": "cd0173a9a2947b15c4447b21b184ab438b93e01d605d04352b6d96d468ce18da"
+        }
+      ],
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
+    },
+    {
+      "target": "native/plugins/sky-agents/vendor/jsonc-parser/impl/format.js",
+      "source": "npm:jsonc-parser@3.3.1/lib/esm/impl/format.js",
+      "sourceSha256": "d45f3774aee20aa65d100cb91203cd0b91bcf1f377c59431bb0df542d634cef2",
+      "generatedSha256": "d45f3774aee20aa65d100cb91203cd0b91bcf1f377c59431bb0df542d634cef2",
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/impl/format.js",
+          "sha256": "d45f3774aee20aa65d100cb91203cd0b91bcf1f377c59431bb0df542d634cef2"
+        }
+      ],
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
+    },
+    {
+      "target": "native/plugins/sky-agents/vendor/jsonc-parser/impl/parser.js",
+      "source": "npm:jsonc-parser@3.3.1/lib/esm/impl/parser.js",
+      "sourceSha256": "b3683ac2f5c7558abedae13f5b1749980707372dbf63af82a4ead48fda71afcf",
+      "generatedSha256": "b3683ac2f5c7558abedae13f5b1749980707372dbf63af82a4ead48fda71afcf",
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/impl/parser.js",
+          "sha256": "b3683ac2f5c7558abedae13f5b1749980707372dbf63af82a4ead48fda71afcf"
+        }
+      ],
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
+    },
+    {
+      "target": "native/plugins/sky-agents/vendor/jsonc-parser/impl/scanner.js",
+      "source": "npm:jsonc-parser@3.3.1/lib/esm/impl/scanner.js",
+      "sourceSha256": "e737e1774f87ca88d85d73e3bafff688b78cac06b81c53b96c54da8b3ca86cd9",
+      "generatedSha256": "e737e1774f87ca88d85d73e3bafff688b78cac06b81c53b96c54da8b3ca86cd9",
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/impl/scanner.js",
+          "sha256": "e737e1774f87ca88d85d73e3bafff688b78cac06b81c53b96c54da8b3ca86cd9"
+        }
+      ],
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
+    },
+    {
+      "target": "native/plugins/sky-agents/vendor/jsonc-parser/impl/string-intern.js",
+      "source": "npm:jsonc-parser@3.3.1/lib/esm/impl/string-intern.js",
+      "sourceSha256": "3a0aad3f56c3e0728812c7584568c0ff200bce1ca58cf40e946f01fdb54c5752",
+      "generatedSha256": "3a0aad3f56c3e0728812c7584568c0ff200bce1ca58cf40e946f01fdb54c5752",
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/impl/string-intern.js",
+          "sha256": "3a0aad3f56c3e0728812c7584568c0ff200bce1ca58cf40e946f01fdb54c5752"
+        }
+      ],
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
+    },
+    {
+      "target": "native/plugins/sky-agents/core/catalog.ts",
+      "source": "packages/sky-agents/src/catalog.ts",
+      "sourceSha256": "5207018860e7fc19a230ebec2ac813f0e8989b2de98c5578ac81d70a7c22224d",
+      "generatedSha256": "5207018860e7fc19a230ebec2ac813f0e8989b2de98c5578ac81d70a7c22224d",
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/catalog.ts",
+          "sha256": "5207018860e7fc19a230ebec2ac813f0e8989b2de98c5578ac81d70a7c22224d"
+        }
+      ]
+    },
+    {
+      "target": "native/plugins/sky-agents/core/index.ts",
+      "source": "packages/sky-agents/src/index.ts",
+      "sourceSha256": "57a30bc2f3e402dc58ec9ba575450fb09d8052e97975ec1909a228e5b97474bf",
+      "generatedSha256": "57a30bc2f3e402dc58ec9ba575450fb09d8052e97975ec1909a228e5b97474bf",
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/index.ts",
+          "sha256": "57a30bc2f3e402dc58ec9ba575450fb09d8052e97975ec1909a228e5b97474bf"
+        }
+      ]
+    },
+    {
+      "target": "native/plugins/sky-agents/core/profile-apply.ts",
+      "source": "packages/sky-agents/src/profile-apply.ts",
+      "sourceSha256": "657e02222e9dffd120cde96768436066b31ac1f5773a2736d55e9612f430782e",
+      "generatedSha256": "7a9e6af145c1bf5895165ad7c4c1eaf37e7a1cb287e5098177daf5e0d4716ec9",
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/profile-apply.ts",
+          "sha256": "657e02222e9dffd120cde96768436066b31ac1f5773a2736d55e9612f430782e"
+        }
+      ]
+    },
+    {
+      "target": "native/plugins/sky-agents/core/profiles.ts",
+      "source": "packages/sky-agents/src/profiles.ts",
+      "sourceSha256": "6cb99f0a9071a856a5177d54fae3d8faf72217448a4e0e2d1e5e509532a0258a",
+      "generatedSha256": "6cb99f0a9071a856a5177d54fae3d8faf72217448a4e0e2d1e5e509532a0258a",
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/profiles.ts",
+          "sha256": "6cb99f0a9071a856a5177d54fae3d8faf72217448a4e0e2d1e5e509532a0258a"
+        }
+      ]
+    },
+    {
+      "target": "native/plugins/sky-agents/core/roots.ts",
+      "source": "packages/sky-agents/src/roots.ts",
+      "sourceSha256": "2024c780510cfb1320a0bde60132622ce4d9d49b914a83240442239bb18475c4",
+      "generatedSha256": "2024c780510cfb1320a0bde60132622ce4d9d49b914a83240442239bb18475c4",
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/roots.ts",
+          "sha256": "2024c780510cfb1320a0bde60132622ce4d9d49b914a83240442239bb18475c4"
+        }
+      ]
+    },
+    {
+      "target": "native/plugins/sky-agents/core/rpc.ts",
+      "source": "packages/sky-agents/src/rpc.ts",
+      "sourceSha256": "3463f45ba9160ae05b34c583670986ec00fe7c0d9f5458dd18ac20c639687789",
+      "generatedSha256": "3463f45ba9160ae05b34c583670986ec00fe7c0d9f5458dd18ac20c639687789",
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/rpc.ts",
+          "sha256": "3463f45ba9160ae05b34c583670986ec00fe7c0d9f5458dd18ac20c639687789"
+        }
+      ]
+    },
+    {
+      "target": "native/plugins/sky-agents/core/storage.ts",
+      "source": "packages/sky-agents/src/storage.ts",
+      "sourceSha256": "3883fd3e475ce517e6e0be77ee4aba20c1d477cb68d8bcdcd0792fde185875e9",
+      "generatedSha256": "3883fd3e475ce517e6e0be77ee4aba20c1d477cb68d8bcdcd0792fde185875e9",
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/storage.ts",
+          "sha256": "3883fd3e475ce517e6e0be77ee4aba20c1d477cb68d8bcdcd0792fde185875e9"
+        }
+      ]
+    }
+  ]
+}

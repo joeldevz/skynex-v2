@@ -18,6 +18,13 @@
 - D14: Use Clack for the initial interactive CLI behind an application-facing UI port.
 - D15: License the repository under Apache-2.0.
 - D16: The bootstrap is intentionally built without TDD at the human partner's request; verification is still required.
+- D17: The real-resource source is the current global OpenCode installation, validated against the installed OpenCode 2 executable; the old repository is no longer the content source.
+- D18: Ship 13 global agents, retaining `mentor` and excluding `advisor`, `manager`, and `linear-orchestrator`.
+- D19: Ship the 10 Skynex skills as complete directories, including their shared protocols, references, and templates.
+- D20: Generate managed OpenCode 2 agent modes and minimum permissions without copying model, provider, MCP, credential, or personal preference values.
+- D21: Ship Sky Agents as a native OpenCode 2 extension. Profile management is non-mutating; applying a profile requires an explicit confirmation and a bounded backup before changing global model assignments.
+- D22: Exclude Nodeterm, Herdr, branding, and the historical workflow plugin from this resource migration.
+- D23: Harmonize inherited TDD language with route-scoped TDD and fail closed when secure diagnostic tools are unavailable; never substitute shell access.
 
 ## Open assumptions
 
@@ -25,6 +32,7 @@
 - A2: A human-readable terminal diff is sufficient for first-release update decisions.
 - A3: A local single-user transaction model is sufficient before the Task Graph exists.
 - A4: The final product and npm package names will be chosen before publication.
+- A5: Sky Agents can be ported faithfully to the installed OpenCode 2 plugin, client, RPC, and TUI contracts without importing machine-specific paths.
 
 ## Out of scope
 
@@ -33,6 +41,8 @@
 - npm publication.
 - Universal representations for target-exclusive behavior.
 - Migrating historical workflow receipts or databases.
+- Importing global model assignments, providers, MCP servers, credentials, terminal preferences, or machine-specific absolute paths.
+- Nodeterm, Herdr, branding, and legacy workflow-plugin integration in the real-resource delivery.
 
 ## Ready for PRD
 

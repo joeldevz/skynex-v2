@@ -13,3 +13,5 @@ jobs:
       - run: pnpm check
       - run: pnpm build
       - run: pnpm verify:installer
+      - run: pnpm verify:real-resources
+      - run: pnpm verify:sky-agents

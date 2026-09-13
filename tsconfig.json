@@ -8,6 +8,7 @@
     { "path": "packages/installer" },
     { "path": "packages/presentation" },
     { "path": "packages/testing" },
+    { "path": "packages/sky-agents" },
     { "path": "targets/opencode" },
     { "path": "apps/cli" }
   ]

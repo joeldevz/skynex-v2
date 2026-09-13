@@ -1,1 +1,1045 @@
-{"schemaVersion":1,"version":"0.1.0","targets":[{"id":"opencode-v2","compatibility":"^2"}],"resources":[{"id":"skynex-orchestrator","kind":"agent","version":"0.1.0","origin":"canonical","sourcePath":"canonical/agents/skynex-orchestrator.md","component":"agents","targets":[{"id":"opencode-v2","relativePath":"agents/skynex-orchestrator.md"}]},{"id":"safe-install","kind":"skill","version":"0.1.0","origin":"canonical","sourcePath":"canonical/skills/safe-install/SKILL.md","component":"skills","targets":[{"id":"opencode-v2","relativePath":"skills/safe-install/SKILL.md"}]},{"id":"skynex-doctor","kind":"command","version":"0.1.0","origin":"canonical","sourcePath":"canonical/commands/skynex-doctor.md","component":"commands","targets":[{"id":"opencode-v2","relativePath":"commands/skynex-doctor.md"}]},{"id":"skynex-runtime","kind":"native","version":"0.1.0","origin":"native","sourcePath":"native/plugins/skynex-runtime.ts","component":"plugins","targets":[{"id":"opencode-v2","relativePath":"skynex/plugins/runtime/index.ts"}]},{"id":"skynex-prompt-hook","kind":"hook","version":"0.1.0","origin":"native","sourcePath":"native/hooks/prompt.ts","component":"plugins","targets":[{"id":"opencode-v2","relativePath":"skynex/plugins/runtime/prompt.ts"}]}]}
+{
+  "schemaVersion": 1,
+  "version": "0.1.0",
+  "targets": [
+    {
+      "id": "opencode-v2",
+      "compatibility": "^2"
+    }
+  ],
+  "resources": [
+    {
+      "id": "agents.coder",
+      "kind": "agent",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/agents/coder.md",
+      "component": "agents",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "agents/coder.md"
+        }
+      ]
+    },
+    {
+      "id": "agents.diagnostic-researcher",
+      "kind": "agent",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/agents/diagnostic-researcher.md",
+      "component": "agents",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "agents/diagnostic-researcher.md"
+        }
+      ]
+    },
+    {
+      "id": "agents.infrastructure-engineer",
+      "kind": "agent",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/agents/infrastructure-engineer.md",
+      "component": "agents",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "agents/infrastructure-engineer.md"
+        }
+      ]
+    },
+    {
+      "id": "agents.mentor",
+      "kind": "agent",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/agents/mentor.md",
+      "component": "agents",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "agents/mentor.md"
+        }
+      ]
+    },
+    {
+      "id": "agents.pr-reviewer",
+      "kind": "agent",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/agents/pr-reviewer.md",
+      "component": "agents",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "agents/pr-reviewer.md"
+        }
+      ]
+    },
+    {
+      "id": "agents.security",
+      "kind": "agent",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/agents/security.md",
+      "component": "agents",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "agents/security.md"
+        }
+      ]
+    },
+    {
+      "id": "agents.skill-validator",
+      "kind": "agent",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/agents/skill-validator.md",
+      "component": "agents",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "agents/skill-validator.md"
+        }
+      ]
+    },
+    {
+      "id": "agents.skynex-orchestrator",
+      "kind": "agent",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/agents/skynex-orchestrator.md",
+      "component": "agents",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "agents/skynex-orchestrator.md"
+        }
+      ]
+    },
+    {
+      "id": "agents.task-classifier",
+      "kind": "agent",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/agents/task-classifier.md",
+      "component": "agents",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "agents/task-classifier.md"
+        }
+      ]
+    },
+    {
+      "id": "agents.tech-planner",
+      "kind": "agent",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/agents/tech-planner.md",
+      "component": "agents",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "agents/tech-planner.md"
+        }
+      ]
+    },
+    {
+      "id": "agents.test-engineer",
+      "kind": "agent",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/agents/test-engineer.md",
+      "component": "agents",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "agents/test-engineer.md"
+        }
+      ]
+    },
+    {
+      "id": "agents.test-reviewer",
+      "kind": "agent",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/agents/test-reviewer.md",
+      "component": "agents",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "agents/test-reviewer.md"
+        }
+      ]
+    },
+    {
+      "id": "agents.verifier",
+      "kind": "agent",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/agents/verifier.md",
+      "component": "agents",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "agents/verifier.md"
+        }
+      ]
+    },
+    {
+      "id": "opencode-config",
+      "kind": "configuration",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/config/managed-agents.json",
+      "component": "configuration",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "opencode.jsonc"
+        }
+      ]
+    },
+    {
+      "id": "skills._shared.advisor-protocol",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/_shared/advisor-protocol.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/_shared/advisor-protocol.md"
+        }
+      ]
+    },
+    {
+      "id": "skills._shared.dispatching-parallel-agents",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/_shared/dispatching-parallel-agents.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/_shared/dispatching-parallel-agents.md"
+        }
+      ]
+    },
+    {
+      "id": "skills._shared.neurox-protocol",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/_shared/neurox-protocol.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/_shared/neurox-protocol.md"
+        }
+      ]
+    },
+    {
+      "id": "skills._shared.return-envelope",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/_shared/return-envelope.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/_shared/return-envelope.md"
+        }
+      ]
+    },
+    {
+      "id": "skills._shared.skill-resolver",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/_shared/skill-resolver.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/_shared/skill-resolver.md"
+        }
+      ]
+    },
+    {
+      "id": "skills._shared.smart-zone-budget",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/_shared/smart-zone-budget.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/_shared/smart-zone-budget.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.diagnose",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/diagnose/SKILL.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/diagnose/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.diagnose.scripts.hitl-loop.template.sh",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/diagnose/scripts/hitl-loop.template.sh",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/diagnose/scripts/hitl-loop.template.sh"
+        }
+      ]
+    },
+    {
+      "id": "skills.grill-me",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/grill-me/SKILL.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/grill-me/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.infrastructure-quality-tooling",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/infrastructure-quality-tooling/SKILL.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/infrastructure-quality-tooling/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.prd",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/prd/SKILL.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/prd/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.prd.references.prd-workflow",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/prd/references/prd-workflow.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/prd/references/prd-workflow.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.prd.references.schema",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/prd/references/schema.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/prd/references/schema.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.review-pr",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/review-pr/SKILL.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/review-pr/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.security",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/security/SKILL.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/security/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.tdd-discipline",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/tdd-discipline/SKILL.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/tdd-discipline/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.triage",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/triage/SKILL.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/triage/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.triage.agent-brief",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/triage/AGENT-BRIEF.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/triage/AGENT-BRIEF.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.triage.out-of-scope",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/triage/OUT-OF-SCOPE.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/triage/OUT-OF-SCOPE.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.visual-recap",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/visual-recap/SKILL.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/visual-recap/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.visual-recap.readme",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/visual-recap/README.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/visual-recap/README.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.visual-recap.references.recap-workflow",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/visual-recap/references/recap-workflow.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/visual-recap/references/recap-workflow.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.visual-recap.references.wireframe",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/visual-recap/references/wireframe.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/visual-recap/references/wireframe.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.write-a-skill",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/write-a-skill/SKILL.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/write-a-skill/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "skynex-prompt-hook",
+      "kind": "hook",
+      "sourcePath": "native/hooks/prompt.ts",
+      "relativePath": "skynex/plugins/runtime/prompt.ts",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/runtime/prompt.ts"
+        }
+      ],
+      "transformation": "v2-adaptation",
+      "sourceReferences": [],
+      "generatedSha256": "831ba19799445754976bc4895e2c7358550272b0f4223db46f218d181943f68d"
+    },
+    {
+      "id": "skynex-runtime",
+      "kind": "native",
+      "sourcePath": "native/plugins/skynex-runtime.ts",
+      "relativePath": "skynex/plugins/runtime/index.ts",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/runtime/index.ts"
+        }
+      ],
+      "transformation": "v2-adaptation",
+      "sourceReferences": [],
+      "generatedSha256": "ee2b4d72b4e7f0f859739a963633780a502422f04c300e7759947ad6ff458303"
+    },
+    {
+      "id": "skynex-sky-agents-core-catalog",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/core/catalog.ts",
+      "relativePath": "skynex/plugins/sky-agents/core/catalog.ts",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/core/catalog.ts"
+        }
+      ],
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/catalog.ts",
+          "sha256": "5207018860e7fc19a230ebec2ac813f0e8989b2de98c5578ac81d70a7c22224d"
+        }
+      ],
+      "generatedSha256": "5207018860e7fc19a230ebec2ac813f0e8989b2de98c5578ac81d70a7c22224d"
+    },
+    {
+      "id": "skynex-sky-agents-core-index",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/core/index.ts",
+      "relativePath": "skynex/plugins/sky-agents/core/index.ts",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/core/index.ts"
+        }
+      ],
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/index.ts",
+          "sha256": "57a30bc2f3e402dc58ec9ba575450fb09d8052e97975ec1909a228e5b97474bf"
+        }
+      ],
+      "generatedSha256": "57a30bc2f3e402dc58ec9ba575450fb09d8052e97975ec1909a228e5b97474bf"
+    },
+    {
+      "id": "skynex-sky-agents-core-profile-apply",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/core/profile-apply.ts",
+      "relativePath": "skynex/plugins/sky-agents/core/profile-apply.ts",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/core/profile-apply.ts"
+        }
+      ],
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/profile-apply.ts",
+          "sha256": "657e02222e9dffd120cde96768436066b31ac1f5773a2736d55e9612f430782e"
+        }
+      ],
+      "generatedSha256": "7a9e6af145c1bf5895165ad7c4c1eaf37e7a1cb287e5098177daf5e0d4716ec9"
+    },
+    {
+      "id": "skynex-sky-agents-core-profiles",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/core/profiles.ts",
+      "relativePath": "skynex/plugins/sky-agents/core/profiles.ts",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/core/profiles.ts"
+        }
+      ],
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/profiles.ts",
+          "sha256": "6cb99f0a9071a856a5177d54fae3d8faf72217448a4e0e2d1e5e509532a0258a"
+        }
+      ],
+      "generatedSha256": "6cb99f0a9071a856a5177d54fae3d8faf72217448a4e0e2d1e5e509532a0258a"
+    },
+    {
+      "id": "skynex-sky-agents-core-roots",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/core/roots.ts",
+      "relativePath": "skynex/plugins/sky-agents/core/roots.ts",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/core/roots.ts"
+        }
+      ],
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/roots.ts",
+          "sha256": "2024c780510cfb1320a0bde60132622ce4d9d49b914a83240442239bb18475c4"
+        }
+      ],
+      "generatedSha256": "2024c780510cfb1320a0bde60132622ce4d9d49b914a83240442239bb18475c4"
+    },
+    {
+      "id": "skynex-sky-agents-core-rpc",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/core/rpc.ts",
+      "relativePath": "skynex/plugins/sky-agents/core/rpc.ts",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/core/rpc.ts"
+        }
+      ],
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/rpc.ts",
+          "sha256": "3463f45ba9160ae05b34c583670986ec00fe7c0d9f5458dd18ac20c639687789"
+        }
+      ],
+      "generatedSha256": "3463f45ba9160ae05b34c583670986ec00fe7c0d9f5458dd18ac20c639687789"
+    },
+    {
+      "id": "skynex-sky-agents-core-storage",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/core/storage.ts",
+      "relativePath": "skynex/plugins/sky-agents/core/storage.ts",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/core/storage.ts"
+        }
+      ],
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/storage.ts",
+          "sha256": "3883fd3e475ce517e6e0be77ee4aba20c1d477cb68d8bcdcd0792fde185875e9"
+        }
+      ],
+      "generatedSha256": "3883fd3e475ce517e6e0be77ee4aba20c1d477cb68d8bcdcd0792fde185875e9"
+    },
+    {
+      "id": "skynex-sky-agents-index",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/index.ts",
+      "relativePath": "skynex/plugins/sky-agents/index.ts",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/index.ts"
+        }
+      ],
+      "transformation": "v2-adaptation",
+      "sourceReferences": [],
+      "generatedSha256": "f67681dca18983257b210f362b8dd57dcec9dbfdbadde37d3efba51a918f61e6"
+    },
+    {
+      "id": "skynex-sky-agents-jsonc-parser",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/vendor/jsonc-parser/main.js",
+      "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/main.js",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/main.js"
+        }
+      ],
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/main.js",
+          "sha256": "d09565a36368b66aedf0a800b8556239f86c8571ded62218ff93483cfe965844"
+        }
+      ],
+      "generatedSha256": "d09565a36368b66aedf0a800b8556239f86c8571ded62218ff93483cfe965844"
+    },
+    {
+      "id": "skynex-sky-agents-jsonc-parser-impl-edit",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/vendor/jsonc-parser/impl/edit.js",
+      "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/impl/edit.js",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/impl/edit.js"
+        }
+      ],
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/impl/edit.js",
+          "sha256": "cd0173a9a2947b15c4447b21b184ab438b93e01d605d04352b6d96d468ce18da"
+        }
+      ],
+      "generatedSha256": "cd0173a9a2947b15c4447b21b184ab438b93e01d605d04352b6d96d468ce18da"
+    },
+    {
+      "id": "skynex-sky-agents-jsonc-parser-impl-format",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/vendor/jsonc-parser/impl/format.js",
+      "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/impl/format.js",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/impl/format.js"
+        }
+      ],
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/impl/format.js",
+          "sha256": "d45f3774aee20aa65d100cb91203cd0b91bcf1f377c59431bb0df542d634cef2"
+        }
+      ],
+      "generatedSha256": "d45f3774aee20aa65d100cb91203cd0b91bcf1f377c59431bb0df542d634cef2"
+    },
+    {
+      "id": "skynex-sky-agents-jsonc-parser-impl-parser",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/vendor/jsonc-parser/impl/parser.js",
+      "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/impl/parser.js",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/impl/parser.js"
+        }
+      ],
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/impl/parser.js",
+          "sha256": "b3683ac2f5c7558abedae13f5b1749980707372dbf63af82a4ead48fda71afcf"
+        }
+      ],
+      "generatedSha256": "b3683ac2f5c7558abedae13f5b1749980707372dbf63af82a4ead48fda71afcf"
+    },
+    {
+      "id": "skynex-sky-agents-jsonc-parser-impl-scanner",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/vendor/jsonc-parser/impl/scanner.js",
+      "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/impl/scanner.js",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/impl/scanner.js"
+        }
+      ],
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/impl/scanner.js",
+          "sha256": "e737e1774f87ca88d85d73e3bafff688b78cac06b81c53b96c54da8b3ca86cd9"
+        }
+      ],
+      "generatedSha256": "e737e1774f87ca88d85d73e3bafff688b78cac06b81c53b96c54da8b3ca86cd9"
+    },
+    {
+      "id": "skynex-sky-agents-jsonc-parser-impl-string-intern",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/vendor/jsonc-parser/impl/string-intern.js",
+      "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/impl/string-intern.js",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/impl/string-intern.js"
+        }
+      ],
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/impl/string-intern.js",
+          "sha256": "3a0aad3f56c3e0728812c7584568c0ff200bce1ca58cf40e946f01fdb54c5752"
+        }
+      ],
+      "generatedSha256": "3a0aad3f56c3e0728812c7584568c0ff200bce1ca58cf40e946f01fdb54c5752"
+    },
+    {
+      "id": "skynex-sky-agents-jsonc-parser-license",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/vendor/jsonc-parser/LICENSE.md",
+      "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/LICENSE.md",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/LICENSE.md"
+        }
+      ],
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/LICENSE.md",
+          "sha256": "d0e26984080b12c7830983ef4de2ec522e1aa94047f2753347953b278e9c66e0"
+        }
+      ],
+      "generatedSha256": "d0e26984080b12c7830983ef4de2ec522e1aa94047f2753347953b278e9c66e0"
+    },
+    {
+      "id": "skynex-sky-agents-jsonc-parser-types",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/vendor/jsonc-parser/main.d.ts",
+      "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/main.d.ts",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/vendor/jsonc-parser/main.d.ts"
+        }
+      ],
+      "transformation": "vendored-jsonc-parser-3.3.1",
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz",
+      "sourceReferences": [
+        {
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/main.d.ts",
+          "sha256": "f1d603af05e59e26aae3d9fa7bb0138e744bfbfc9f4793ddeaabe5c85da1d30f"
+        }
+      ],
+      "generatedSha256": "f1d603af05e59e26aae3d9fa7bb0138e744bfbfc9f4793ddeaabe5c85da1d30f"
+    },
+    {
+      "id": "skynex-sky-agents-package",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/package.json",
+      "relativePath": "skynex/plugins/sky-agents/package.json",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/package.json"
+        }
+      ],
+      "transformation": "v2-adaptation",
+      "sourceReferences": [],
+      "generatedSha256": "04740f2b44243f6f4946562c8f6c4a730d50bde4e9638a644034c5f7b004bf4e"
+    },
+    {
+      "id": "skynex-sky-agents-rpc",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/rpc.ts",
+      "relativePath": "skynex/plugins/sky-agents/rpc.ts",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/rpc.ts"
+        }
+      ],
+      "transformation": "v2-adaptation",
+      "sourceReferences": [],
+      "generatedSha256": "9592bc0114016537047cbc94b2ae8e5d45353985988a4219b220d9c21c40e7fb"
+    },
+    {
+      "id": "skynex-sky-agents-tui",
+      "kind": "native",
+      "sourcePath": "native/plugins/sky-agents/tui.tsx",
+      "relativePath": "skynex/plugins/sky-agents/tui.tsx",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/sky-agents/tui.tsx"
+        }
+      ],
+      "transformation": "v2-adaptation",
+      "sourceReferences": [],
+      "generatedSha256": "5c425f2e33efc24081f0a9c9e6a142af9a6508e47dd5d8b1022dc3e938333433"
+    }
+  ]
+}

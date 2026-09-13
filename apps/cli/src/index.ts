@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-import { homedir } from "node:os";
 import { relative, resolve } from "node:path";
 import * as p from "@clack/prompts";
 import type { InstallComponent, InstallRoots, InstallScope, OpenCodeConfigPreference } from "@skynex-internal/domain";
 import { applyInstallPlan, applyUninstallPlan, createInstallPlan, createUninstallPlan, listBackups, prepareUpdatePlan, readInstallLock, readInstallLockSnapshot, restoreBackup } from "@skynex-internal/installer";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
-import { openCodeTarget, removeManagedPlugin } from "@skynex-internal/target-opencode";
+import { getManagedAgents, openCodeTarget, removeManagedPlugin } from "@skynex-internal/target-opencode";
+import { createProfileApplyService, createProfileStore, resolveGlobalSkynexRoots, type ProfileApplyRoots } from "@skynex-internal/sky-agents";
 
 const args = process.argv.slice(2).filter((argument) => argument !== "--");
 const command = args[0]?.startsWith("-") ? undefined : args[0];
@@ -17,8 +17,11 @@ const valueOf = (flag: string): string | undefined => {
   return index >= 0 ? args[index + 1] : undefined;
 };
 const sha256 = (value: Buffer | string): string => createHash("sha256").update(value).digest("hex");
-const knownFlags = new Set(["--", "--global", "--project", "--state-dir", "--config", "--dry-run", "--yes", "--allow-executable-plugins", "--help", "-h", "--version", "-v", "--json"]);
-const valueFlags = new Set(["--project", "--state-dir", "--config"]);
+const scopeComponents = (scope: InstallScope): readonly InstallComponent[] => scope === "project"
+  ? ["configuration", "agents", "skills"]
+  : ["configuration", "agents", "skills", "plugins"];
+const knownFlags = new Set(["--", "--global", "--project", "--state-dir", "--config", "--name", "--components", "--dry-run", "--yes", "--allow-executable-plugins", "--help", "-h", "--version", "-v", "--json"]);
+const valueFlags = new Set(["--project", "--state-dir", "--config", "--name", "--components"]);
 for (let index = positionalOffset; index < args.length; index += 1) {
   const argument = args[index]!;
   if (argument.startsWith("-") && !knownFlags.has(argument)) throw new Error(`Unknown flag: ${argument}`);
@@ -32,17 +35,19 @@ if (has("--global") && args.includes("--project")) throw new Error("--global and
 const help = `Skynex v2
 
 Usage:
-  skynex install [--global | --project <dir>] [--dry-run] [--yes]
-  skynex update  [--global | --project <dir>] [--dry-run] [--yes]
+  skynex install [--global | --project <dir>] [--components <list>] [--dry-run] [--yes]
+  skynex update  [--global | --project <dir>] [--components <list>] [--dry-run] [--yes]
   skynex uninstall [--global | --project <dir>] [--dry-run] [--yes]
   skynex backup list|restore <transaction-id>
+  skynex profile apply --name <profile> --global [--config json|jsonc]
   skynex doctor  [--global | --project <dir>] [--json]
 
 Options:
-  --global         Install into ~/.config/opencode (default)
+  --global         Install into ~/.config/opencode (required for profile apply)
   --project <dir>  Install into <dir>/.opencode
   --state-dir <p>  Override Skynex state root (useful for isolated testing)
   --config <format> Select json or jsonc when both config files exist
+  --components <list> Comma-separated configuration,agents,skills,commands,plugins (plugins are global-only)
   --dry-run        Preview without writing
   --yes            Apply without the confirmation prompt (safe changes only)
   --allow-executable-plugins  Allow plugin installation with --yes
@@ -52,8 +57,9 @@ Options:
 const roots = (projectOverride?: string): InstallRoots => {
   const project = projectOverride ?? valueOf("--project");
   const scope: InstallScope = project ? "project" : "global";
-  const targetRoot = project ? resolve(project, ".opencode") : resolve(homedir(), ".config/opencode");
-  const stateRoot = resolve(valueOf("--state-dir") ?? (project ? resolve(project, ".skynex") : resolve(homedir(), ".config/skynex")));
+  const globalRoots = resolveGlobalSkynexRoots();
+  const targetRoot = project ? resolve(project, ".opencode") : globalRoots.configRoot;
+  const stateRoot = resolve(valueOf("--state-dir") ?? (project ? resolve(project, ".skynex") : globalRoots.stateRoot));
   return { scope, targetRoot, stateRoot };
 };
 
@@ -65,6 +71,8 @@ if (has("--version") || has("-v")) {
   console.log("0.1.0");
   process.exit(0);
 }
+if (command === "profile" && args[1] === "apply" && (!has("--global") || has("--project"))) throw new Error("Profile apply requires --global and does not accept --project")
+if (command === "profile" && args[1] === "apply" && has("--state-dir")) throw new Error("Profile apply uses the global Skynex profile store and does not accept --state-dir")
 
 const run = async (): Promise<void> => {
   const spinner = p.spinner();
@@ -106,7 +114,9 @@ const run = async (): Promise<void> => {
   const requestedConfig = valueOf("--config");
   if (requestedConfig !== undefined && requestedConfig !== "json" && requestedConfig !== "jsonc") throw new Error("--config must be json or jsonc");
   let configPreference: OpenCodeConfigPreference | undefined = requestedConfig as OpenCodeConfigPreference | undefined;
-  const needsConfig = command === "install" || command === "update" || command === "uninstall" || (command === "backup" && args[1] === "restore");
+  const catalogResourcesFor = async (roots: InstallRoots, components: readonly InstallComponent[]): Promise<Map<string, string>> =>
+    new Map((await openCodeTarget.desiredArtifacts(roots, components, configPreference ? { configPreference } : undefined)).map((artifact) => [artifact.resource.id, artifact.relativePath]));
+const needsConfig = command === "install" || command === "update" || command === "uninstall" || command === "profile" || (command === "backup" && args[1] === "restore");
   if (needsConfig && detection.configCandidates.length > 1 && !configPreference) {
     if (has("--yes") || has("--dry-run")) throw new Error("Both opencode.json and opencode.jsonc exist; pass --config json or --config jsonc");
     const choice = await p.select<OpenCodeConfigPreference>({
@@ -132,6 +142,22 @@ const run = async (): Promise<void> => {
     p.outro("No files changed");
     return;
   }
+  if (command === "profile") {
+    if (args[1] !== "apply") throw new Error("Use 'skynex profile apply --name <profile>'");
+    if (has("--yes")) throw new Error("Profile apply requires the interactive confirmation prompt; --yes is not accepted");
+    const name = valueOf("--name"); if (!name) throw new Error("Missing --name");
+    const preference = configPreference ?? (detection.configPath?.endsWith(".jsonc") ? "jsonc" : "json");
+    if (!detection.configPath) throw new Error("No OpenCode configuration found");
+    const service = createProfileApplyService(installRoots as ProfileApplyRoots, createProfileStore(resolve(installRoots.stateRoot, "profiles")));
+    const plan = await service.preview(name, preference);
+    p.note(plan.changes.length ? plan.changes.map((change) => `${change.agent}: ${change.from ?? "(unset)"} → ${change.to}`).join("\n") : "No model assignments change", "Profile apply preview");
+    if (has("--dry-run")) { p.outro("Preview complete · no files changed"); return; }
+    const answer = await p.confirm({ message: `Apply profile '${name}' to ${plan.configPath}?`, initialValue: false });
+    if (p.isCancel(answer) || !answer) { p.cancel("Nothing changed"); return; }
+    await service.apply(plan, service.authorize(plan.planDigest));
+    p.outro(`Applied profile '${name}' (${plan.changes.length} model assignments)`);
+    return;
+  }
   if (command === "backup") {
     const action = args[1];
     if (action === "list") {
@@ -148,7 +174,7 @@ const run = async (): Promise<void> => {
         const answer = await p.confirm({ message: `Restore backup ${transactionId}?`, initialValue: false });
         if (p.isCancel(answer) || !answer) { p.cancel("Nothing changed"); return; }
       }
-      const catalogResources = new Map((await openCodeTarget.desiredArtifacts(installRoots, undefined, configPreference ? { configPreference } : undefined)).map((artifact) => [artifact.resource.id, artifact.relativePath]));
+      const catalogResources = await catalogResourcesFor(installRoots, scopeComponents(installRoots.scope));
       const result = await restoreBackup(installRoots, transactionId, catalogResources);
       p.outro(`Restored ${result.restored.length} files`);
       return;
@@ -156,8 +182,10 @@ const run = async (): Promise<void> => {
     throw new Error("Use 'skynex backup list' or 'skynex backup restore <transaction-id>'");
   }
   if (command === "uninstall") {
-    const uninstallPreference = configPreference ? { configPreference } : undefined;
-    const catalogResources = new Map((await openCodeTarget.desiredArtifacts(installRoots, undefined, ...(uninstallPreference ? [uninstallPreference] : []))).map((artifact) => [artifact.resource.id, artifact.relativePath]));
+    const uncheckedLock = await readInstallLock(installRoots);
+    if (!uncheckedLock) throw new Error("Skynex is not installed in this scope");
+    const installedComponents = uncheckedLock.installedComponents ?? scopeComponents(installRoots.scope);
+    const catalogResources = await catalogResourcesFor(installRoots, installedComponents);
     const lock = await readInstallLock(installRoots, catalogResources);
     if (!lock) throw new Error("Skynex is not installed in this scope");
     p.note(lock.resources.map((item) => `- ${item.relativePath}`).join("\n"), "Managed resources to remove");
@@ -169,25 +197,40 @@ const run = async (): Promise<void> => {
     const detectedConfigPath = detection.configPath ? relative(installRoots.targetRoot, detection.configPath) : undefined;
     const configPath = configPreference === "json" ? "opencode.json" : configPreference === "jsonc" ? "opencode.jsonc" : detectedConfigPath;
     const configResource = lock.resources.find((resource) => resource.id === "opencode-config" && resource.relativePath === configPath);
-    const config = configResource && configPath ? { resourceId: configResource.id, relativePath: configPath, currentContent: await readFile(resolve(installRoots.targetRoot, configPath), "utf8"), removeManagedRegistration: removeManagedPlugin } : undefined;
+    const ownsConfiguration = lock.installedComponents?.includes("configuration") ?? lock.resources.some((resource) => resource.id === "opencode-config");
+    const ownsPlugins = lock.installedComponents?.includes("plugins") ?? lock.resources.some((resource) => resource.kind === "native" && resource.id.includes("plugin"));
+    const managedAgents = ownsConfiguration ? await getManagedAgents() : [];
+    const managedPlugins = ownsPlugins ? ["./skynex/plugins/runtime", "./skynex/plugins/sky-agents"] : [];
+    const config = configResource && configPath ? { resourceId: configResource.id, relativePath: configPath, currentContent: await readFile(resolve(installRoots.targetRoot, configPath), "utf8"), removeManagedRegistration: (source: string) => removeManagedPlugin(source, managedAgents, managedPlugins) } : undefined;
     await applyUninstallPlan(createUninstallPlan({ roots: installRoots, lock, allowedResources: catalogResources, ...(config ? { config } : {}) }), catalogResources);
     p.outro("Skynex managed resources removed");
     return;
   }
   if (command !== "install" && command !== "update") throw new Error(`Unknown command: ${command}`);
 
-  let selectedComponents: readonly InstallComponent[] = ["configuration", "agents", "skills", "commands", "plugins"];
-  if (!has("--yes") && !has("--dry-run")) {
+  const requestedComponents = valueOf("--components");
+  const knownComponents = new Set<InstallComponent>(["configuration", "agents", "skills", "commands", "plugins"]);
+  let selectedComponents: readonly InstallComponent[] = scopeComponents(installRoots.scope);
+  if (requestedComponents !== undefined) {
+    const components = requestedComponents.split(",");
+    if (components.some((component) => !component || !knownComponents.has(component as InstallComponent))) {
+      throw new Error("--components must be a nonempty comma-separated list of configuration,agents,skills,commands,plugins");
+    }
+    if (new Set(components).size !== components.length) throw new Error("--components must not contain duplicates");
+    selectedComponents = components as InstallComponent[];
+  } else if (!has("--yes") && !has("--dry-run")) {
+    const componentOptions = [
+      { value: "configuration" as const, label: "Foundation", hint: "managed state and installation notes" },
+      { value: "agents" as const, label: "Agents", hint: "focused Skynex collaborators" },
+      { value: "skills" as const, label: "Skills", hint: "reusable working methods" },
+      ...(installRoots.scope === "global"
+        ? [{ value: "plugins" as const, label: "Runtime plugins", hint: "global OpenCode 2 integration" }]
+        : []),
+    ];
     const components = await p.multiselect<InstallComponent>({
       message: "Choose what to bring into OpenCode",
-      options: [
-        { value: "configuration", label: "Foundation", hint: "managed state and installation notes" },
-        { value: "agents", label: "Agents", hint: "focused Skynex collaborators" },
-        { value: "skills", label: "Skills", hint: "reusable working methods" },
-        { value: "commands", label: "Commands", hint: "shortcuts inside OpenCode" },
-        { value: "plugins", label: "Runtime plugin", hint: "native OpenCode 2 integration" },
-      ],
-      initialValues: ["configuration", "agents", "skills", "commands", "plugins"],
+      options: componentOptions,
+      initialValues: [...scopeComponents(installRoots.scope)],
       required: true,
     });
     if (p.isCancel(components)) {
@@ -195,6 +238,9 @@ const run = async (): Promise<void> => {
       return;
     }
     selectedComponents = components;
+  }
+  if (installRoots.scope === "project" && selectedComponents.includes("plugins")) {
+    throw new Error("Sky Agents plugins can only be installed globally");
   }
 
   startSpinner("Preparing a safe installation plan");

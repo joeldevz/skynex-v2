@@ -1,0 +1,7 @@
+{
+  "name": "@skynex/sky-agents",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./index.ts", "./tui": "./tui.tsx", "./rpc": "./rpc.ts" }
+}
