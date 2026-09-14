@@ -14,10 +14,13 @@ export { createUninstallPlan } from "./uninstall.js";
 export { listBackups, restoreBackup } from "./backup-service.js";
 export { executeTransaction } from "./transaction.js";
 
-export interface InstallOperation { readonly kind: "create" | "replace" | "unchanged" | "conflict"; readonly artifact: DesiredArtifact; readonly relativePath: string; readonly destination: string; readonly currentDigest: string | null; readonly desiredDigest: string; readonly previous?: ManagedResourceState; readonly decision?: UpdateDecision; }
+export interface InstallOperation { readonly kind: "create" | "replace" | "preserve" | "unchanged" | "conflict"; readonly artifact: DesiredArtifact; readonly relativePath: string; readonly destination: string; readonly currentDigest: string | null; readonly desiredDigest: string; readonly previous?: ManagedResourceState; readonly decision?: UpdateDecision; }
 export interface InstallPlan { readonly id: string; readonly createdAt: string; readonly target: TargetDetection; readonly operations: readonly InstallOperation[]; readonly allowedResources?: readonly { readonly id: string; readonly relativePath: string }[]; readonly selectedComponents?: readonly InstallComponent[]; readonly updateMode?: boolean; readonly expectedPreviousLockDigest?: string | null; }
 export interface ApplyResult { readonly transactionId: string; readonly changed: number; readonly backupRoot: string | null; readonly lockPath: string; }
 const sha256 = (content: string | Buffer): string => createHash("sha256").update(content).digest("hex");
+const authorizedCollisionPlans = new WeakMap<InstallPlan, string>();
+const plannedCollisionPlans = new WeakMap<InstallPlan, string>();
+const collisionAuthorization = (plan: InstallPlan): string => sha256(JSON.stringify(plan));
 const exists = async (path: string): Promise<boolean> => lstat(path).then(() => true).catch((e: NodeJS.ErrnoException) => { if (e.code === "ENOENT") return false; throw e; });
 const isSharedOpenCodeConfig = (target: TargetDetection, artifact: DesiredArtifact): boolean =>
   target.id === "opencode-v2" && artifact.resource.id === "opencode-config" && artifact.resource.kind === "configuration" &&
@@ -52,34 +55,58 @@ export const createInstallPlan = async (target: TargetAdapter, roots: InstallRoo
     if (destinations.has(artifact.relativePath)) throw new Error(`Duplicate destination: ${artifact.relativePath}`); destinations.add(artifact.relativePath);
     const destination = await assertSafeMutationTarget(roots.targetRoot, artifact.relativePath); const current = await exists(destination) ? await readFile(destination) : null; const desiredDigest = artifact.sourceDigest ?? sha256(artifact.content); const currentDigest = current ? sha256(current) : null;
     const prior = priorResources.get(artifact.relativePath);
-    if (current && !prior && !isSharedOpenCodeConfig(detection, artifact)) {
-      throw new Error(`Unmanaged existing resource collision: ${artifact.relativePath}`);
-    }
-    operations.push({ artifact, relativePath: artifact.relativePath, currentDigest, desiredDigest, previous: prior, kind: !current ? "create" : currentDigest === desiredDigest ? "unchanged" : "replace", destination });
+    const unmanagedCollision = current !== null && !prior && !isSharedOpenCodeConfig(detection, artifact);
+    operations.push({ artifact, relativePath: artifact.relativePath, currentDigest, desiredDigest, previous: prior, kind: unmanagedCollision ? "conflict" : !current ? "create" : currentDigest === desiredDigest ? "unchanged" : "replace", destination });
   }
-  return { id: randomUUID(), createdAt: new Date().toISOString(), target: detection, operations, selectedComponents: selected, allowedResources: trustedArtifacts.map((artifact) => ({ id: artifact.resource.id, relativePath: artifact.relativePath })) };
+  const plan = { id: randomUUID(), createdAt: new Date().toISOString(), target: detection, operations, selectedComponents: selected, allowedResources: trustedArtifacts.map((artifact) => ({ id: artifact.resource.id, relativePath: artifact.relativePath })) };
+  plannedCollisionPlans.set(plan, collisionAuthorization(plan));
+  return plan;
 };
 
 export const applyInstallPlan = async (plan: InstallPlan): Promise<ApplyResult> => {
-  if (plan.operations.some((item) => item.kind === "conflict")) throw new Error("Unresolved update conflict; edit the resource and replan");
+  if (plan.operations.some((item) => item.kind === "conflict")) throw new Error(plan.updateMode ? "Unresolved update conflict; edit the resource and replan" : "Unresolved collision; choose overwrite or preserve before applying");
+  const hasUnmanagedDecision = plan.operations.some((item) => !item.previous && ((item.kind === "replace" && item.decision === "accept-upstream") || (item.kind === "preserve" && item.decision === "preserve")));
+  if (hasUnmanagedDecision && authorizedCollisionPlans.get(plan) !== collisionAuthorization(plan)) throw new Error("Unmanaged collision decisions require an authorized collision plan");
+  for (const item of plan.operations) {
+    const current = await exists(item.destination) ? await readFile(item.destination) : null;
+    if ((current ? sha256(current) : null) !== item.currentDigest) throw new Error(`Target changed after planning: ${item.relativePath}`);
+  }
   const roots = plan.target.roots; const allowed = new Map((plan.allowedResources ?? []).map((entry) => [entry.id, entry.relativePath]));
   if (!plan.allowedResources?.length) throw new Error("Missing trusted resource ownership map");
   if (allowed.size !== plan.allowedResources.length || new Set(plan.allowedResources.map((entry) => entry.relativePath)).size !== plan.allowedResources.length) throw new Error("Invalid trusted resource ownership map");
   const snapshot = await readInstallLockSnapshot(roots, allowed); const prior = snapshot?.lock ?? null;
   const installed = prior;
-  const planned = new Set(plan.operations.map((item) => item.artifact.relativePath));
-  const resources = [...(prior?.resources ?? []).filter((resource) => !planned.has(resource.relativePath)), ...plan.operations.map((item) => item.previous && item.kind === "unchanged" ? (item.currentDigest === item.desiredDigest ? convergedResource(item.previous, item) : item.previous) : ({ ...item.artifact.resource, origin: item.artifact.resource.kind === "native" ? "native" : "canonical", relativePath: item.relativePath, sourceDigest: item.desiredDigest, installedDigest: item.desiredDigest } as ManagedResourceState))];
+  const ownedOperations = plan.operations.filter((item) => item.kind !== "preserve");
+  const planned = new Set(ownedOperations.map((item) => item.artifact.relativePath));
+  const resources = [...(prior?.resources ?? []).filter((resource) => !planned.has(resource.relativePath)), ...ownedOperations.map((item) => item.previous && item.kind === "unchanged" ? (item.currentDigest === item.desiredDigest ? convergedResource(item.previous, item) : item.previous) : ({ ...item.artifact.resource, origin: item.artifact.resource.kind === "native" ? "native" : "canonical", relativePath: item.relativePath, sourceDigest: item.desiredDigest, installedDigest: item.desiredDigest } as ManagedResourceState))];
   const lock = { schemaVersion: 1 as const, target: "opencode-v2" as const, scope: roots.scope, targetRoot: resolve(roots.targetRoot), stateRoot: resolve(roots.stateRoot), installedAt: new Date().toISOString(), transactionId: plan.id, resources, installedComponents: plan.selectedComponents ?? [...new Set(plan.operations.map((operation) => operation.artifact.component))] } satisfies InstallLock;
   for (const item of plan.operations) {
     const owned = installed?.resources.find((resource) => resource.id === item.artifact.resource.id && resource.relativePath === item.relativePath);
     const reviewed = plan.updateMode && ["accept-upstream", "keep-local", "skip", "preserve"].includes(item.decision ?? "");
-    if (item.currentDigest !== null && !owned && !isSharedOpenCodeConfig(plan.target, item.artifact)) throw new Error(`Unmanaged existing resource collision: ${item.relativePath}`);
+    if (item.currentDigest !== null && !owned && !isSharedOpenCodeConfig(plan.target, item.artifact) && !((item.kind === "replace" && item.decision === "accept-upstream") || (item.kind === "preserve" && item.decision === "preserve"))) throw new Error(`Unmanaged existing resource collision: ${item.relativePath}`);
     if (owned && item.currentDigest !== owned.installedDigest && item.currentDigest !== item.desiredDigest && !reviewed) throw new Error(`Locally edited managed resource: ${item.relativePath}`);
     if (owned && !plan.updateMode && item.currentDigest !== item.desiredDigest && (owned.pendingSourceDigest !== undefined || item.currentDigest !== owned.sourceDigest)) throw new Error(`Customized managed resource requires an explicit update decision: ${item.relativePath}`);
     if (plan.updateMode && reviewed && (!owned || item.previous?.id !== owned.id || item.previous.relativePath !== owned.relativePath)) throw new Error(`Reviewed update requires the reviewed resource: ${item.relativePath}`);
   }
   const result = await executeTransaction({ plan: plan as unknown as InstallationPlan, lockBytes: `${JSON.stringify(lock)}\n`, expectedPreviousLockDigest: plan.expectedPreviousLockDigest ?? (snapshot ? sha256(snapshot.bytes) : null) });
   return { transactionId: result.transactionId, changed: result.changed, backupRoot: result.backupRoot, lockPath: result.lockPath };
+};
+
+export type CollisionDecision = "overwrite" | "preserve";
+export const resolveInstallCollisions = (plan: InstallPlan, decisions: ReadonlyMap<string, CollisionDecision>): InstallPlan => {
+  if (plannedCollisionPlans.get(plan) !== collisionAuthorization(plan)) throw new Error("Collision resolution requires an unchanged planner-created plan");
+  const collisions = plan.operations.filter((item) => item.kind === "conflict");
+  const expected = new Set(collisions.map((item) => item.relativePath));
+  if (decisions.size !== expected.size || [...decisions.keys()].some((path) => !expected.has(path))) throw new Error("Collision decisions must exactly match unresolved collisions");
+  const resolved = { ...plan, operations: plan.operations.map((item) => {
+    if (item.kind !== "conflict") return item;
+    const decision = decisions.get(item.relativePath);
+    if (decision === "overwrite") return { ...item, kind: "replace" as const, decision: "accept-upstream" as const };
+    if (decision === "preserve") return { ...item, kind: "preserve" as const, decision: "preserve" as const };
+    throw new Error(`Missing collision decision: ${item.relativePath}`);
+  }) };
+  authorizedCollisionPlans.set(resolved, collisionAuthorization(resolved));
+  return resolved;
 };
 
 export { applyUninstallPlan } from "./uninstall.js";
@@ -109,5 +136,7 @@ export function prepareUpdatePlan(plan: InstallPlan, lock: InstallLock, choose?:
     if (decision === "accept-upstream") return { ...operation, kind: "replace" as const, decision, previous: prior };
     return { ...operation, kind: "conflict" as const, decision, previous: prior };
   });
-  return { ...plan, updateMode: true, ...(expectedPreviousLockDigest === undefined ? {} : { expectedPreviousLockDigest }), operations };
+  const prepared = { ...plan, updateMode: true, ...(expectedPreviousLockDigest === undefined ? {} : { expectedPreviousLockDigest }), operations };
+  if (authorizedCollisionPlans.get(plan) === collisionAuthorization(plan)) authorizedCollisionPlans.set(prepared, collisionAuthorization(prepared));
+  return prepared;
 }

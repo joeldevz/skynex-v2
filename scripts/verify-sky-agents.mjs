@@ -27,7 +27,7 @@ await test("rpc-schemas-avoid-unsupported-pattern-and-handlers-validate",async()
   visit(SkyAgents);
    const rpcSource=await readFile(new URL("../targets/opencode/resources/native/plugins/sky-agents/rpc.ts",import.meta.url),"utf8"); assert.doesNotMatch(rpcSource,/\bpattern\b/); assert.doesNotMatch(rpcSource,/authorizeProfileApply|applyProfile/);
    const serverSource=await readFile(new URL("../targets/opencode/resources/native/plugins/sky-agents/index.ts",import.meta.url),"utf8"); assert.doesNotMatch(serverSource,/authorizeProfileApply|applyProfile/);
-   const tuiSource=await readFile(new URL("../targets/opencode/resources/native/plugins/sky-agents/tui.tsx",import.meta.url),"utf8"); assert.doesNotMatch(tuiSource,/authorizeProfileApply|applyProfile/); assert.match(tuiSource,/skynex profile apply --name/);
+    const tuiSource=await readFile(new URL("../targets/opencode/resources/native/plugins/sky-agents/tui.tsx",import.meta.url),"utf8"); assert.doesNotMatch(tuiSource,/authorizeProfileApply|applyProfile/); assert.match(tuiSource,/skynex profile apply --name/); assert.match(tuiSource,/rpc\.listProfiles\(\{\}\)/); assert.match(tuiSource,/JSON\.stringify\(error\)/);
    const cliSource=await readFile(new URL("../apps/cli/src/index.ts",import.meta.url),"utf8"); assert.match(cliSource,/Profile apply requires the interactive confirmation prompt/); assert.match(cliSource,/if \(has\("--yes"\)\)/);
   assert.throws(()=>validateProfileName("bad_name"),/Invalid profile name/);
   const invalid=profile(); invalid.models.coder="not-a-model"; assert.throws(()=>validateProfile(invalid),/Invalid profile model reference/);

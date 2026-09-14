@@ -1,7 +1,7 @@
 import { cp, mkdir, writeFile, rm, symlink } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { loadCatalog, validateManifest } from "../packages/catalog/dist/index.js";
-import { createInstallPlan, applyInstallPlan } from "../packages/installer/dist/index.js";
+import { createInstallPlan, applyInstallPlan, createUninstallPlan, applyUninstallPlan, resolveInstallCollisions } from "../packages/installer/dist/index.js";
 import { openCodeTarget } from "../targets/opencode/dist/index.js";
 import { assert, fresh, fixture, readFile, join, sha, fail, detection, snapshot, exists } from "./verify-installer-support.mjs";
 
@@ -22,6 +22,115 @@ async function assertDigests(catalog, root) {
   }
 }
 export async function verify(test) {
+  await test("collision-plan-discovers-all-unmanaged-without-mutation", async () => {
+    const f = await fixture("collision-discovery");
+    const artifacts = ["agents/first.md", "skills/second/SKILL.md"].map((relativePath, index) => ({
+      resource: { id: `collision-${index}`, kind: index ? "skill" : "agent", version: "1" },
+      component: index ? "skills" : "agents", relativePath, content: `upstream-${index}`,
+    }));
+    for (const artifact of artifacts) {
+      await mkdir(dirname(f.target(artifact.relativePath)), { recursive: true });
+      await writeFile(f.target(artifact.relativePath), `local-${artifact.resource.id}`);
+    }
+    const before = await snapshot(f.root);
+    const plan = await createInstallPlan({ detect: detection, desiredArtifacts: async () => artifacts }, f.roots);
+    assert.deepEqual(plan.operations.map((item) => [item.relativePath, item.kind, item.currentDigest]), [
+      [artifacts[0].relativePath, "conflict", sha("local-collision-0")],
+      [artifacts[1].relativePath, "conflict", sha("local-collision-1")],
+    ]);
+    assert.deepEqual(await snapshot(f.root), before);
+  });
+  await test("collision-unresolved-apply-fails-without-mutation", async () => {
+    const f = await fixture("collision-unresolved");
+    const artifact = { resource: { id: "collision", kind: "agent", version: "1" }, component: "agents", relativePath: "agents/collision.md", content: "upstream" };
+    await mkdir(dirname(f.target(artifact.relativePath)), { recursive: true });
+    await writeFile(f.target(artifact.relativePath), "local");
+    const before = await snapshot(f.root);
+    const plan = await createInstallPlan({ detect: detection, desiredArtifacts: async () => [artifact] }, f.roots);
+    await fail(() => applyInstallPlan(plan), "Unresolved collision");
+    assert.deepEqual(await snapshot(f.root), before);
+  });
+  for (const variant of ["manual", "spread", "tampered"]) {
+    await test(`collision-${variant}-resolved-plan-is-rejected-without-mutation`, async () => {
+      const f = await fixture(`collision-${variant}-authorization`);
+      const artifact = { resource: { id: "collision", kind: "agent", version: "1" }, component: "agents", relativePath: "agents/collision.md", content: "upstream" };
+      await mkdir(dirname(f.target(artifact.relativePath)), { recursive: true });
+      await writeFile(f.target(artifact.relativePath), "local");
+      const base = await createInstallPlan({ detect: detection, desiredArtifacts: async () => [artifact] }, f.roots);
+      const resolved = resolveInstallCollisions(base, new Map([[artifact.relativePath, "overwrite"]]));
+      const plan = variant === "manual"
+        ? { ...base, operations: base.operations.map((item) => ({ ...item, kind: "replace", decision: "accept-upstream" })) }
+        : variant === "spread"
+          ? { ...resolved }
+          : { ...resolved, operations: resolved.operations.map((item) => ({ ...item, desiredDigest: sha("tampered") })) };
+      const before = await snapshot(f.root);
+      await fail(() => applyInstallPlan(plan), "authorized collision plan");
+      assert.deepEqual(await snapshot(f.root), before);
+    });
+  }
+  await test("collision-resolver-rejects-fabricated-plan-without-mutation", async () => {
+    const f = await fixture("collision-fabricated-resolver");
+    const artifact = { resource: { id: "collision", kind: "agent", version: "1" }, component: "agents", relativePath: "agents/collision.md", content: "upstream" };
+    await mkdir(dirname(f.target(artifact.relativePath)), { recursive: true });
+    await writeFile(f.target(artifact.relativePath), "local");
+    const planned = await createInstallPlan({ detect: detection, desiredArtifacts: async () => [artifact] }, f.roots);
+    const fabricated = { ...planned };
+    const before = await snapshot(f.root);
+    assert.throws(() => resolveInstallCollisions(fabricated, new Map([[artifact.relativePath, "overwrite"]])), /planner-created plan/);
+    assert.deepEqual(await snapshot(f.root), before);
+  });
+  await test("collision-resolver-rejects-preauthorization-tamper-without-mutation", async () => {
+    const f = await fixture("collision-preauthorization-tamper");
+    const artifact = { resource: { id: "collision", kind: "agent", version: "1" }, component: "agents", relativePath: "agents/collision.md", content: "upstream" };
+    await mkdir(dirname(f.target(artifact.relativePath)), { recursive: true });
+    await writeFile(f.target(artifact.relativePath), "local");
+    const planned = await createInstallPlan({ detect: detection, desiredArtifacts: async () => [artifact] }, f.roots);
+    planned.operations[0].artifact.content = "tampered";
+    planned.operations[0].desiredDigest = sha("tampered");
+    const before = await snapshot(f.root);
+    assert.throws(() => resolveInstallCollisions(planned, new Map([[artifact.relativePath, "overwrite"]])), /unchanged planner-created plan/);
+    assert.deepEqual(await snapshot(f.root), before);
+  });
+  await test("collision-overwrite-snapshots-writes-and-records-ownership", async () => {
+    const f = await fixture("collision-overwrite");
+    const artifact = { resource: { id: "collision", kind: "agent", version: "1" }, component: "agents", relativePath: "agents/collision.md", content: "upstream" };
+    await mkdir(dirname(f.target(artifact.relativePath)), { recursive: true });
+    await writeFile(f.target(artifact.relativePath), "old-local-bytes");
+    const base = await createInstallPlan({ detect: detection, desiredArtifacts: async () => [artifact] }, f.roots);
+    const plan = resolveInstallCollisions(base, new Map([[artifact.relativePath, "overwrite"]]));
+    const result = await applyInstallPlan(plan);
+    assert.equal(await readFile(f.target(artifact.relativePath), "utf8"), "upstream");
+    const lock = JSON.parse(await readFile(f.lockPath, "utf8"));
+    assert.equal(lock.resources.find((item) => item.id === artifact.resource.id)?.installedDigest, sha("upstream"));
+    assert(result.backupRoot);
+    assert((await snapshot(result.backupRoot)).some((entry) => entry[1] === "file" && Buffer.from(entry[2], "base64").toString() === "old-local-bytes"));
+  });
+  await test("collision-preserve-is-unowned-and-survives-uninstall", async () => {
+    const f = await fixture("collision-preserve");
+    const artifact = { resource: { id: "collision", kind: "agent", version: "1" }, component: "agents", relativePath: "agents/collision.md", content: "upstream" };
+    await mkdir(dirname(f.target(artifact.relativePath)), { recursive: true });
+    await writeFile(f.target(artifact.relativePath), "local");
+    const base = await createInstallPlan({ detect: detection, desiredArtifacts: async () => [artifact] }, f.roots);
+    const plan = resolveInstallCollisions(base, new Map([[artifact.relativePath, "preserve"]]));
+    await applyInstallPlan(plan);
+    assert.equal(await readFile(f.target(artifact.relativePath), "utf8"), "local");
+    const lock = JSON.parse(await readFile(f.lockPath, "utf8"));
+    assert.equal(lock.resources.some((item) => item.relativePath === artifact.relativePath), false);
+    const allowed = new Map(plan.allowedResources.map((item) => [item.id, item.relativePath]));
+    await applyUninstallPlan(createUninstallPlan({ roots: f.roots, lock, allowedResources: allowed }), allowed);
+    assert.equal(await readFile(f.target(artifact.relativePath), "utf8"), "local");
+  });
+  await test("collision-mixed-decisions-stale-digest-are-atomic", async () => {
+    const f = await fixture("collision-stale");
+    const artifacts = ["agents/overwrite.md", "skills/preserve/SKILL.md"].map((relativePath, index) => ({ resource: { id: `mixed-${index}`, kind: index ? "skill" : "agent", version: "1" }, component: index ? "skills" : "agents", relativePath, content: `upstream-${index}` }));
+    for (const artifact of artifacts) { await mkdir(dirname(f.target(artifact.relativePath)), { recursive: true }); await writeFile(f.target(artifact.relativePath), `local-${artifact.resource.id}`); }
+    const base = await createInstallPlan({ detect: detection, desiredArtifacts: async () => artifacts }, f.roots);
+    const plan = resolveInstallCollisions(base, new Map(artifacts.map((item, index) => [item.relativePath, index ? "preserve" : "overwrite"])));
+    await writeFile(f.target(artifacts[1].relativePath), "stale-after-plan");
+    const before = await snapshot(f.root);
+    await fail(() => applyInstallPlan(plan), `Target changed after planning: ${artifacts[1].relativePath}`);
+    assert.deepEqual(await snapshot(f.root), before);
+  });
   for (const kind of ["agent", "skill", "command", "native", "hook", "mcp", "configuration"]) {
     await test(`collision-${kind}-plan-and-apply-no-mutation`, async () => {
       const f = await fixture(`collision-${kind}`);
@@ -29,18 +138,16 @@ export async function verify(test) {
       const artifact = { resource: { id: `fixture-${kind}`, kind, version: "1" },
         component: "configuration", relativePath: path, content: "upstream" };
       const adapter = { detect: detection, desiredArtifacts: async () => [artifact] };
-      // Plan before a competing unmanaged writer, then prove both entry points refuse.
+      // Plan before a competing unmanaged writer, then prove apply still refuses.
       const plan = await createInstallPlan(adapter, f.roots);
       await mkdir(f.target(kind));
       await writeFile(f.target(path), "local");
       const before = await snapshot(f.root);
-      await fail(() => createInstallPlan(adapter, f.roots), "Unmanaged existing resource collision");
+      const collisionPlan = await createInstallPlan(adapter, f.roots);
+      assert.equal(collisionPlan.operations[0].kind, "conflict");
+      assert.equal(collisionPlan.operations[0].currentDigest, sha("local"));
       assert.deepEqual(await snapshot(f.root), before);
-      // An apply-time plan with observed local bytes must not bypass ownership checks.
-      const observed = { ...plan, operations: plan.operations.map((item) => ({
-        ...item, kind: "replace", currentDigest: sha("local"),
-      })) };
-      await fail(() => applyInstallPlan(observed), "Unmanaged existing resource collision");
+      await fail(() => applyInstallPlan(collisionPlan), "Unresolved");
       assert.deepEqual(await snapshot(f.root), before);
     });
   }
@@ -60,17 +167,12 @@ export async function verify(test) {
       await writeFile(f.target(path), content);
       assert.equal(sha(await readFile(f.target(path))), initialPlan.operations[0].desiredDigest);
       const before = await snapshot(f.root);
-      const message = `Unmanaged existing resource collision: ${path}`;
-      await fail(() => createInstallPlan(adapter, f.roots), message);
+      const collisionPlan = await createInstallPlan(adapter, f.roots);
+      assert.equal(collisionPlan.operations[0].kind, "conflict");
+      assert.equal(collisionPlan.operations[0].currentDigest, collisionPlan.operations[0].desiredDigest);
+      assert.equal(collisionPlan.operations[0].decision, undefined);
       assert.deepEqual(await snapshot(f.root), before);
-      // Exercise apply independently with an unchanged operation whose observed
-      // digest equals desired. Keep the genuine adapter-derived map untouched.
-      const observedPlan = { ...initialPlan, operations: initialPlan.operations.map((item) => ({
-        ...item, kind: "unchanged", currentDigest: sha(content),
-      })) };
-      assert.equal(observedPlan.operations[0].currentDigest, observedPlan.operations[0].desiredDigest);
-      assert.equal(observedPlan.operations[0].previous, undefined);
-      await fail(() => applyInstallPlan(observedPlan), message);
+      await fail(() => applyInstallPlan(collisionPlan), "Unresolved");
       assert.deepEqual(await snapshot(f.root), before);
       assert.deepEqual(await readFile(f.target(path)), Buffer.from(content));
       assert.equal(await exists(f.roots.stateRoot), false);
@@ -130,7 +232,9 @@ export async function verify(test) {
           desiredArtifacts: async () => [artifact] };
         await writeFile(f.target(path), "local");
         const before = await snapshot(f.root);
-        await fail(() => createInstallPlan(adapter, f.roots), "Unmanaged existing resource collision");
+        const collisionPlan = await createInstallPlan(adapter, f.roots);
+        assert.equal(collisionPlan.operations[0].kind, "conflict");
+        await fail(() => applyInstallPlan(collisionPlan), "Unresolved collision");
         assert.deepEqual(await snapshot(f.root), before);
       });
     }
@@ -144,7 +248,9 @@ export async function verify(test) {
       await mkdir(dirname(f.target(path)), { recursive: true });
       await writeFile(f.target(path), "local");
       const before = await snapshot(f.root);
-      await fail(() => createInstallPlan({ detect: openCodeTarget.detect, desiredArtifacts: async () => artifacts }, f.roots), "Unmanaged existing resource collision");
+      const collisionPlan = await createInstallPlan({ detect: openCodeTarget.detect, desiredArtifacts: async () => artifacts }, f.roots);
+      assert.equal(collisionPlan.operations[0].kind, "conflict");
+      await fail(() => applyInstallPlan(collisionPlan), "Unresolved collision");
       assert.deepEqual(await snapshot(f.root), before);
     });
   }

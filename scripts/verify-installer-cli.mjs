@@ -43,7 +43,40 @@ async function setup(name, formats = []) {
   const args = (command, explicit) => [command, "--project", project, "--state-dir", state,
     "--yes", ...(command === "install" || command === "update" ? ["--components", nonPluginComponents.join(",")] : []),
     ...(explicit ? ["--config", explicit] : [])];
-  return { root, project, target, state, run, args, lockPath: join(state, "lock.json") };
+  return { root, project, target, state, env, run, args, lockPath: join(state, "lock.json") };
+}
+async function runInteractiveSteps(f, steps) {
+  const session = `skynex-cli-${process.pid}-${Date.now()}`;
+  const args = [process.execPath, cli, "install", "--project", f.project, "--state-dir", f.state, "--components", nonPluginComponents.join(",")];
+  const command = ["env", "-u", "CI", ...Object.entries(f.env).filter(([key]) => key !== "CI").map(([key, value]) => `${key}=${value}`), ...args]
+    .map((item) => `'${item.replaceAll("'", "'\\''")}'`).join(" ");
+  const started = spawnSync("tmux", ["new-session", "-d", "-s", session, "-x", "160", "-y", "40", command], { encoding: "utf8" });
+  assert.equal(started.status, 0, started.stderr);
+  let output = "";
+  try {
+    for (const { prompt, keys } of steps) {
+      let found = false;
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        const captured = spawnSync("tmux", ["capture-pane", "-pt", session, "-S", "-200"], { encoding: "utf8" });
+        output = captured.stdout;
+        if (output.includes(prompt)) { found = true; break; }
+        await new Promise((resolveWait) => setTimeout(resolveWait, 50));
+      }
+      assert(found, `interactive prompt missing: ${prompt}\n${output}`);
+      await new Promise((resolveWait) => setTimeout(resolveWait, 100));
+      const captured = spawnSync("tmux", ["capture-pane", "-pt", session, "-S", "-200"], { encoding: "utf8" });
+      output = captured.stdout;
+      const sent = spawnSync("tmux", ["send-keys", "-t", session, ...keys], { encoding: "utf8" });
+      assert.equal(sent.status, 0, sent.stderr);
+    }
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (spawnSync("tmux", ["has-session", "-t", session]).status !== 0) return { status: 0, signal: null, output };
+      await new Promise((resolveWait) => setTimeout(resolveWait, 50));
+    }
+    throw new Error(`interactive CLI did not exit\n${output}`);
+  } finally {
+    spawnSync("tmux", ["kill-session", "-t", session]);
+  }
 }
 export async function verify(test) {
   for (const [name, formats, explicit] of [
@@ -139,6 +172,43 @@ export async function verify(test) {
     assert.deepEqual(lock.installedComponents, ["configuration", "agents", "skills"]);
     assert.equal(lock.resources.some((resource) => resource.kind === "command" || resource.kind === "native"), false);
     assert.equal(configValue(await readFile(join(f.target, "opencode.jsonc"), "utf8")).plugins, undefined);
+  });
+  await test("cli-yes-lists-all-unmanaged-collisions-and-makes-no-mutation", async () => {
+    const f = await setup("yes-unmanaged-collisions");
+    const collisions = ["agents/skynex-orchestrator.md", "skills/diagnose/SKILL.md"];
+    for (const path of collisions) { await mkdir(resolve(f.target, path, ".."), { recursive: true }); await writeFile(join(f.target, path), `local-${path}`); }
+    const before = await snapshot(f.root);
+    const result = f.run(f.args("install"), "Unmanaged existing resource collisions require an interactive decision");
+    const output = result.stdout + result.stderr;
+    for (const path of collisions) assert(output.includes(path), output);
+    assert.deepEqual(await snapshot(f.root), before);
+  });
+  await test("cli-interactive-prompts-each-collision-default-preserve-before-mutation", async () => {
+    const f = await setup("interactive-default-preserve");
+    const collisions = ["agents/skynex-orchestrator.md", "skills/diagnose/SKILL.md"];
+    for (const path of collisions) { await mkdir(resolve(f.target, path, ".."), { recursive: true }); await writeFile(join(f.target, path), `local-${path}`); }
+    const result = await runInteractiveSteps(f, [
+      { prompt: collisions[0], keys: ["Enter"] },
+      { prompt: collisions[1], keys: ["Enter"] },
+      { prompt: "Ready to make OpenCode yours?", keys: ["Enter"] },
+    ]);
+    assert.equal(result.status, 0, result.output);
+    assert(result.output.indexOf(collisions[0]) < result.output.indexOf(collisions[1]), result.output);
+    for (const path of collisions) assert.equal(await readFile(join(f.target, path), "utf8"), `local-${path}`);
+    const lock = JSON.parse(await readFile(f.lockPath, "utf8"));
+    for (const path of collisions) assert.equal(lock.resources.some((item) => item.relativePath === path), false);
+  });
+  await test("cli-interactive-cancel-after-prior-collision-answer-has-zero-mutation", async () => {
+    const f = await setup("interactive-cancel");
+    const collisions = ["agents/skynex-orchestrator.md", "skills/diagnose/SKILL.md"];
+    for (const path of collisions) { await mkdir(resolve(f.target, path, ".."), { recursive: true }); await writeFile(join(f.target, path), `local-${path}`); }
+    const before = await snapshot(f.root);
+    const result = await runInteractiveSteps(f, [
+      { prompt: collisions[0], keys: ["Down", "Enter"] },
+      { prompt: collisions[1], keys: ["C-c"] },
+    ]);
+    assert.equal(result.status, 0, result.output);
+    assert.deepEqual(await snapshot(f.root), before);
   });
   await test("cli-global-default-yes-includes-both-plugins-and-no-commands", async () => {
     const f = await setup("global-default");

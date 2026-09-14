@@ -3,6 +3,11 @@ import { SkyAgents } from "./rpc.js"
 type Profile = { name: string; created_at: string; updated_at: string; models: Record<string, string> }
 type Model = { providerID: string; modelID: string; variant?: string; name?: string }
 const AGENTS = ["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "skynex-orchestrator", "task-classifier", "tech-planner", "test-engineer", "test-reviewer", "verifier"]
+const errorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message
+  if (typeof error === "string") return error
+  try { return (JSON.stringify(error) ?? "Unknown RPC error").slice(0, 500) } catch { return "Unknown RPC error" }
+}
 
 export default {
   id: "skynex-sky-agents.tui",
@@ -23,7 +28,7 @@ export default {
       try {
         const location = context.location ?? context.data.location.default()
         await context.data.location.model.sync(location)
-        const profiles = await rpc.listProfiles() as Profile[]
+        const profiles = await rpc.listProfiles({}) as Profile[]
         const selected = await context.ui.dialog.select<Profile>({
           title: "Sky Agents profiles",
           placeholder: "Select a profile or create one",
@@ -46,7 +51,7 @@ export default {
            if (!confirmed) return
            context.ui.toast.show({ title: "Sky Agents", message: `No files changed. Run: skynex profile apply --name ${selected.name}` })
         }
-      } catch (error) { context.ui.toast.show({ variant: "error", title: "Sky Agents", message: error instanceof Error ? error.message : String(error) }) }
+      } catch (error) { context.ui.toast.show({ variant: "error", title: "Sky Agents", message: errorMessage(error) }) }
     }
     return context.ui.slot({ append: "app", render: () => { context.keymap.layer(() => ({ mode: "global", priority: 10, commands: [{ id: "skynex.sky-agents", title: "Sky Agents profiles", group: "Skynex", palette: true, slash: { name: "sky-agents" }, run: open }] })); return null } })
   },

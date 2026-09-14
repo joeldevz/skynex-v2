@@ -2,7 +2,7 @@
 import { relative, resolve } from "node:path";
 import * as p from "@clack/prompts";
 import type { InstallComponent, InstallRoots, InstallScope, OpenCodeConfigPreference } from "@skynex-internal/domain";
-import { applyInstallPlan, applyUninstallPlan, createInstallPlan, createUninstallPlan, listBackups, prepareUpdatePlan, readInstallLock, readInstallLockSnapshot, restoreBackup } from "@skynex-internal/installer";
+import { applyInstallPlan, applyUninstallPlan, createInstallPlan, createUninstallPlan, listBackups, prepareUpdatePlan, readInstallLock, readInstallLockSnapshot, resolveInstallCollisions, restoreBackup } from "@skynex-internal/installer";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { getManagedAgents, openCodeTarget, removeManagedPlugin } from "@skynex-internal/target-opencode";
@@ -257,6 +257,27 @@ const needsConfig = command === "install" || command === "update" || command ===
     if (spinnerActive) stopSpinner("Plan could not be created");
     throw error;
   }
+  const unmanagedCollisions = plan.operations.filter((operation) => operation.kind === "conflict" && !operation.previous);
+  if (unmanagedCollisions.length) {
+    if (has("--yes")) throw new Error(`Unmanaged existing resource collisions require an interactive decision: ${unmanagedCollisions.map((item) => item.relativePath).join(", ")}`);
+    if (!has("--dry-run")) {
+      const decisions = new Map<string, "overwrite" | "preserve">();
+      for (const collision of unmanagedCollisions) {
+        p.log.info(collision.relativePath);
+        const choice = await p.select<"overwrite" | "preserve">({
+          message: collision.relativePath,
+          options: [
+            { value: "preserve", label: "Preserve" },
+            { value: "overwrite", label: "Overwrite" },
+          ],
+          initialValue: "preserve",
+        });
+        if (p.isCancel(choice)) { p.cancel("Nothing changed"); return; }
+        decisions.set(collision.relativePath, choice);
+      }
+      plan = resolveInstallCollisions(plan, decisions);
+    }
+  }
   if (command === "update") {
     const lockSnapshot = await readInstallLockSnapshot(installRoots, new Map((plan.allowedResources ?? []).map((entry) => [entry.id, entry.relativePath])));
     const lock = lockSnapshot?.lock;
@@ -264,7 +285,7 @@ const needsConfig = command === "install" || command === "update" || command ===
     const updateBasePlan = plan;
     plan = prepareUpdatePlan(updateBasePlan, lock, undefined, lockSnapshot ? sha256(lockSnapshot.bytes) : null);
     const conflicts = plan.operations.filter((operation) => operation.kind === "conflict");
-    const reviewable = plan.operations.filter((operation) => operation.kind === "conflict" || (operation.kind === "replace" && ["agents", "skills"].includes(operation.artifact.component)));
+    const reviewable = plan.operations.filter((operation) => operation.kind === "conflict" || (operation.kind === "replace" && operation.previous && ["agents", "skills"].includes(operation.artifact.component)));
     if (reviewable.length) {
       if (conflicts.length && (has("--yes") || has("--dry-run"))) throw new Error(`Local changes require an interactive decision: ${conflicts.map((item) => item.artifact.relativePath).join(", ")}`);
       if (has("--dry-run") || has("--yes")) {
