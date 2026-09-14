@@ -163,10 +163,23 @@ try {
    assert(skyAgents[0].source.path.startsWith(join(configDir, "skynex/plugins/sky-agents")), "Sky Agents must resolve from snapshot");
     const localPlugins = plugins.data.filter((plugin) => plugin.source.type === "local");
     assert.deepEqual(new Set(localPlugins.map((plugin) => plugin.id)), new Set(["skynex.runtime", "skynex-sky-agents.server"]), "Unexpected local plugin activation");
-   const rpcEnvelope = await rpcRequest(base, "skynex.sky-agents", "listProfiles", {});
-    evidence.rpc = { registered: skyAgents[0].features.rpc === true, listProfiles: { called: true, result: rpcEnvelope.output } };
-   assert.equal(evidence.rpc.registered, true, "Sky Agents RPC feature must be registered");
-    assert.deepEqual(evidence.rpc.listProfiles.result, [], "Fresh isolated profile store must be empty");
+    const rpcEnvelope = await rpcRequest(base, "skynex.sky-agents", "listProfiles", {});
+     evidence.rpc = { registered: skyAgents[0].features.rpc === true, listProfiles: { called: true, result: rpcEnvelope.output } };
+    assert.equal(evidence.rpc.registered, true, "Sky Agents RPC feature must be registered");
+     assert.deepEqual(evidence.rpc.listProfiles.result, [], "Fresh isolated profile store must be empty");
+     const mutationProfile = { name: "rpc-contract", created_at: new Date(0).toISOString(), updated_at: new Date(1).toISOString(), models: Object.fromEntries(Object.keys(config.agents).map((id) => [id, "openai/gpt-5"])) };
+     const saveEnvelope = await rpcRequest(base, "skynex.sky-agents", "saveProfile", { profile: mutationProfile });
+     assert.deepEqual(saveEnvelope.output, { ok: true }, "saveProfile must return an explicit JSON success envelope");
+     assert.deepEqual((await rpcRequest(base, "skynex.sky-agents", "getProfile", { name: mutationProfile.name })).output, mutationProfile, "saveProfile mutation must be observable");
+     mutationProfile.updated_at = new Date(2).toISOString();
+     mutationProfile.models.coder = "anthropic/claude";
+     const updateEnvelope = await rpcRequest(base, "skynex.sky-agents", "updateProfile", { profile: mutationProfile });
+     assert.deepEqual(updateEnvelope.output, { ok: true }, "updateProfile must return an explicit JSON success envelope");
+     assert.deepEqual((await rpcRequest(base, "skynex.sky-agents", "getProfile", { name: mutationProfile.name })).output, mutationProfile, "updateProfile mutation must be observable");
+     const deleteEnvelope = await rpcRequest(base, "skynex.sky-agents", "deleteProfile", { name: mutationProfile.name });
+     assert.deepEqual(deleteEnvelope.output, { ok: true }, "deleteProfile must return an explicit JSON success envelope");
+     assert.equal((await rpcRequest(base, "skynex.sky-agents", "getProfile", { name: mutationProfile.name })).output, null, "deleteProfile mutation must be observable");
+     evidence.rpc.mutations = { save: saveEnvelope.output, update: updateEnvelope.output, delete: deleteEnvelope.output, observableCrud: true };
     const previewEnvelope = await rpcRequest(base, "skynex.sky-agents", "previewProfileApply", { name: "missing-profile", config: "jsonc" }).then(
       (value) => ({ value }),
       (error) => ({ error: error.message }),

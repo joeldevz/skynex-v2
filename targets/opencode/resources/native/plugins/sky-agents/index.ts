@@ -19,9 +19,18 @@ export default {
     return context.rpc.register(SkyAgents, {
       listProfiles: () => backend.store.list(),
       getProfile: (input: { name: string }) => backend.store.get(input.name),
-      saveProfile: (input: { profile: Profile }) => backend.store.save(input.profile),
-      updateProfile: (input: { profile: Profile }) => backend.store.update(input.profile),
-      deleteProfile: (input: { name: string }) => backend.store.remove(input.name),
+      saveProfile: async (input: { profile: Profile }) => {
+        await backend.store.save(input.profile)
+        return { ok: true }
+      },
+      updateProfile: async (input: { profile: Profile }) => {
+        await backend.store.update(input.profile)
+        return { ok: true }
+      },
+      deleteProfile: async (input: { name: string }) => {
+        await backend.store.remove(input.name)
+        return { ok: true }
+      },
       previewProfileApply: (input: { name: string; config: "json" | "jsonc" }) => backend.previewApply(input.name, input.config),
     })
   },

@@ -709,10 +709,10 @@
       "sourceReferences": [
         {
           "path": "packages/sky-agents/src/rpc.ts",
-          "sha256": "638e430b306ad5a431f988e5dcc577fa63466f31cf7179e3b6c68e543b8c654d"
+          "sha256": "3737fecef45d39be1de7302360d90bb8cbcb55e5741b224a8696c698eed28e29"
         }
       ],
-      "generatedSha256": "638e430b306ad5a431f988e5dcc577fa63466f31cf7179e3b6c68e543b8c654d"
+      "generatedSha256": "3737fecef45d39be1de7302360d90bb8cbcb55e5741b224a8696c698eed28e29"
     },
     {
       "id": "skynex-sky-agents-core-storage",
@@ -753,7 +753,7 @@
       ],
       "transformation": "v2-adaptation",
       "sourceReferences": [],
-      "generatedSha256": "f67681dca18983257b210f362b8dd57dcec9dbfdbadde37d3efba51a918f61e6"
+      "generatedSha256": "310d26ca105f828e077d519d64e857f0ccc6c8a26e93ef59f5f92bfad1fe04e0"
     },
     {
       "id": "skynex-sky-agents-jsonc-parser",
@@ -1021,7 +1021,7 @@
       ],
       "transformation": "v2-adaptation",
       "sourceReferences": [],
-      "generatedSha256": "d912e63d658d2395f550c96c4ecd43adaf8bbddaea7b87b36e0bc95c6fa49df0"
+      "generatedSha256": "1d813a7707c038068c0b3347a3aed2c646d3b98afe278de7df7423daeaedc009"
     },
     {
       "id": "skynex-sky-agents-tui",

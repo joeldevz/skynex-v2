@@ -24,13 +24,14 @@ const plan = {
 } as const
 const objectInput = (properties: Record<string, unknown>, required: string[]) => ({ type: "object", additionalProperties: false, properties, required })
 const method = (input: unknown, output: unknown) => ({ input, output, errors: {} })
+const mutationResult = { type: "object", additionalProperties: false, required: ["ok"], properties: { ok: { type: "boolean" } } } as const
 export const SkyAgents = {
   id: "skynex.sky-agents", events: {}, methods: {
     listProfiles: method({ type: "object", additionalProperties: false, properties: {}, required: [] }, { type: "array", items: profile }),
     getProfile: method(objectInput({ name }, ["name"]), { anyOf: [profile, { type: "null" }] }),
-    saveProfile: method(objectInput({ profile }, ["profile"]), undefined),
-    updateProfile: method(objectInput({ profile }, ["profile"]), undefined),
-    deleteProfile: method(objectInput({ name }, ["name"]), undefined),
+    saveProfile: method(objectInput({ profile }, ["profile"]), mutationResult),
+    updateProfile: method(objectInput({ profile }, ["profile"]), mutationResult),
+    deleteProfile: method(objectInput({ name }, ["name"]), mutationResult),
      previewProfile: method(objectInput({ name }, ["name"]), { type: "object", additionalProperties: false, required: ["profile", "current", "digest"], properties: { profile, current: { type: "object" }, digest: string } }),
     previewProfileApply: method(objectInput({ name, config: { enum: ["json", "jsonc"] } }, ["name", "config"]), plan),
   },
