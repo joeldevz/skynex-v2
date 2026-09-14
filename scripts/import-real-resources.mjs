@@ -84,10 +84,12 @@ async function safeSource(path, expected) {
 }
 for (const entry of [...selectedAgents, ...selectedSkills]) {
   const source = await safeSource(entry.path, entry.sha256);
-  const target = entry.category === "global-agent" ? `canonical/${entry.path}` : `canonical/${entry.path}`;
-  generated.set(target, entry.category === "global-agent" ? normalizeAgent(entry.path.split("/").pop().replace(/\.md$/, ""), source) : transformSkill(entry.path === "skills/diagnose/SKILL.md" ? "diagnose" : entry.path, source));
+  const sourceName = entry.path.split("/").pop().replace(/\.md$/, "");
+  const outputName = sourceName === "skynex-orchestrator" ? "thalam" : sourceName;
+  const target = entry.category === "global-agent" ? `canonical/agents/${outputName}.md` : `canonical/${entry.path}`;
+  generated.set(target, entry.category === "global-agent" ? normalizeAgent(outputName, source) : transformSkill(entry.path === "skills/diagnose/SKILL.md" ? "diagnose" : entry.path, source));
 }
-const agentNames = selectedAgents.map((e) => e.path.split("/").pop().replace(/\.md$/, ""));
+const agentNames = selectedAgents.map((e) => e.path.split("/").pop().replace(/\.md$/, "")).map((name) => name === "skynex-orchestrator" ? "thalam" : name);
 const managed = JSON.stringify(managedAgents(agentNames), null, 2) + "\n";
 generated.set("canonical/config/managed-agents.json", managed);
 const nativeRecords = [];
@@ -147,7 +149,7 @@ for (const resource of nativeFiles) {
   const vendor = isVendor ? { package: vendorPackageName, packageVersion: vendorPackageVersion, packageIntegrity: vendorIntegrity, upstreamRepository: vendorRepository, upstreamTag: `v${vendorPackageVersion}`, npmTarball: vendorTarball } : {};
   nativeRecords.push({ ...resource, version: "0.1.0", origin: "native", component: "plugins", targets: [{ id: "opencode-v2", relativePath: resource.relativePath }], transformation: isVendor ? "vendored-jsonc-parser-3.3.1" : "v2-adaptation", ...vendor, sourceReferences: isVendor ? [{ path: `npm:${vendorPackageName}@${vendorPackageVersion}/${packagePath}`, sha256: sha256(bytes) }] : source ? [{ path: source, sha256: sha256(inputBytes) }] : [], generatedSha256: sha256(bytes) });
 }
-const provenance = { schemaVersion: 1, inventorySha256: sha256(inventoryBytes), generated: [...generated].sort(([a], [b]) => a.localeCompare(b)).map(([target, content]) => ({ target, source: inventory.entries.find((e) => `canonical/${e.path}` === target)?.path ?? "generated", sourceSha256: inventory.entries.find((e) => `canonical/${e.path}` === target)?.sha256 ?? null, generatedSha256: sha256(content) })) };
+const provenance = { schemaVersion: 1, inventorySha256: sha256(inventoryBytes), generated: [...generated].sort(([a], [b]) => a.localeCompare(b)).map(([target, content]) => { const entry = inventory.entries.find((e) => `canonical/${e.path}` === target) ?? (target === "canonical/agents/thalam.md" ? inventory.entries.find((e) => e.path === "agents/skynex-orchestrator.md") : undefined); return { target, source: entry?.path ?? "generated", sourceSha256: entry?.sha256 ?? null, generatedSha256: sha256(content) }; }) };
 provenance.generated.push(...nativeRecords.map(({ sourcePath, generatedSha256, transformation, sourceReferences, package: packageName, packageVersion, packageIntegrity, upstreamRepository, upstreamTag, npmTarball }) => ({ target: sourcePath, source: sourceReferences[0]?.path ?? sourcePath, sourceSha256: sourceReferences[0]?.sha256 ?? generatedSha256, generatedSha256, transformation, sourceReferences, ...(packageName ? { package: packageName, packageVersion, packageIntegrity, upstreamRepository, upstreamTag, npmTarball } : {}) })));
 generated.set("provenance.json", JSON.stringify(provenance, null, 2) + "\n");
 const manifestResources = [...generated.keys()].filter((p) => p !== "provenance.json").sort().map((sourcePath) => {

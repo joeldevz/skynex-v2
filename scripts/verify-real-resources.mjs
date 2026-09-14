@@ -26,6 +26,8 @@ const provenance = JSON.parse(await readFile(join(root, "provenance.json")));
 await test("catalog-exact-agent-and-skill-inventory", async () => {
   const agents = manifest.resources.filter(x => x.kind === "agent");
   assert.equal(agents.length, 13); assert(agents.some(x => x.id.endsWith("mentor")));
+  assert(agents.some(x => x.id === "agents.thalam" && x.sourcePath === "canonical/agents/thalam.md" && x.targets.some(t => t.relativePath === "agents/thalam.md")));
+  assert(!agents.some(x => /skynex-orchestrator/.test(`${x.id} ${x.sourcePath} ${JSON.stringify(x.targets)}`)));
   assert(!agents.some(x => /advisor|manager|linear/.test(x.id)));
   const skillLeaves = manifest.resources.filter(x => x.kind === "skill");
   assert.equal(skillLeaves.length, 24);
@@ -65,10 +67,17 @@ await test("native-sky-agents-imports-are-runtime-relative", async () => {
 });
 await test("managed-config-safe-values", async () => {
   const c=JSON.parse(await readFile(join(root,"canonical/config/managed-agents.json")));
-  assert.equal(Object.keys(c.agents).length,13); assert(!/(model|provider|mcp)/i.test(JSON.stringify(c)));
-  for(const a of Object.values(c.agents)){ assert.equal(a.permissions[0].effect,"deny"); assert(["all","subagent"].includes(a.mode)); }
+  assert.equal(c.agents.length,13); const thalam=c.agents.find(a=>a.id==="thalam"); assert(thalam); assert(!c.agents.some(a=>a.id==="skynex-orchestrator")); assert.equal(thalam.mode,"all"); assert(!/(model|provider|mcp)/i.test(JSON.stringify(c)));
+  for(const a of c.agents){ assert.equal(a.permissions[0].effect,"deny"); assert(["all","subagent"].includes(a.mode)); }
   const sensitive=[".env",".env.*","**/.env","**/.env.*",".npmrc","**/.npmrc",".netrc","**/.netrc","*.pem","**/*.pem","*.key","**/*.key","credentials.json","**/credentials.json","*service-account*.json","**/*service-account*.json","**/.aws/**","**/.ssh/**"];
-  for(const a of Object.values(c.agents).filter(a=>a.permissions.some(p=>p.action==="read"&&p.effect==="allow"))){const allow=a.permissions.findIndex(p=>p.action==="read"&&p.resource==="*"&&p.effect==="allow");for(const resource of sensitive){const deny=a.permissions.findIndex(p=>p.action==="read"&&p.resource===resource&&p.effect==="deny");assert(deny>allow,`missing or misordered sensitive read deny: ${resource}`)}}
+  for(const a of c.agents.filter(a=>a.permissions.some(p=>p.action==="read"&&p.effect==="allow"))){const allow=a.permissions.findIndex(p=>p.action==="read"&&p.resource==="*"&&p.effect==="allow");for(const resource of sensitive){const deny=a.permissions.findIndex(p=>p.action==="read"&&p.resource===resource&&p.effect==="deny");assert(deny>allow,`missing or misordered sensitive read deny: ${resource}`)}}
+});
+await test("thalam-canonical-heading-and-source-provenance",async()=>{
+  const source=await readFile(join(root,"canonical/agents/thalam.md"),"utf8");
+  assert.match(source,/^# Thalam\s*$/m);
+  const record=provenance.generated.find(x=>x.target==="canonical/agents/thalam.md");
+  assert(record); assert.equal(record.source,"agents/skynex-orchestrator.md");
+  assert(!provenance.generated.some(x=>x.target==="canonical/agents/skynex-orchestrator.md"));
 });
 await test("resources-have-no-placeholders-or-commands", async () => {
   assert.equal(manifest.resources.filter(x=>x.kind==="command").length,0);

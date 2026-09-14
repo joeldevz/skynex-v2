@@ -2,7 +2,7 @@ import { SkyAgents } from "./rpc.js"
 
 type Profile = { name: string; created_at: string; updated_at: string; models: Record<string, string> }
 type Model = { providerID: string; modelID: string; variant?: string; name?: string }
-const AGENTS = ["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "skynex-orchestrator", "task-classifier", "tech-planner", "test-engineer", "test-reviewer", "verifier"]
+const AGENTS = ["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "thalam", "task-classifier", "tech-planner", "test-engineer", "test-reviewer", "verifier"]
 const errorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message
   if (typeof error === "string") return error

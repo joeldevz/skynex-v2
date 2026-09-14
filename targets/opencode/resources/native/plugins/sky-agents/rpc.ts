@@ -2,7 +2,7 @@
 const string = { type: "string" } as const
 const model = { type: "string" } as const
 const name = { type: "string" } as const
-const agentIds = ["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "skynex-orchestrator", "task-classifier", "tech-planner", "test-engineer", "test-reviewer", "verifier"] as const
+const agentIds = ["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "thalam", "task-classifier", "tech-planner", "test-engineer", "test-reviewer", "verifier"] as const
 const models = Object.fromEntries(agentIds.map((id) => [id, model]))
 const profile = { type: "object", additionalProperties: false, required: ["name", "created_at", "updated_at", "models"], properties: { name, created_at: string, updated_at: string, models: { type: "object", additionalProperties: false, required: [...agentIds], properties: models } } } as const
 const nullableModels = Object.fromEntries(agentIds.map((id) => [id, { anyOf: [string, { type: "null" }] }]))

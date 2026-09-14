@@ -3,8 +3,8 @@ import { atomicWrite, readFileSafe, safeDirectory } from "./storage.js"
 
 export const MAX_PROFILE_BYTES = 64 * 1024
 export const MAX_PROFILES = 100
-export const APPROVED_AGENT_IDS = ["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "skynex-orchestrator", "task-classifier", "tech-planner", "test-engineer", "test-reviewer", "verifier"] as const
-export interface Profile { name: string; created_at: string; updated_at: string; models: Record<string, string> }
+export const APPROVED_AGENT_IDS = ["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "thalam", "task-classifier", "tech-planner", "test-engineer", "test-reviewer", "verifier"] as const
+export interface Profile { name: string; created_at: string; updated_at: string; models: Record<string, string>; [key: string]: unknown }
 export interface ProfileStore { list(): Promise<Profile[]>; get(id: string): Promise<Profile | null>; save(profile: Profile): Promise<void>; update(profile: Profile): Promise<void>; remove(id: string): Promise<void> }
 export function validateProfileName(name: string): void {
   if (typeof name !== "string" || !/^[a-z0-9-]{1,32}$/.test(name) || name === "default") throw new Error("Invalid profile name")
@@ -19,7 +19,15 @@ export function validateProfile(profile: Profile): void {
     if (!/^[a-zA-Z0-9._-]{1,128}$/.test(agent) || typeof model !== "string" || !/^[a-zA-Z0-9._-]{1,64}\/[a-zA-Z0-9._-]{1,128}(?:#[a-zA-Z0-9._-]{1,64})?$/.test(model)) throw new Error("Invalid profile model reference")
   }
 }
-function decode(text: string, name: string): Profile { const value: unknown = JSON.parse(text); if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid profile"); const profile = value as Profile; if (profile.name !== name) throw new Error("Invalid profile name"); validateProfile(profile); return profile }
+export function normalizeProfileAgentIdentity(profile: Profile): { profile: Profile; migrated: boolean } {
+  if (!profile || typeof profile !== "object" || Array.isArray(profile) || !profile.models || typeof profile.models !== "object" || Array.isArray(profile.models)) throw new Error("Invalid profile")
+  const old = Object.hasOwn(profile.models, "skynex-orchestrator"), current = Object.hasOwn(profile.models, "thalam")
+  if (old && current) throw new Error("Profile agent identity conflict: both skynex-orchestrator and thalam are present")
+  const models = { ...profile.models }
+  if (old) { models.thalam = models["skynex-orchestrator"]!; delete models["skynex-orchestrator"] }
+  return { profile: { ...profile, models }, migrated: old }
+}
+function decode(text: string, name: string): Profile { const value: unknown = JSON.parse(text); if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid profile"); const profile = normalizeProfileAgentIdentity(value as Profile).profile; if (profile.name !== name) throw new Error("Invalid profile name"); validateProfile(profile); return profile }
 export function createProfileStore(root: string): ProfileStore {
   const file = (name: string) => join(root, `${name}.json`)
   return {

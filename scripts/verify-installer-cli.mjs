@@ -175,7 +175,7 @@ export async function verify(test) {
   });
   await test("cli-yes-lists-all-unmanaged-collisions-and-makes-no-mutation", async () => {
     const f = await setup("yes-unmanaged-collisions");
-    const collisions = ["agents/skynex-orchestrator.md", "skills/diagnose/SKILL.md"];
+    const collisions = ["agents/thalam.md", "skills/diagnose/SKILL.md"];
     for (const path of collisions) { await mkdir(resolve(f.target, path, ".."), { recursive: true }); await writeFile(join(f.target, path), `local-${path}`); }
     const before = await snapshot(f.root);
     const result = f.run(f.args("install"), "Unmanaged existing resource collisions require an interactive decision");
@@ -185,7 +185,7 @@ export async function verify(test) {
   });
   await test("cli-interactive-prompts-each-collision-default-preserve-before-mutation", async () => {
     const f = await setup("interactive-default-preserve");
-    const collisions = ["agents/skynex-orchestrator.md", "skills/diagnose/SKILL.md"];
+    const collisions = ["agents/thalam.md", "skills/diagnose/SKILL.md"];
     for (const path of collisions) { await mkdir(resolve(f.target, path, ".."), { recursive: true }); await writeFile(join(f.target, path), `local-${path}`); }
     const result = await runInteractiveSteps(f, [
       { prompt: collisions[0], keys: ["Enter"] },
@@ -200,7 +200,7 @@ export async function verify(test) {
   });
   await test("cli-interactive-cancel-after-prior-collision-answer-has-zero-mutation", async () => {
     const f = await setup("interactive-cancel");
-    const collisions = ["agents/skynex-orchestrator.md", "skills/diagnose/SKILL.md"];
+    const collisions = ["agents/thalam.md", "skills/diagnose/SKILL.md"];
     for (const path of collisions) { await mkdir(resolve(f.target, path, ".."), { recursive: true }); await writeFile(join(f.target, path), `local-${path}`); }
     const before = await snapshot(f.root);
     const result = await runInteractiveSteps(f, [

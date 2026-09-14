@@ -100,6 +100,15 @@ export async function verify(test) {
     assert.deepEqual(await readFile(f.lockPath), replacementBytes);
     assert.deepEqual(await readFile(f.target("skill.md")), targetBytes);
   });
+  await test("project-rename-does-not-migrate-legacy-lock-ownership", async () => {
+    const f = await setup();
+    const legacy = await f.lock();
+    legacy.resources[0] = { ...legacy.resources[0], id: "agents.skynex-orchestrator", relativePath: "agents/skynex-orchestrator.md" };
+    const bytes = Buffer.from(`${JSON.stringify(legacy)}\n`);
+    await writeFile(f.lockPath, bytes);
+    await fail(() => readInstallLockSnapshot(f.roots, new Map([["agents.thalam", "agents/thalam.md"]])), "does not match the installed catalog");
+    assert.deepEqual(await readFile(f.lockPath), bytes);
+  });
   await test("update-target-reedit-and-missing-file-refused", async () => {
     const f = await setup();
     const plan = prepareUpdatePlan(await f.plan(), await f.lock(), () => "keep-local");

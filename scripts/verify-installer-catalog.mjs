@@ -305,7 +305,7 @@ export async function verify(test) {
   for (const [name, path] of [
     ["manifest", "manifest.json"], ["root", "."], ["canonical", "canonical"],
     ["native", "native"], ["nested", "canonical/agents"],
-    ["leaf", "canonical/agents/skynex-orchestrator.md"],
+    ["leaf", "canonical/agents/thalam.md"],
   ]) {
     await test(`catalog-valid-${name}-symlink-specifically-refused`, async () => {
       const f = await clone();
@@ -342,7 +342,7 @@ export async function verify(test) {
   });
   await test("catalog-declared-missing-file-refused", async () => {
     const f = await clone();
-    await rm(join(f.catalog, "canonical/agents/skynex-orchestrator.md"));
+    await rm(join(f.catalog, "canonical/agents/thalam.md"));
     await assert.rejects(() => loadCatalog(f), (error) => error.code === "ENOENT");
   });
   await test("catalog-declared-native-root-missing-refused", async () => {

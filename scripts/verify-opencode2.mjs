@@ -89,7 +89,7 @@ try {
       { package: "./skynex/plugins/runtime", options: { managedBy: "skynex" } },
       { package: "./skynex/plugins/sky-agents", options: { managedBy: "skynex" } },
     ],
-    agents: Object.fromEntries(["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "skynex-orchestrator", "task-classifier", "tech-planner", "test-engineer", "test-reviewer", "verifier"].map((id) => [id, { mode: id === "skynex-orchestrator" ? "all" : "subagent", permissions: [] }])),
+    agents: Object.fromEntries(["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "thalam", "task-classifier", "tech-planner", "test-engineer", "test-reviewer", "verifier"].map((id) => [id, { mode: id === "thalam" ? "all" : "subagent", permissions: [] }])),
   }));
   const parseErrors = [];
   const config = parse(configBytes.toString(), parseErrors);

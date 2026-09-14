@@ -91,11 +91,16 @@ function verifyManagedModels(parsed: Record<string, unknown>, desired: Readonly<
 function buildContent(source: string, desired: Readonly<Record<string, string>>): string {
   const parsed = parseConfiguration(source)
   const agents = parsed.agents as Record<string, unknown>
+  const legacy = agents["skynex-orchestrator"]
+  if (legacy !== undefined && agents.thalam !== undefined) throw new Error("OpenCode agent identity conflict: both skynex-orchestrator and thalam are present")
+  let result = source
+  if (legacy !== undefined) result = applyEdits(result, modify(result, ["agents", "thalam"], legacy, { formattingOptions: formatting }))
+  if (legacy !== undefined) result = applyEdits(result, modify(result, ["agents", "skynex-orchestrator"], undefined, { formattingOptions: formatting }))
+  const normalized = parseConfiguration(result).agents as Record<string, unknown>
   for (const id of APPROVED_AGENT_IDS) {
-    const entry = agents[id]
+    const entry = normalized[id]
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) throw new Error(`Managed OpenCode agent is missing: ${id}`)
   }
-  let result = source
   for (const id of APPROVED_AGENT_IDS) result = applyEdits(result, modify(result, ["agents", id, "model"], desired[id], { formattingOptions: formatting }))
   verifyManagedModels(parseConfiguration(result), desired)
   return result
@@ -157,8 +162,11 @@ export function createProfileApplyService(roots: ProfileApplyRoots, store: Profi
     await requireDirectory(roots.targetRoot)
     const path = selectConfig(roots, preference); await requireRegularFile(path); const source = await read(path); const parsed = parseConfiguration(source.toString("utf8")) as { agents?: Record<string, { model?: unknown }> }
     if (!parsed.agents || typeof parsed.agents !== "object" || Array.isArray(parsed.agents)) throw new Error("OpenCode 'agents' must be an object")
+    const legacy = parsed.agents["skynex-orchestrator"]
+    if (legacy !== undefined && parsed.agents.thalam !== undefined) throw new Error("OpenCode agent identity conflict: both skynex-orchestrator and thalam are present")
+    const previewAgents = legacy === undefined ? parsed.agents : { ...parsed.agents, thalam: legacy }
     const current: Record<string, string | null> = {}; const desired: Record<string, string> = {}
-    for (const id of APPROVED_AGENT_IDS) { const entry = parsed.agents[id]; if (!entry || typeof entry !== "object" || Array.isArray(entry)) throw new Error(`Invalid managed OpenCode agent: ${id}`); const value = entry.model; if (value !== undefined && value !== null && typeof value !== "string") throw new Error(`Invalid model for agent: ${id}`); current[id] = value == null ? null : value; desired[id] = profile.models[id]! }
+    for (const id of APPROVED_AGENT_IDS) { const entry = previewAgents[id]; if (!entry || typeof entry !== "object" || Array.isArray(entry)) throw new Error(`Invalid managed OpenCode agent: ${id}`); const value = entry.model; if (value !== undefined && value !== null && typeof value !== "string") throw new Error(`Invalid model for agent: ${id}`); current[id] = value == null ? null : value; desired[id] = profile.models[id]! }
     const changes = APPROVED_AGENT_IDS.filter((id) => current[id] !== desired[id]).map((agent) => ({ agent, from: current[agent] ?? null, to: desired[agent]! }))
     const sourceDigest = digest(source); const planDigest = computePlanDigest({ profile, configPath: path, sourceDigest, current, desired, changes })
     return { profile, configPath: path, sourceDigest, planDigest, current, desired, changes }

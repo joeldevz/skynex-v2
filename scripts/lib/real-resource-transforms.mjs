@@ -11,7 +11,7 @@ const descriptions = {
   "pr-reviewer": "Reviews one adversarial code-quality dimension",
   security: "Reviews code for concrete security vulnerabilities",
   "skill-validator": "Validates implementation against project skills and conventions",
-  "skynex-orchestrator": "Coordinates work with small, explicit scopes",
+  thalam: "Coordinates work with small, explicit scopes",
   "task-classifier": "Classifies requests for the orchestrator",
   "tech-planner": "Produces prescriptive implementation plans",
   "test-engineer": "Writes behavior-focused red test contracts",
@@ -108,21 +108,21 @@ const policy = (name) => {
   if (name === "test-engineer") return testEngineer;
   if (name === "tech-planner") return techPlanner;
   if (name === "mentor") return mentor;
-  if (name === "skynex-orchestrator") return orchestrator;
+  if (name === "thalam") return orchestrator;
   return readOnly;
 };
 
 export function normalizeAgent(name, source) {
   const body = source.replace(/^---\n[\s\S]*?\n---\n\n?/, "");
-  const mode = name === "skynex-orchestrator" ? "all" : "subagent";
+  const mode = name === "thalam" ? "all" : "subagent";
   const frontmatter = ["---", `description: ${descriptions[name] ?? `OpenCode ${name} agent`}`, `mode: ${mode}`, "permissions:", ...policy(name).map((item) => `  - action: ${item.action}\n    resource: ${item.resource}\n    effect: ${item.effect}`), "---", ""].join("\n");
-  return frontmatter + body;
+  return frontmatter + (name === "thalam" ? body.replace(/^SKYNEX ORCHESTRATOR[^\n]*\n=+\s*$/m, "# Thalam") : body);
 }
 
 export function managedAgents(agentNames) {
   return {
     schemaVersion: 1,
-    agents: agentNames.map((name) => ({ id: name, mode: name === "skynex-orchestrator" ? "all" : "subagent", permissions: policy(name) })),
+    agents: agentNames.map((name) => ({ id: name, mode: name === "thalam" ? "all" : "subagent", permissions: policy(name) })),
   };
 }
 

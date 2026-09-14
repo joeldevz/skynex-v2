@@ -45,12 +45,6 @@
       "generatedSha256": "45ccb69d9a4a26b7fad39d5c17a65e5877758cb4545565f8458b25b11730dd09"
     },
     {
-      "target": "canonical/agents/skynex-orchestrator.md",
-      "source": "agents/skynex-orchestrator.md",
-      "sourceSha256": "eb46ce33b0cdc5713b1d42a5f89eec4bd4182e0dbd31acb42d8eba25f5be6170",
-      "generatedSha256": "a5f67a7bea4348d7c4d0bbec6c57e5b5d6aa325a0ebad818f9fbe9243a34c299"
-    },
-    {
       "target": "canonical/agents/task-classifier.md",
       "source": "agents/task-classifier.md",
       "sourceSha256": "7ebea01e1a5189f8e512b786a35ab8360c43783294d578e811af050c8d6f71af",
@@ -75,6 +69,12 @@
       "generatedSha256": "bf4b9e2cfe0bcc5b4f79083f69f5810a7493262d441fce59ea49dd5e0dcdafdb"
     },
     {
+      "target": "canonical/agents/thalam.md",
+      "source": "agents/skynex-orchestrator.md",
+      "sourceSha256": "eb46ce33b0cdc5713b1d42a5f89eec4bd4182e0dbd31acb42d8eba25f5be6170",
+      "generatedSha256": "fd40644aa58ef44083f152ace0da21a337531677034cb001e19a91fc56e0af6d"
+    },
+    {
       "target": "canonical/agents/verifier.md",
       "source": "agents/verifier.md",
       "sourceSha256": "f75381cf7aa64e7c1091b8c71fe17765bdd5e298564e285024f2ac8dcb6f4e2b",
@@ -84,7 +84,7 @@
       "target": "canonical/config/managed-agents.json",
       "source": "generated",
       "sourceSha256": null,
-      "generatedSha256": "5405a6de1bd3ef0404b2996ee43f260674b6c96c90debecb84adaf3b9b557c78"
+      "generatedSha256": "adda0323007f1eeadc8f413381c52e756d8740d6d6c942e2173e1c8157e95504"
     },
     {
       "target": "canonical/skills/_shared/advisor-protocol.md",
@@ -265,16 +265,16 @@
     {
       "target": "native/plugins/sky-agents/tui.tsx",
       "source": "native/plugins/sky-agents/tui.tsx",
-      "sourceSha256": "efa438470f9119d2df6d044a90240b0e8529e8ae49b72c60473250dcd0b520c4",
-      "generatedSha256": "efa438470f9119d2df6d044a90240b0e8529e8ae49b72c60473250dcd0b520c4",
+      "sourceSha256": "6d9bd3448709d4054ba4552a95e642836200fb3236804513806f4e7f4934edb6",
+      "generatedSha256": "6d9bd3448709d4054ba4552a95e642836200fb3236804513806f4e7f4934edb6",
       "transformation": "v2-adaptation",
       "sourceReferences": []
     },
     {
       "target": "native/plugins/sky-agents/rpc.ts",
       "source": "native/plugins/sky-agents/rpc.ts",
-      "sourceSha256": "9592bc0114016537047cbc94b2ae8e5d45353985988a4219b220d9c21c40e7fb",
-      "generatedSha256": "9592bc0114016537047cbc94b2ae8e5d45353985988a4219b220d9c21c40e7fb",
+      "sourceSha256": "d912e63d658d2395f550c96c4ecd43adaf8bbddaea7b87b36e0bc95c6fa49df0",
+      "generatedSha256": "d912e63d658d2395f550c96c4ecd43adaf8bbddaea7b87b36e0bc95c6fa49df0",
       "transformation": "v2-adaptation",
       "sourceReferences": []
     },
@@ -433,13 +433,13 @@
     {
       "target": "native/plugins/sky-agents/core/catalog.ts",
       "source": "packages/sky-agents/src/catalog.ts",
-      "sourceSha256": "5207018860e7fc19a230ebec2ac813f0e8989b2de98c5578ac81d70a7c22224d",
-      "generatedSha256": "5207018860e7fc19a230ebec2ac813f0e8989b2de98c5578ac81d70a7c22224d",
+      "sourceSha256": "8b0cdb0de262b1992284de13258e9a8eff5c6b5fd25b0d14bfcbcf6a4c0bf9c8",
+      "generatedSha256": "8b0cdb0de262b1992284de13258e9a8eff5c6b5fd25b0d14bfcbcf6a4c0bf9c8",
       "transformation": "v2-adaptation",
       "sourceReferences": [
         {
           "path": "packages/sky-agents/src/catalog.ts",
-          "sha256": "5207018860e7fc19a230ebec2ac813f0e8989b2de98c5578ac81d70a7c22224d"
+          "sha256": "8b0cdb0de262b1992284de13258e9a8eff5c6b5fd25b0d14bfcbcf6a4c0bf9c8"
         }
       ]
     },
@@ -459,26 +459,26 @@
     {
       "target": "native/plugins/sky-agents/core/profile-apply.ts",
       "source": "packages/sky-agents/src/profile-apply.ts",
-      "sourceSha256": "657e02222e9dffd120cde96768436066b31ac1f5773a2736d55e9612f430782e",
-      "generatedSha256": "7a9e6af145c1bf5895165ad7c4c1eaf37e7a1cb287e5098177daf5e0d4716ec9",
+      "sourceSha256": "c8ea1ced18c5eae16d5d7c69daf4c28f8f9e50f39048f62815c063c871b9d90c",
+      "generatedSha256": "790cba8e9f16c55c62dbfd05eacfc70da8dd0cf3037390d1e98a4f5e27b68cb8",
       "transformation": "v2-adaptation",
       "sourceReferences": [
         {
           "path": "packages/sky-agents/src/profile-apply.ts",
-          "sha256": "657e02222e9dffd120cde96768436066b31ac1f5773a2736d55e9612f430782e"
+          "sha256": "c8ea1ced18c5eae16d5d7c69daf4c28f8f9e50f39048f62815c063c871b9d90c"
         }
       ]
     },
     {
       "target": "native/plugins/sky-agents/core/profiles.ts",
       "source": "packages/sky-agents/src/profiles.ts",
-      "sourceSha256": "6cb99f0a9071a856a5177d54fae3d8faf72217448a4e0e2d1e5e509532a0258a",
-      "generatedSha256": "6cb99f0a9071a856a5177d54fae3d8faf72217448a4e0e2d1e5e509532a0258a",
+      "sourceSha256": "7916fafac31dd7a99267a2e186c3f0d12124564d231ebfab4b31174960076624",
+      "generatedSha256": "7916fafac31dd7a99267a2e186c3f0d12124564d231ebfab4b31174960076624",
       "transformation": "v2-adaptation",
       "sourceReferences": [
         {
           "path": "packages/sky-agents/src/profiles.ts",
-          "sha256": "6cb99f0a9071a856a5177d54fae3d8faf72217448a4e0e2d1e5e509532a0258a"
+          "sha256": "7916fafac31dd7a99267a2e186c3f0d12124564d231ebfab4b31174960076624"
         }
       ]
     },
@@ -498,13 +498,13 @@
     {
       "target": "native/plugins/sky-agents/core/rpc.ts",
       "source": "packages/sky-agents/src/rpc.ts",
-      "sourceSha256": "3463f45ba9160ae05b34c583670986ec00fe7c0d9f5458dd18ac20c639687789",
-      "generatedSha256": "3463f45ba9160ae05b34c583670986ec00fe7c0d9f5458dd18ac20c639687789",
+      "sourceSha256": "638e430b306ad5a431f988e5dcc577fa63466f31cf7179e3b6c68e543b8c654d",
+      "generatedSha256": "638e430b306ad5a431f988e5dcc577fa63466f31cf7179e3b6c68e543b8c654d",
       "transformation": "v2-adaptation",
       "sourceReferences": [
         {
           "path": "packages/sky-agents/src/rpc.ts",
-          "sha256": "3463f45ba9160ae05b34c583670986ec00fe7c0d9f5458dd18ac20c639687789"
+          "sha256": "638e430b306ad5a431f988e5dcc577fa63466f31cf7179e3b6c68e543b8c654d"
         }
       ]
     },
