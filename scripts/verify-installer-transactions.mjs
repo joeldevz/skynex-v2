@@ -27,6 +27,41 @@ export async function verify(test) {
   const leasePath = join(roots.stateRoot, ".installer.lock");
   let replacementLock;
 
+  await test("plugin-registration-published-after-files-and-removed-before-files", async () => {
+    const config = "opencode.jsonc";
+    const entry = "skynex/plugins/runtime/index.ts";
+    const helper = "skynex/plugins/runtime/prompt.ts";
+    const configBytes = '{"plugins":[{"package":"./skynex/plugins/runtime"}]}';
+    const operations = [operation(config, configBytes, null, "opencode-config"),
+      operation(entry, 'import "./prompt.ts";', null), operation(helper, "export {};", null)];
+    const seen = [];
+    await executeTransaction({ plan: plan("fixture-plugin-publish", operations) }, {
+      afterMutation: async (path) => {
+        seen.push(path);
+        if (await exists(target(config))) {
+          assert.equal(await readFile(target(entry), "utf8"), 'import "./prompt.ts";');
+          assert.equal(await readFile(target(helper), "utf8"), "export {};");
+        }
+      },
+    });
+    assert.deepEqual(seen, [entry, helper, config]);
+    // Even an adversarial plan order must unregister before deleting dependencies.
+    const removal = [
+      { ...operation(entry, "", 'import "./prompt.ts";'), kind: "remove" },
+      { ...operation(helper, "", "export {};"), kind: "remove" },
+      operation(config, '{"plugins":[]}', configBytes, "opencode-config"),
+    ];
+    const removed = [];
+    await executeTransaction({ plan: plan("fixture-plugin-unregister", removal) }, {
+      afterMutation: async (path) => {
+        removed.push(path);
+        assert.equal(await readFile(target(config), "utf8"), '{"plugins":[]}');
+      },
+    });
+    assert.deepEqual(removed, [config, entry, helper]);
+    await rm(target(config));
+  });
+
   await test("api-project-default-plan-is-scope-aware", async () => {
     const api = await fixture("api-project-default");
     const projectRoots = { ...api.roots, scope: "project" };

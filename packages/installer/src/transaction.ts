@@ -28,6 +28,7 @@ const ensureParent = async (path: string): Promise<void> => ensureDirectory(dirn
 interface TransactionDependencies {
   readonly readLock?: (path: string) => Promise<Buffer>;
   readonly beforeLockCommit?: () => Promise<void>;
+  readonly afterMutation?: (relativePath: string) => Promise<void>;
 }
 type PriorLock = { kind: "uncaptured" } | { kind: "absent" } | { kind: "present"; bytes: Buffer };
 
@@ -54,7 +55,15 @@ export async function executeTransaction(options: TransactionOptions, dependenci
   await ensureDirectory(backupsRoot);
   await assertSafeRoot(backupsRoot);
   const backupRoot = validateManagedPath(backupsRoot, plan.id);
-    const changed = plan.operations.filter((item) => item.kind !== "unchanged" && item.kind !== "preserve");
+  const changed = plan.operations.filter((item) => item.kind !== "unchanged" && item.kind !== "preserve");
+  // OpenCode watches its config and immediately loads registered plugins. Publish
+  // registrations only after their files exist; unregister before removing files.
+  const removesFiles = changed.some((item) => item.kind === "remove");
+  const isConfig = (item: InstallOperation): boolean => plan.target.id === "opencode-v2"
+    && item.artifact.resource.id === "opencode-config"
+    && ["opencode.json", "opencode.jsonc"].includes(item.relativePath);
+  const applyOrder = [...changed].sort((left, right) =>
+    (Number(isConfig(left)) - Number(isConfig(right))) * (removesFiles ? -1 : 1));
   const snapshots = new Map<string, Buffer | null>(); const applied: InstallOperation[] = [];
   let lease: Awaited<ReturnType<typeof open>> | undefined; let priorLockState: PriorLock = { kind: "uncaptured" }; let lockChanged = false; let ownsBackup = false;
   const restoredPaths: string[] = []; const unreconciledPaths: string[] = [];
@@ -89,10 +98,11 @@ export async function executeTransaction(options: TransactionOptions, dependenci
     if (oldLock !== null) await atomic(validateManagedPath(backupRoot, "lock.json"), oldLock, `${plan.id}-lock`);
     const resultingLock = options.removeLock ? null : options.lockBytes !== undefined ? hash(options.lockBytes) : oldLock === null ? null : hash(oldLock);
     await atomic(join(backupRoot, "manifest.json"), `${JSON.stringify({ schemaVersion: 1, transactionId: plan.id, createdAt: new Date().toISOString(), target: plan.target.id, scope: roots.scope, priorLock, resultingLockDigest: resultingLock, files })}\n`, plan.id);
-    for (const item of changed) {
+    for (const item of applyOrder) {
       const destination = await assertSafeMutationTarget(targetRoot, item.relativePath ?? item.artifact.relativePath);
       if (item.kind === "remove") { await rm(destination, { force: true }); applied.push(item); await syncDirectory(dirname(destination)); }
       else { await ensureParent(destination); await atomic(destination, item.artifact.content, plan.id, () => applied.push(item)); }
+      await dependencies.afterMutation?.(item.relativePath);
     }
     if (options.verify) await options.verify();
     for (const item of changed) if (item.kind !== "remove" && hash(await readFile(await assertSafeMutationTarget(targetRoot, item.relativePath ?? item.artifact.relativePath))) !== item.desiredDigest) throw new Error(`Verification failed: ${item.relativePath ?? item.artifact.relativePath}`);
