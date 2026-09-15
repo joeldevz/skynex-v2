@@ -10,3 +10,7 @@ src/**/*.d.ts.map
 .env.*
 !.env.example
 /.skynex/
+
+# Public npm distribution outputs
+packages/npm-cli/dist/
+packages/npm-cli/*.tgz

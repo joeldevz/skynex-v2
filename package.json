@@ -18,7 +18,10 @@
     "verify:real-resources": "node scripts/verify-real-resources.mjs",
     "verify:sky-agents": "node scripts/verify-sky-agents.mjs",
     "verify:opencode": "node scripts/verify-opencode2.mjs",
-    "pack:cli": "pnpm --filter @skynex-internal/cli pack --pack-destination /tmp/opencode/skynex-pack"
+    "pack:cli": "pnpm build:distribution && pnpm --filter @skynex-ai/cli pack --pack-destination /tmp/opencode/skynex-pack",
+    "build:distribution": "pnpm --filter @skynex-ai/cli build:distribution",
+    "verify:package": "node scripts/verify-npm-cli-package.mjs --static-and-install",
+    "verify:package:release": "node scripts/verify-npm-cli-package.mjs --release"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",
