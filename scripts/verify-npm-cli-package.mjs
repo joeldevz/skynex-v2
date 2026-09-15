@@ -74,10 +74,12 @@ async function readContract() {
   assert(stat?.isFile() && !stat.isSymbolicLink(),
     "missing public package contract: packages/npm-cli/package.json must be a regular file");
   const manifest = JSON.parse(await readFile(manifestPath, "utf8"));
+  assert.equal(typeof manifest.version, "string");
+  assert.match(manifest.version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/, "release version must be a stable semver");
   assert.deepEqual({ name: manifest.name, version: manifest.version, description: manifest.description,
     license: manifest.license, type: manifest.type, bin: manifest.bin, files: manifest.files,
     engines: manifest.engines, publishConfig: manifest.publishConfig }, {
-    name: "@skynex-ai/cli", version: "0.1.0",
+    name: "@skynex-ai/cli", version: manifest.version,
     description: "Install and manage Skynex resources for OpenCode 2", license: "Apache-2.0",
     type: "module", bin: { skynex: "dist/cli.js" },
     files: ["dist/cli.js", "dist/resources", "README.md", "LICENSE"], engines: { node: ">=24" },
@@ -234,7 +236,7 @@ async function packTwice(root, env, allowed, manifest) {
   assert.deepEqual(records[0].normalized, records[1].normalized, "normalized packs differ"); return records[0];
 }
 
-async function verifyInstall(tarball, root, env) {
+async function verifyInstall(tarball, root, env, manifest) {
   const prefix = join(root, "prefix"), project = join(root, "project"), state = join(root, "cli-state");
   await import("node:fs/promises").then(({ mkdir }) => Promise.all([prefix, project, state].map((p) => mkdir(p, { recursive: true }))));
   const install = await run("npm", ["install", "--global", "--prefix", prefix, "--cache", env.npm_config_cache,
@@ -242,8 +244,10 @@ async function verifyInstall(tarball, root, env) {
   const bin = join(prefix, "bin", "skynex"), binStat = await lstat(bin); assert(binStat.isSymbolicLink());
   const binTarget = await realpath(bin); assert(under(prefix, binTarget)); const targetStat = await lstat(binTarget); assert.equal(targetStat.mode & 0o777, 0o755); assert((await readFile(binTarget, "utf8")).startsWith("#!/usr/bin/env node\n"));
   const commandEnv = { ...env, PATH: `${join(prefix, "bin")}:${env.PATH}` };
-  for (const [commandArgs, match] of [["--version"], ["--help"]].map((x, i) => [x, i ? /install.*update.*uninstall.*doctor/is : /^0\.1\.0\s*$/])) {
-    const result = await run(bin, commandArgs, { cwd: project, env: commandEnv }); assert.equal(result.code, 0, result.stderr); assert.match(result.stdout, match);
+  for (const commandArgs of [["--version"], ["--help"]]) {
+    const result = await run(bin, commandArgs, { cwd: project, env: commandEnv }); assert.equal(result.code, 0, result.stderr);
+    if (commandArgs[0] === "--version") assert.equal(result.stdout.trim(), manifest.version);
+    else assert.match(result.stdout, /install.*update.*uninstall.*doctor/is);
   }
   const doctor = await run(bin, ["doctor", "--project", project, "--state-dir", state, "--json"], { cwd: project, env: commandEnv }); assert.equal(doctor.code, 0, doctor.stderr);
   assert(under(root, project) && under(root, state)); const doctorJson = JSON.parse(doctor.stdout.trim().split("\n").at(-1).replace(/^\x1b\[[0-9;?]*[A-Za-z]/, ""));
@@ -287,10 +291,10 @@ async function verifyPublishDryRun() {
   const tarballStat = await lstat(evidence.tarball); assert(tarballStat.isFile() && !tarballStat.isSymbolicLink()); const tarball = await realpath(evidence.tarball); assert(under(exportRoot, tarball));
   const bytes = await readFile(tarball); assert.equal(sha(bytes), evidence.tarSha256); const allowed = await resourceAllowlist(); const audited = verifyArchive(parseTar(bytes), allowed, await readContract()); assert.equal(audited.normalizedSha256, evidence.normalizedSha256); assert.deepEqual(audited.records, evidence.records);
   const root = await mkdtemp(join(tmpdir(), "skynex-publish-dry-run-")); try { const env = await isolatedEnv(root);
-    const localName = "skynex-ai-cli-0.1.0.tgz", localTarball = join(root, localName), localSpec = `./${localName}`;
+    const localName = `skynex-ai-cli-${manifest.version}.tgz`, localTarball = join(root, localName), localSpec = `./${localName}`;
     await copyFile(tarball, localTarball); assert.equal(sha(await readFile(localTarball)), evidence.tarSha256, "dry-run local tarball copy drifted");
     const argv = ["publish", localSpec, "--dry-run", "--json", "--registry=https://registry.npmjs.org/", "--access=public"];
-    assert.deepEqual(argv, ["publish", "./skynex-ai-cli-0.1.0.tgz", "--dry-run", "--json", "--registry=https://registry.npmjs.org/", "--access=public"]);
+    assert.deepEqual(argv, ["publish", `./skynex-ai-cli-${manifest.version}.tgz`, "--dry-run", "--json", "--registry=https://registry.npmjs.org/", "--access=public"]);
     assert(argv.includes("--dry-run"), "publish execution is forbidden without --dry-run");
     assert((await lstat(localTarball)).isFile(), "local publish tarball must exist at spawn");
     assert(!/^(?:git|github):|github\.com/i.test(localSpec), "git/GitHub publish spec forbidden");
@@ -298,9 +302,9 @@ async function verifyPublishDryRun() {
     const [versionCommand, versionArgs] = npmInvocation(["--version"]); const version = await run(versionCommand, versionArgs, { cwd: root, env }); assert.equal(version.code, 0, version.stderr); assert.match(version.stdout.trim(), /^11\./, "publish dry-run requires npm 11");
     const result = await run(npmCommand, npmArgs, { cwd: root, env }); assert.equal(result.code, 0, result.stderr);
     const parsedOutput = JSON.parse(result.stdout); const published = npmPackageOutput(parsedOutput, "@skynex-ai/cli");
-    assert.equal(published.name, "@skynex-ai/cli"); assert.equal(published.version, "0.1.0"); if (published.filename) assert.equal(basename(published.filename), basename(tarball));
+    assert.equal(published.name, "@skynex-ai/cli"); assert.equal(published.version, manifest.version); if (published.filename) assert.equal(basename(published.filename), basename(tarball));
     const [packCommand, packArgs] = npmInvocation(["pack", packageRoot, "--dry-run", "--ignore-scripts", "--json"]); const dryPack = await run(packCommand, packArgs, { cwd: root, env }); assert.equal(dryPack.code, 0, dryPack.stderr); const packJson = JSON.parse(dryPack.stdout); const listed = (Array.isArray(packJson) ? packJson[0] : packJson).files?.map((x) => `package/${x.path}`).sort(); assert.deepEqual(listed, audited.records.filter((x) => !x.includes("\0directory\0")).map((x) => x.split("\0")[0]).sort());
-  } finally { await rm(root, { recursive: true, force: true }); await rm(exportRoot, { recursive: true, force: true }); }
+  } finally { await rm(root, { recursive: true, force: true }); if (process.env.SKYNEX_PRESERVE_AUDIT !== "1") await rm(exportRoot, { recursive: true, force: true }); }
 }
 
 async function exportAudit(packed) {
@@ -318,7 +322,7 @@ if (mode === "--contract") { assert(manifest); const npmOutputFailures = verifyN
 else if (mode === "--publish-dry-run") await verifyPublishDryRun();
 else {
   const root = await mkdtemp(join(tmpdir(), "skynex-package-")); let evidencePath; try { const allowed = await resourceAllowlist(); await verifyBuild(allowed);
-    const env = await isolatedEnv(root); const packed = await packTwice(root, env, allowed, manifest); const installed = await verifyInstall(packed.path, root, env);
+    const env = await isolatedEnv(root); const packed = await packTwice(root, env, allowed, manifest); const installed = await verifyInstall(packed.path, root, env, manifest);
     if (mode === "--release") await verifyRuntime(installed, root);
     evidencePath = await exportAudit(packed);
   } finally { await rm(root, { recursive: true, force: true }); }
