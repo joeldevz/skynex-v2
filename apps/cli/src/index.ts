@@ -68,7 +68,7 @@ if (has("--help") || has("-h") || (!command && !has("--version") && !has("-v")))
   process.exit(0);
 }
 if (has("--version") || has("-v")) {
-  console.log("0.1.1");
+  console.log("0.1.2");
   process.exit(0);
 }
 if (command === "profile" && args[1] === "apply" && (!has("--global") || has("--project"))) throw new Error("Profile apply requires --global and does not accept --project")
