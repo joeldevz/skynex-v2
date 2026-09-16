@@ -1,8 +1,9 @@
 import { lstat, readFile, readdir } from "node:fs/promises";
 import type { Stats } from "node:fs";
-import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
+import { dirname, relative, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { validateManifest, type ReleaseManifest } from "./schema.js";
+import { assertWithinRoot } from "./containment.js";
 import type { LoadedResource } from "@skynex-internal/domain";
 export interface ResourceCatalog { readonly manifest: ReleaseManifest; readonly resources: readonly LoadedResource[]; }
 
@@ -11,10 +12,7 @@ type ExpectedPath = "directory" | "file";
 const checkPath = async (root: string, target: string, expected: ExpectedPath) => {
   const rootPath = resolve(root);
   const targetPath = resolve(target);
-  const relativeTarget = relative(rootPath, targetPath);
-  if (relativeTarget === ".." || relativeTarget.startsWith(`..${sep}`) || isAbsolute(relativeTarget)) {
-    throw new Error("Catalog path escapes root");
-  }
+  assertWithinRoot(rootPath, targetPath, "Catalog path escapes root");
 
   let current = targetPath;
   let finalInfo: Stats | undefined;
@@ -65,7 +63,7 @@ export async function loadCatalog(input: { readonly manifestPath: string }): Pro
   const resources: LoadedResource[] = [];
   for (const entry of manifest.resources) {
     const path = resolve(root, entry.sourcePath);
-    if (!path.startsWith(`${root}/`)) throw new Error("Resource escapes manifest root");
+    assertWithinRoot(root, path, "Resource escapes manifest root");
     await checkPath(root, path, "file");
     const content = await readFile(path, "utf8");
     resources.push({ ...entry, content, digest: createHash("sha256").update(content).digest("hex") });

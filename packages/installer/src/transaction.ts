@@ -3,13 +3,10 @@ import { createHash } from "node:crypto";
 import { dirname, join, resolve } from "node:path";
 import type { InstallOperation, InstallationPlan, TransactionResult } from "@skynex-internal/domain";
 import { assertSafeMutationTarget, assertSafeRoot, validateManagedPath } from "./path-policy.js";
+import { syncDirectory } from "./fs-sync.js";
 
 const hash = (value: Buffer | string): string => createHash("sha256").update(value).digest("hex");
 const present = async (path: string): Promise<boolean> => lstat(path).then(() => true).catch((error: NodeJS.ErrnoException) => { if (error.code === "ENOENT") return false; throw error; });
-const syncDirectory = async (path: string): Promise<void> => {
-  const directory = await open(path, "r");
-  try { await directory.sync(); } finally { await directory.close(); }
-};
 const atomic = async (path: string, value: Buffer | string, token: string, mutated?: () => void): Promise<void> => {
   const temporary = `${path}.skynex-${token}.tmp`;
   const file = await open(temporary, "wx", 0o600);

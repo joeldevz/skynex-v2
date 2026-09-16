@@ -1,9 +1,9 @@
 import { lstat } from "node:fs/promises";
-import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { dirname, isAbsolute, relative, resolve, sep } from "node:path";
 
 const contained = (root: string, candidate: string): boolean => {
   const rel = relative(resolve(root), resolve(candidate));
-  return rel !== "" && rel !== ".." && !rel.startsWith("../") && !isAbsolute(rel);
+  return rel !== "" && rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel);
 };
 
 /** Validate an untrusted catalog/lock path without ever normalising through a symlink. */

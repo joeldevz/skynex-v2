@@ -389,4 +389,13 @@ export async function verify(test) {
       if (plugins.includes("external gap")) assert(cleaned.includes("external gap") && cleaned.includes("tail"));
     }
   });
+  await test("directory-sync-windows-platform-noop", async () => {
+    // Dynamic namespace access keeps RED proof on missing behavior (undefined ->
+    // TypeError) rather than a static-import SyntaxError when the export is absent.
+    const { syncDirectory } = await import("../packages/installer/dist/index.js");
+    const missingPath = target("missing-dir");
+    assert.equal(await exists(missingPath), false);
+    await syncDirectory("/definitely/missing/skynex-dir", "win32");
+    await assert.rejects(() => syncDirectory(missingPath, "linux"), (error) => error.code === "ENOENT");
+  });
 }

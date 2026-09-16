@@ -1,5 +1,5 @@
 import { cp, mkdir, writeFile, rm, symlink } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, posix, resolve, win32 } from "node:path";
 import { loadCatalog, validateManifest } from "../packages/catalog/dist/index.js";
 import { createInstallPlan, applyInstallPlan, createUninstallPlan, applyUninstallPlan, resolveInstallCollisions } from "../packages/installer/dist/index.js";
 import { openCodeTarget } from "../targets/opencode/dist/index.js";
@@ -355,5 +355,25 @@ export async function verify(test) {
     await rm(join(f.catalog, "canonical/agents"), { recursive: true });
     await writeFile(join(f.catalog, "canonical/agents"), "not-dir");
     await fail(() => loadCatalog(f), "Undeclared catalog files");
+  });
+  await test("catalog-containment-platform-path-semantics", async () => {
+    // Dynamic namespace access keeps RED proof on missing behavior (undefined ->
+    // TypeError) rather than a static-import SyntaxError when the export is absent.
+    const { isWithinRoot } = await import("../packages/catalog/dist/index.js");
+    const cases = [
+      [win32, "win32", "C:\\Users\\vmarr\\AppData\\Local\\Temp\\resources", "C:\\Users\\vmarr\\AppData\\Local\\Temp\\resources\\canonical\\agents\\thalam.md", true],
+      [win32, "win32", "C:\\pkg\\", "C:\\pkg\\x.md", true],
+      [win32, "win32", "C:\\pkg", "c:\\PKG\\canonical\\x.md", true],
+      [win32, "win32", "C:\\pkg", "C:\\other\\x.md", false],
+      [win32, "win32", "C:\\pkg", "C:\\pkg\\..\\other\\x.md", false],
+      [win32, "win32", "C:\\pkg", "D:\\x.md", false],
+      [posix, "posix", "/a/b", "/a/b/c.md", true],
+      [posix, "posix", "/a/b", "/a/b/../c.md", false],
+      [posix, "posix", "/a/b", "/a/c.md", false],
+      [posix, "posix", "/a/b", "/a/b", true],
+    ];
+    for (const [pathApi, label, root, target, expected] of cases) {
+      assert.equal(isWithinRoot(root, target, pathApi), expected, `${label} containment ${root} -> ${target}`);
+    }
   });
 }

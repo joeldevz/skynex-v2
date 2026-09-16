@@ -1,0 +1,8 @@
+import { open } from "node:fs/promises";
+
+/** Windows cannot fsync a directory handle; the per-file fsync remains authoritative there. */
+export const syncDirectory = async (path: string, platform: NodeJS.Platform = process.platform): Promise<void> => {
+  if (platform === "win32") return;
+  const directory = await open(path, "r");
+  try { await directory.sync(); } finally { await directory.close(); }
+};

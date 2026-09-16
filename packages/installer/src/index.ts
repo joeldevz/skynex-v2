@@ -7,6 +7,7 @@ import { assertSafeMutationTarget, assertSafeRoot } from "./path-policy.js";
 import { executeTransaction } from "./transaction.js";
 import { readInstallLockSnapshot } from "./state-store.js";
 export { validateManagedPath, assertSafeMutationTarget, assertSafeRoot } from "./path-policy.js";
+export { syncDirectory } from "./fs-sync.js";
 export { digest } from "./digest.js";
 export { readInstallLock, readInstallLockSnapshot } from "./state-store.js";
 export { compareResource } from "./planner.js";
