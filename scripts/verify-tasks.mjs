@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, readdir, readlink, lstat, rm, stat, symlink, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { link, mkdir, mkdtemp, readFile, readdir, readlink, lstat, rm, stat, symlink, writeFile } from "node:fs/promises";
+import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   MAX_INSTRUCTION_BYTES,
@@ -72,6 +72,31 @@ async function exists(path) {
     if (error.code === "ENOENT") return false;
     throw error;
   }
+}
+
+async function treeContains(root, marker) {
+  async function walk(directory) {
+    let names;
+    try {
+      names = await readdir(directory, { withFileTypes: true });
+    } catch (error) {
+      if (error.code === "ENOENT") return false;
+      throw error;
+    }
+    for (const entry of names) {
+      const full = join(directory, entry.name);
+      if (entry.isDirectory()) {
+        if (await walk(full)) return true;
+      } else if (entry.isFile()) {
+        const info = await lstat(full);
+        if (info.size <= 1024 * 1024 && (await readFile(full, "utf8")).includes(marker)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  return walk(root);
 }
 
 async function snapshotTree(root) {
@@ -795,6 +820,297 @@ await test("add-step-avoids-duplicate-id", async () => {
     const ids = parseJson(status).steps.map((step) => step.id);
     assert.equal(new Set(ids).size, ids.length);
     assert.equal(ids.includes(newId), true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("instruction-file-escape-rejected", async () => {
+  const root = await freshRoot();
+  const outside = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Escape Task", "--tasks-root", root, "--json"]).status, 0);
+    const secret = join(outside, "secret.md");
+    await writeFile(secret, "ESCAPE-SECRET-MARKER\n");
+    const escapePath = relative(root, secret);
+    assert.equal(escapePath.startsWith(".."), true, escapePath);
+    const taskPath = join(root, "escape-task", "task.json");
+    const before = await readFile(taskPath);
+    const result = runCli([
+      "next", "add", "Escape title", "--scope", "S", "--done-when", "D", "--evidence", "E",
+      "--instruction-file", escapePath, "--task", "escape-task", "--tasks-root", root, "--json",
+    ], { cwd: root });
+    assert.equal(result.status, 5, result.stderr);
+    assert.equal(parseJson(result).code, "INVALID_PATH");
+    assert.deepEqual(await readFile(taskPath), before);
+    assert.equal(await exists(join(root, "escape-task", "instructions", "step-001.md")), false);
+    assert.equal(result.stdout.includes("ESCAPE-SECRET-MARKER"), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
+  }
+});
+
+await test("instruction-file-absolute-outside-rejected", async () => {
+  const root = await freshRoot();
+  const outside = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Absolute Task", "--tasks-root", root, "--json"]).status, 0);
+    const secret = join(outside, "secret.md");
+    await writeFile(secret, "ABSOLUTE-SECRET-MARKER\n");
+    const taskPath = join(root, "absolute-task", "task.json");
+    const before = await readFile(taskPath);
+    const result = runCli([
+      "next", "add", "Absolute title", "--scope", "S", "--done-when", "D", "--evidence", "E",
+      "--instruction-file", secret, "--task", "absolute-task", "--tasks-root", root, "--json",
+    ], { cwd: root });
+    assert.equal(result.status, 5, result.stderr);
+    assert.equal(parseJson(result).code, "INVALID_PATH");
+    assert.deepEqual(await readFile(taskPath), before);
+    assert.equal(await exists(join(root, "absolute-task", "instructions", "step-001.md")), false);
+    assert.equal(result.stdout.includes("ABSOLUTE-SECRET-MARKER"), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
+  }
+});
+
+await test("instruction-file-symlink-rejected", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Symlink Task", "--tasks-root", root, "--json"]).status, 0);
+    await writeFile(join(root, "notas.md"), "SYMLINK-BODY-MARKER\n");
+    await symlink("notas.md", join(root, "enlace.md"));
+    const taskPath = join(root, "symlink-task", "task.json");
+    const before = await readFile(taskPath);
+    const result = runCli([
+      "next", "add", "Symlink title", "--scope", "S", "--done-when", "D", "--evidence", "E",
+      "--instruction-file", "enlace.md", "--task", "symlink-task", "--tasks-root", root, "--json",
+    ], { cwd: root });
+    assert.equal(result.status, 5, result.stderr);
+    assert.equal(parseJson(result).code, "INVALID_PATH");
+    assert.deepEqual(await readFile(taskPath), before);
+    assert.equal(await exists(join(root, "symlink-task", "instructions", "step-001.md")), false);
+    assert.equal(result.stdout.includes("SYMLINK-BODY-MARKER"), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("instruction-file-sensitive-rejected", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Sensitive Task", "--tasks-root", root, "--json"]).status, 0);
+    await writeFile(join(root, ".env"), "SENSITIVE-ENV-MARKER\n");
+    await writeFile(join(root, "private.pem"), "SENSITIVE-PEM-MARKER\n");
+    const added = runCli([
+      "next", "add", "Safe title", "--scope", "S", "--done-when", "D", "--evidence", "E",
+      "--instruction", "SAFE-BODY-MARKER", "--task", "sensitive-task", "--tasks-root", root, "--json",
+    ], { cwd: root });
+    assert.equal(added.status, 0, added.stderr);
+    const taskPath = join(root, "sensitive-task", "task.json");
+    const before = await readFile(taskPath);
+    for (const candidate of [".env", "private.pem"]) {
+      const result = runCli([
+        "next", "add", "Sensitive title", "--scope", "S", "--done-when", "D", "--evidence", "E",
+        "--instruction-file", candidate, "--task", "sensitive-task", "--tasks-root", root, "--json",
+      ], { cwd: root });
+      assert.equal(result.status, 5, result.stderr);
+      const json = parseJson(result);
+      assert.equal(json.code, "INVALID_PATH");
+      assert.match(json.message, /sensitive/i);
+      assert.equal(result.stdout.includes("SENSITIVE-"), false);
+    }
+    assert.deepEqual(await readFile(taskPath), before);
+    assert.equal((await readFile(taskPath, "utf8")).includes("SENSITIVE-"), false);
+    assert.equal(await exists(join(root, "sensitive-task", "instructions", "step-002.md")), false);
+    const show = runCli(
+      ["next", "show", "step-001", "--task", "sensitive-task", "--tasks-root", root, "--json"],
+      { cwd: root },
+    );
+    assert.equal(show.status, 0, show.stderr);
+    const shown = parseJson(show);
+    assert.equal(shown.instruction.includes("SAFE-BODY-MARKER"), true);
+    assert.equal(shown.instruction.includes("SENSITIVE-ENV-MARKER"), false);
+    assert.equal(shown.instruction.includes("SENSITIVE-PEM-MARKER"), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("instruction-file-oversize-rejected", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Oversize Task", "--tasks-root", root, "--json"]).status, 0);
+    await writeFile(join(root, "grande.md"), "x".repeat(MAX_INSTRUCTION_BYTES + 1));
+    const taskPath = join(root, "oversize-task", "task.json");
+    const before = await readFile(taskPath);
+    const result = runCli([
+      "next", "add", "Oversize title", "--scope", "S", "--done-when", "D", "--evidence", "E",
+      "--instruction-file", "grande.md", "--task", "oversize-task", "--tasks-root", root, "--json",
+    ], { cwd: root });
+    assert.equal(result.status, 5, result.stderr);
+    assert.equal(parseJson(result).code, "FILE_TOO_LARGE");
+    assert.deepEqual(await readFile(taskPath), before);
+    assert.equal(await exists(join(root, "oversize-task", "instructions", "step-001.md")), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("instruction-file-legitimate-still-works", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Legit Task", "--tasks-root", root, "--json"]).status, 0);
+    const body = "LEGIT-BODY-MARKER\n";
+    await writeFile(join(root, "notas.md"), body);
+    const added = runCli([
+      "next", "add", "Legit title", "--scope", "S", "--done-when", "D", "--evidence", "E",
+      "--instruction-file", "./notas.md", "--task", "legit-task", "--tasks-root", root, "--json",
+    ], { cwd: root });
+    assert.equal(added.status, 0, added.stderr);
+    assert.equal(parseJson(added).stepId, "step-001");
+    const stored = await readFile(join(root, "legit-task", "instructions", "step-001.md"), "utf8");
+    assert.equal(stored.includes(body), true);
+    const show = runCli(
+      ["next", "show", "step-001", "--task", "legit-task", "--tasks-root", root, "--json"],
+      { cwd: root },
+    );
+    assert.equal(show.status, 0, show.stderr);
+    assert.equal(parseJson(show).instruction.includes(body), true);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("instruction-file-ancestor-symlink-outside-rejected", async () => {
+  const root = await freshRoot();
+  const outside = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Ancestor Escape", "--tasks-root", root, "--json"]).status, 0);
+    const marker = "ANCESTOR-ESCAPE-MARKER";
+    await writeFile(join(outside, "x.md"), `${marker}\n`);
+    await symlink(outside, join(root, "link"));
+    const taskPath = join(root, "ancestor-escape", "task.json");
+    const before = await readFile(taskPath);
+    const result = runCli([
+      "next", "add", "Ancestor title", "--scope", "S", "--done-when", "D", "--evidence", "E",
+      "--instruction-file", "link/x.md", "--task", "ancestor-escape", "--tasks-root", root, "--json",
+    ], { cwd: root });
+    assert.equal(result.status, 5, result.stderr);
+    assert.equal(parseJson(result).code, "INVALID_PATH");
+    assert.deepEqual(await readFile(taskPath), before);
+    assert.equal(await exists(join(root, "ancestor-escape", "instructions", "step-001.md")), false);
+    assert.equal(result.stdout.includes(marker), false);
+    assert.equal(await treeContains(join(root, "ancestor-escape"), marker), false);
+    const show = runCli(
+      ["next", "show", "--task", "ancestor-escape", "--tasks-root", root, "--json"],
+      { cwd: root },
+    );
+    assert.equal(show.stdout.includes(marker), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(outside, { recursive: true, force: true });
+  }
+});
+
+await test("instruction-file-ancestor-symlink-to-ssh-rejected", async () => {
+  const root = await freshRoot();
+  const fakeHome = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Ancestor Ssh", "--tasks-root", root, "--json"]).status, 0);
+    const sshDir = join(fakeHome, ".ssh");
+    await mkdir(sshDir, { recursive: true });
+    const marker = "SSH-PRIVATE-KEY-MARKER";
+    await writeFile(join(sshDir, "id_rsa"), `${marker}\n`);
+    await mkdir(join(root, "work"), { recursive: true });
+    await symlink(sshDir, join(root, "work", "keys"));
+    const taskPath = join(root, "ancestor-ssh", "task.json");
+    const before = await readFile(taskPath);
+    const result = runCli([
+      "next", "add", "Ssh title", "--scope", "S", "--done-when", "D", "--evidence", "E",
+      "--instruction-file", "work/keys/id_rsa", "--task", "ancestor-ssh", "--tasks-root", root, "--json",
+    ], { cwd: root });
+    assert.equal(result.status, 5, result.stderr);
+    assert.equal(parseJson(result).code, "INVALID_PATH");
+    assert.deepEqual(await readFile(taskPath), before);
+    assert.equal(await exists(join(root, "ancestor-ssh", "instructions", "step-001.md")), false);
+    assert.equal(result.stdout.includes(marker), false);
+    assert.equal(await treeContains(join(root, "ancestor-ssh"), marker), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+    await rm(fakeHome, { recursive: true, force: true });
+  }
+});
+
+await test("instruction-file-hardlink-to-sensitive-rejected", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Hardlink Task", "--tasks-root", root, "--json"]).status, 0);
+    const marker = "HARDLINK-ENV-MARKER";
+    await writeFile(join(root, ".env"), `${marker}\n`);
+    await link(join(root, ".env"), join(root, "notas.md"));
+    const taskPath = join(root, "hardlink-task", "task.json");
+    const before = await readFile(taskPath);
+    const result = runCli([
+      "next", "add", "Hardlink title", "--scope", "S", "--done-when", "D", "--evidence", "E",
+      "--instruction-file", "notas.md", "--task", "hardlink-task", "--tasks-root", root, "--json",
+    ], { cwd: root });
+    assert.equal(result.status, 5, result.stderr);
+    const json = parseJson(result);
+    assert.equal(json.code, "INVALID_PATH");
+    assert.match(json.message, /hard link/i);
+    assert.deepEqual(await readFile(taskPath), before);
+    assert.equal(await exists(join(root, "hardlink-task", "instructions", "step-001.md")), false);
+    assert.equal(await treeContains(join(root, "hardlink-task"), marker), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("instruction-file-uppercase-sensitive-rejected", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Upper Task", "--tasks-root", root, "--json"]).status, 0);
+    await writeFile(join(root, ".ENV"), "UPPER-ENV-MARKER\n");
+    await writeFile(join(root, "Credentials.json"), "UPPER-CREDS-MARKER\n");
+    const taskPath = join(root, "upper-task", "task.json");
+    const before = await readFile(taskPath);
+    for (const candidate of [".ENV", "Credentials.json"]) {
+      const result = runCli([
+        "next", "add", "Upper title", "--scope", "S", "--done-when", "D", "--evidence", "E",
+        "--instruction-file", candidate, "--task", "upper-task", "--tasks-root", root, "--json",
+      ], { cwd: root });
+      assert.equal(result.status, 5, result.stderr);
+      const json = parseJson(result);
+      assert.equal(json.code, "INVALID_PATH");
+      assert.match(json.message, /sensitive/i);
+    }
+    assert.deepEqual(await readFile(taskPath), before);
+    assert.equal(await exists(join(root, "upper-task", "instructions", "step-001.md")), false);
+    assert.equal(await treeContains(join(root, "upper-task"), "UPPER-ENV-MARKER"), false);
+    assert.equal(await treeContains(join(root, "upper-task"), "UPPER-CREDS-MARKER"), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("instruction-file-nested-legitimate-still-works", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Nested Task", "--tasks-root", root, "--json"]).status, 0);
+    const body = "NESTED-LEGIT-MARKER\n";
+    await mkdir(join(root, "sub", "dir"), { recursive: true });
+    await writeFile(join(root, "sub", "dir", "notas.md"), body);
+    const added = runCli([
+      "next", "add", "Nested title", "--scope", "S", "--done-when", "D", "--evidence", "E",
+      "--instruction-file", "sub/dir/notas.md", "--task", "nested-task", "--tasks-root", root, "--json",
+    ], { cwd: root });
+    assert.equal(added.status, 0, added.stderr);
+    assert.equal(parseJson(added).stepId, "step-001");
+    const stored = await readFile(join(root, "nested-task", "instructions", "step-001.md"), "utf8");
+    assert.equal(stored.includes(body), true);
+    assert.equal(await treeContains(join(root, "nested-task"), body), true);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

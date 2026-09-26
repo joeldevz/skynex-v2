@@ -72,7 +72,7 @@
       "target": "canonical/agents/thalam.md",
       "source": "agents/skynex-orchestrator.md",
       "sourceSha256": "eb46ce33b0cdc5713b1d42a5f89eec4bd4182e0dbd31acb42d8eba25f5be6170",
-      "generatedSha256": "198a719de0a49bc11057acee409e2442d8b1f0a4624176fb883a22de5ecacddd"
+      "generatedSha256": "ddfb8c5403ed8cff4f59f41962f2845c12d829769123afb76eec78b100c875c5"
     },
     {
       "target": "canonical/agents/verifier.md",

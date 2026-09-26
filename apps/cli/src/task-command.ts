@@ -1,6 +1,15 @@
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
-import { TaskError, asTaskError, createTaskService, isTaskError } from "@skynex-internal/tasks";
+import { constants } from "node:fs";
+import type { Stats } from "node:fs";
+import { lstat, open, realpath } from "node:fs/promises";
+import type { FileHandle } from "node:fs/promises";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import {
+  MAX_INSTRUCTION_BYTES,
+  TaskError,
+  asTaskError,
+  createTaskService,
+  isTaskError,
+} from "@skynex-internal/tasks";
 import type { StepDraft, StepStatus, TaskErrorCode, TaskListEntry } from "@skynex-internal/tasks";
 import { createFileTaskStore, resolveTasksRoot, systemClock, uuidIds } from "@skynex-internal/tasks-node";
 
@@ -227,13 +236,197 @@ function humanListLine(entry: TaskListEntry): string {
   return entry.note === undefined ? `${entry.id}  ${entry.format}` : `${entry.id}  ${entry.format}  ${entry.note}`;
 }
 
-async function readInstructionBody(cwd: string, filePath: string): Promise<string> {
+function errnoOf(error: unknown): string | undefined {
+  return (error as NodeJS.ErrnoException).code;
+}
+
+function isSensitiveInstructionPath(relativePath: string): boolean {
+  const segments = relativePath.split(sep).filter((segment) => segment.length > 0);
+  const lowerSegments = segments.map((segment) => segment.toLowerCase());
+  if (lowerSegments.some((segment) => segment === ".aws" || segment === ".ssh")) {
+    return true;
+  }
+  // Case-insensitive match so `.ENV`, `.SSH` and `Credentials.json` are also
+  // refused on case-insensitive filesystems.
+  const name = basename(relativePath).toLowerCase();
+  if (name === ".env" || name.startsWith(".env.")) return true;
+  if (name === ".npmrc" || name === ".netrc") return true;
+  if (name.endsWith(".pem") || name.endsWith(".key")) return true;
+  if (name === "credentials.json") return true;
+  if (name.endsWith(".json") && name.includes("service-account")) return true;
+  return false;
+}
+
+/**
+ * Resolve an `--instruction-file` path strictly inside `cwd`. Relative escapes
+ * (`..`), absolute paths outside `cwd` and empty paths are rejected.
+ *
+ * This is the purely lexical half of the check; `assertInstructionContainment`
+ * adds the real-filesystem (symlink-aware) half before any file is opened.
+ */
+function resolveInstructionPath(
+  cwd: string,
+  filePath: string,
+): { readonly absolute: string; readonly relativePath: string } {
+  if (filePath.length === 0) {
+    throw new TaskError("INVALID_PATH", "Empty --instruction-file path");
+  }
+  const base = resolve(cwd);
+  const absolute = resolve(base, filePath);
+  const relativePath = relative(base, absolute);
+  if (
+    relativePath === "" ||
+    relativePath === ".." ||
+    relativePath.startsWith(`..${sep}`) ||
+    isAbsolute(relativePath)
+  ) {
+    throw new TaskError("INVALID_PATH", `--instruction-file escapes the working directory: ${filePath}`);
+  }
+  return { absolute, relativePath };
+}
+
+/**
+ * Real, symlink-aware containment check for `--instruction-file`.
+ *
+ * The lexical check in `resolveInstructionPath` cannot see symlinks, and
+ * `lstat`/`O_NOFOLLOW` only guard the final component. A symlink in any
+ * intermediate directory inside `cwd` would otherwise escape. This function:
+ *
+ *  - resolves the real path of `cwd` and of the target's parent directory and
+ *    requires the parent to live inside `cwd` (or be `cwd` itself);
+ *  - rejects a missing parent directory with `INVALID_PATH`;
+ *  - walks every intermediate component from the real `cwd` down to the parent
+ *    with `lstat` and rejects any symlink.
+ */
+async function assertInstructionContainment(
+  cwd: string,
+  absolute: string,
+  relativePath: string,
+  filePath: string,
+): Promise<void> {
+  let cwdReal: string;
   try {
-    return await readFile(resolve(cwd, filePath), "utf8");
+    cwdReal = await realpath(cwd);
   } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
+    const code = errnoOf(error);
     const message = error instanceof Error ? error.message : String(error);
     throw new TaskError("INVALID_ARGUMENT", `Unable to read --instruction-file ${filePath}: ${code ?? message}`);
+  }
+  let parentReal: string;
+  try {
+    parentReal = await realpath(dirname(absolute));
+  } catch (error) {
+    const code = errnoOf(error);
+    if (code === "ENOENT") {
+      throw new TaskError("INVALID_PATH", `--instruction-file parent directory does not exist: ${filePath}`);
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    throw new TaskError(
+      "INVALID_PATH",
+      `--instruction-file parent directory is not a usable directory: ${filePath} (${code ?? message})`,
+    );
+  }
+  if (parentReal !== cwdReal && !parentReal.startsWith(`${cwdReal}${sep}`)) {
+    throw new TaskError(
+      "INVALID_PATH",
+      `--instruction-file escapes the working directory via a symlinked ancestor: ${filePath}`,
+    );
+  }
+  const parentRelative = dirname(relativePath);
+  if (parentRelative === "." || parentRelative === "") {
+    return;
+  }
+  const components = parentRelative.split(sep).filter((segment) => segment.length > 0 && segment !== ".");
+  let current = cwdReal;
+  for (const component of components) {
+    current = join(current, component);
+    let info: Stats;
+    try {
+      info = await lstat(current);
+    } catch (error) {
+      const code = errnoOf(error);
+      throw new TaskError(
+        "INVALID_PATH",
+        `--instruction-file path component is not accessible: ${filePath} (${code ?? "unknown"})`,
+      );
+    }
+    if (info.isSymbolicLink()) {
+      throw new TaskError("INVALID_PATH", `Refusing to follow symlink in path component: ${filePath}`);
+    }
+  }
+}
+
+/**
+ * Read an instruction body from a contained regular file. Rejects symlinks (in
+ * the final component and in any ancestor), non-regular files and hardlinked
+ * files (whose origin cannot be verified), refuses known sensitive paths, and
+ * enforces the size limit before reading the whole file.
+ */
+async function readInstructionBody(cwd: string, filePath: string): Promise<string> {
+  const { absolute, relativePath } = resolveInstructionPath(cwd, filePath);
+  if (isSensitiveInstructionPath(relativePath)) {
+    throw new TaskError("INVALID_PATH", `Refusing to read sensitive path: ${filePath}`);
+  }
+  await assertInstructionContainment(cwd, absolute, relativePath, filePath);
+  let initial: Stats;
+  try {
+    initial = await lstat(absolute);
+  } catch (error) {
+    const code = errnoOf(error);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new TaskError("INVALID_ARGUMENT", `Unable to read --instruction-file ${filePath}: ${code ?? message}`);
+  }
+  if (initial.isSymbolicLink()) {
+    throw new TaskError("INVALID_PATH", `Refusing to follow symlink: ${filePath}`);
+  }
+  if (!initial.isFile()) {
+    throw new TaskError("INVALID_PATH", `Not a regular file: ${filePath}`);
+  }
+  if (initial.nlink > 1) {
+    throw new TaskError(
+      "INVALID_PATH",
+      `Refusing to read --instruction-file ${filePath}: file has ${initial.nlink} hard links, so its origin cannot be verified`,
+    );
+  }
+  let handle: FileHandle;
+  try {
+    handle = await open(absolute, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+  } catch (error) {
+    const code = errnoOf(error);
+    if (code === "ELOOP") {
+      throw new TaskError("INVALID_PATH", `Refusing to follow symlink: ${filePath}`);
+    }
+    const message = error instanceof Error ? error.message : String(error);
+    throw new TaskError("INVALID_ARGUMENT", `Unable to read --instruction-file ${filePath}: ${code ?? message}`);
+  }
+  try {
+    const info = await handle.stat();
+    if (!info.isFile()) {
+      throw new TaskError("INVALID_PATH", `Not a regular file: ${filePath}`);
+    }
+    if (info.nlink > 1) {
+      throw new TaskError(
+        "INVALID_PATH",
+        `Refusing to read --instruction-file ${filePath}: file has ${info.nlink} hard links, so its origin cannot be verified`,
+      );
+    }
+    if (info.size > MAX_INSTRUCTION_BYTES) {
+      throw new TaskError("FILE_TOO_LARGE", `Instruction file exceeds ${MAX_INSTRUCTION_BYTES} bytes: ${filePath}`);
+    }
+    const data = await handle.readFile();
+    if (data.byteLength > MAX_INSTRUCTION_BYTES) {
+      throw new TaskError("FILE_TOO_LARGE", `Instruction file exceeds ${MAX_INSTRUCTION_BYTES} bytes: ${filePath}`);
+    }
+    return data.toString("utf8");
+  } catch (error) {
+    if (isTaskError(error)) {
+      throw error;
+    }
+    const code = errnoOf(error);
+    const message = error instanceof Error ? error.message : String(error);
+    throw new TaskError("INVALID_ARGUMENT", `Unable to read --instruction-file ${filePath}: ${code ?? message}`);
+  } finally {
+    await handle.close();
   }
 }
 
