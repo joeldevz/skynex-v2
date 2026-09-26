@@ -10,6 +10,8 @@
     { "path": "../../packages/domain" },
     { "path": "../../packages/installer" },
     { "path": "../../packages/sky-agents" },
+    { "path": "../../packages/tasks" },
+    { "path": "../../packages/tasks-node" },
     { "path": "../../targets/opencode" }
   ]
 }

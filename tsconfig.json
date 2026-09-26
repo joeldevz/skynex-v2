@@ -9,6 +9,8 @@
     { "path": "packages/presentation" },
     { "path": "packages/testing" },
     { "path": "packages/sky-agents" },
+    { "path": "packages/tasks" },
+    { "path": "packages/tasks-node" },
     { "path": "targets/opencode" },
     { "path": "apps/cli" }
   ]

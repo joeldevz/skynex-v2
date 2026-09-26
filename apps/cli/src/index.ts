@@ -7,6 +7,7 @@ import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { getManagedAgents, openCodeTarget, removeManagedPlugin } from "@skynex-internal/target-opencode";
 import { createProfileApplyService, createProfileStore, resolveGlobalSkynexRoots, type ProfileApplyRoots } from "@skynex-internal/sky-agents";
+import { runTaskCommand } from "./task-command.js";
 
 const args = process.argv.slice(2).filter((argument) => argument !== "--");
 const command = args[0]?.startsWith("-") ? undefined : args[0];
@@ -22,15 +23,17 @@ const scopeComponents = (scope: InstallScope): readonly InstallComponent[] => sc
   : ["configuration", "agents", "skills", "plugins"];
 const knownFlags = new Set(["--", "--global", "--project", "--state-dir", "--config", "--name", "--components", "--dry-run", "--yes", "--allow-executable-plugins", "--help", "-h", "--version", "-v", "--json"]);
 const valueFlags = new Set(["--project", "--state-dir", "--config", "--name", "--components"]);
-for (let index = positionalOffset; index < args.length; index += 1) {
-  const argument = args[index]!;
-  if (argument.startsWith("-") && !knownFlags.has(argument)) throw new Error(`Unknown flag: ${argument}`);
-  if (!valueFlags.has(argument)) continue;
-  const value = args[index + 1];
-  if (!value || value.startsWith("-")) throw new Error(`Missing value for ${argument}`);
-  index += 1;
+if (command !== "task") {
+  for (let index = positionalOffset; index < args.length; index += 1) {
+    const argument = args[index]!;
+    if (argument.startsWith("-") && !knownFlags.has(argument)) throw new Error(`Unknown flag: ${argument}`);
+    if (!valueFlags.has(argument)) continue;
+    const value = args[index + 1];
+    if (!value || value.startsWith("-")) throw new Error(`Missing value for ${argument}`);
+    index += 1;
+  }
+  if (has("--global") && args.includes("--project")) throw new Error("--global and --project are mutually exclusive");
 }
-if (has("--global") && args.includes("--project")) throw new Error("--global and --project are mutually exclusive");
 
 const help = `Skynex v2
 
@@ -41,6 +44,9 @@ Usage:
   skynex backup list|restore <transaction-id>
   skynex profile apply --name <profile> --global [--config json|jsonc]
   skynex doctor  [--global | --project <dir>] [--json]
+  skynex task init <title> | list | status | next show [<stepId>] | next done <stepId> [--task <id>] [--tasks-root <dir>] [--json]
+  skynex task next add <title> --scope <t> --done-when <t> --evidence <t> [--task <id>] [--tasks-root <dir>] [--json]
+  skynex task --help
 
 Options:
   --global         Install into ~/.config/opencode (required for profile apply)
@@ -63,11 +69,11 @@ const roots = (projectOverride?: string): InstallRoots => {
   return { scope, targetRoot, stateRoot };
 };
 
-if (has("--help") || has("-h") || (!command && !has("--version") && !has("-v"))) {
+if (command !== "task" && (has("--help") || has("-h") || (!command && !has("--version") && !has("-v")))) {
   console.log(help);
   process.exit(0);
 }
-if (has("--version") || has("-v")) {
+if (command !== "task" && (has("--version") || has("-v"))) {
   console.log("0.1.2");
   process.exit(0);
 }
@@ -363,7 +369,11 @@ const needsConfig = command === "install" || command === "update" || command ===
   }
 };
 
-run().catch((error: unknown) => {
-  p.log.error(error instanceof Error ? error.message : String(error));
-  process.exitCode = 1;
-});
+if (command === "task") {
+  process.exitCode = await runTaskCommand(args.slice(1), { cwd: process.cwd() });
+} else {
+  run().catch((error: unknown) => {
+    p.log.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });
+}

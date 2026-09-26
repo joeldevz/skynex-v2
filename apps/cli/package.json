@@ -15,6 +15,8 @@
     "@skynex-internal/domain": "workspace:*",
     "@skynex-internal/installer": "workspace:*",
     "@skynex-internal/sky-agents": "workspace:*",
-    "@skynex-internal/target-opencode": "workspace:*"
+    "@skynex-internal/target-opencode": "workspace:*",
+    "@skynex-internal/tasks": "workspace:*",
+    "@skynex-internal/tasks-node": "workspace:*"
   }
 }

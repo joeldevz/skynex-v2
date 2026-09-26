@@ -147,9 +147,7 @@ async function verifyCleanWorkspaceBuildContract() {
     await mkdir(join(workspace, "packages/npm-cli/scripts"), { recursive: true });
     await copyFile(join(packageRoot, "scripts/build-distribution.mjs"), join(workspace, "packages/npm-cli/scripts/build-distribution.mjs"));
     await copyFile(join(packageRoot, "package.json"), join(workspace, "packages/npm-cli/package.json"));
-    await mkdir(join(workspace, "apps/cli/src"), { recursive: true });
-    await copyFile(join(repo, "apps/cli/src/index.ts"), join(workspace, "apps/cli/src/index.ts"));
-    for (const rel of ["packages/npm-cli/src", "packages/catalog/src", "packages/compiler/src", "packages/application/src", "packages/domain/src", "packages/installer/src", "packages/sky-agents/src", "targets/opencode/src", "targets/opencode/resources"]) {
+    for (const rel of ["apps/cli/src", "packages/npm-cli/src", "packages/catalog/src", "packages/compiler/src", "packages/application/src", "packages/domain/src", "packages/installer/src", "packages/sky-agents/src", "packages/tasks/src", "packages/tasks-node/src", "targets/opencode/src", "targets/opencode/resources"]) {
       await import("node:fs/promises").then(({ cp }) => cp(join(repo, rel), join(workspace, rel), { recursive: true }));
     }
     const esbuildPackage = join(repo, "node_modules/.pnpm/esbuild@0.25.9/node_modules/esbuild");
