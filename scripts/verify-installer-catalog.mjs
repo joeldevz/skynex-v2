@@ -2,7 +2,7 @@ import { cp, mkdir, writeFile, rm, symlink } from "node:fs/promises";
 import { dirname, posix, resolve, win32 } from "node:path";
 import { loadCatalog, validateManifest } from "../packages/catalog/dist/index.js";
 import { createInstallPlan, applyInstallPlan, createUninstallPlan, applyUninstallPlan, resolveInstallCollisions } from "../packages/installer/dist/index.js";
-import { openCodeTarget } from "../targets/opencode/dist/index.js";
+import { openCodeTarget, mergeConfig } from "../targets/opencode/dist/index.js";
 import { assert, fresh, fixture, readFile, join, sha, fail, detection, snapshot, exists } from "./verify-installer-support.mjs";
 
 const source = resolve("targets/opencode/resources");
@@ -375,5 +375,13 @@ export async function verify(test) {
     for (const [pathApi, label, root, target, expected] of cases) {
       assert.equal(isWithinRoot(root, target, pathApi), expected, `${label} containment ${root} -> ${target}`);
     }
+  });
+  await test("config-merge-adopts-managed-agent-policy", async () => {
+    const source = `{\n  "agents": {\n    "coder": { "mode": "subagent", "permissions": [{ "action": "*", "resource": "*", "effect": "ask" }], "model": "keep/me" }\n  }\n}\n`;
+    const managed = [{ id: "coder", mode: "subagent", permissions: [{ action: "*", resource: "*", effect: "deny" }, { action: "read", resource: "*", effect: "allow" }] }];
+    const merged = JSON.parse(mergeConfig(source, false, managed));
+    assert.deepEqual(merged.agents.coder.permissions, managed[0].permissions);
+    assert.equal(merged.agents.coder.mode, "subagent");
+    assert.equal(merged.agents.coder.model, "keep/me");
   });
 }

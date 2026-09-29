@@ -98,8 +98,25 @@ async function readContract() {
 async function resourceAllowlist() {
   const root = join(repo, "targets/opencode/resources");
   const catalog = JSON.parse(await readFile(join(root, "manifest.json"), "utf8"));
+  const historicalSources = new Set([
+    "native/plugins/skynex-tasks/tasks-core/errors.js",
+    "native/plugins/skynex-tasks/tasks-core/index.js",
+    "native/plugins/skynex-tasks/tasks-core/instruction.js",
+    "native/plugins/skynex-tasks/tasks-core/ports.js",
+    "native/plugins/skynex-tasks/tasks-core/schema.js",
+    "native/plugins/skynex-tasks/tasks-core/service.js",
+    "native/plugins/skynex-tasks/tasks-core/slug.js",
+    "native/plugins/skynex-tasks/tasks-core/task.js",
+    "native/plugins/skynex-tasks/tasks-node-core/fs-safe.js",
+    "native/plugins/skynex-tasks/tasks-node-core/index.js",
+    "native/plugins/skynex-tasks/tasks-node-core/roots.js",
+    "native/plugins/skynex-tasks/tasks-node-core/store.js",
+    "native/plugins/skynex-tasks/tasks-node-core/system.js",
+    "native/plugins/skynex-tasks/tasks-node.js",
+    "native/plugins/skynex-tasks/tasks.js",
+  ]);
   const allowed = new Set(["manifest.json", "provenance.json", "templates/.gitkeep"]);
-  for (const item of catalog.resources) allowed.add(item.sourcePath);
+  for (const item of catalog.resources) if (!historicalSources.has(item.sourcePath)) allowed.add(item.sourcePath);
   const leaves = [];
   async function walk(dir, prefix = "") {
     for (const entry of (await readdir(dir, { withFileTypes: true })).sort((a, b) => a.name.localeCompare(b.name))) {
@@ -111,7 +128,7 @@ async function resourceAllowlist() {
     }
   }
   await walk(root);
-  assert.deepEqual(leaves.sort(), [...allowed].sort(), "source resource leaves must equal manifest-derived allowlist");
+  assert.deepEqual(leaves.filter((leaf) => !historicalSources.has(leaf)).sort(), [...allowed].sort(), "source resource leaves must equal manifest-derived allowlist");
   return allowed;
 }
 
@@ -147,9 +164,7 @@ async function verifyCleanWorkspaceBuildContract() {
     await mkdir(join(workspace, "packages/npm-cli/scripts"), { recursive: true });
     await copyFile(join(packageRoot, "scripts/build-distribution.mjs"), join(workspace, "packages/npm-cli/scripts/build-distribution.mjs"));
     await copyFile(join(packageRoot, "package.json"), join(workspace, "packages/npm-cli/package.json"));
-    await mkdir(join(workspace, "apps/cli/src"), { recursive: true });
-    await copyFile(join(repo, "apps/cli/src/index.ts"), join(workspace, "apps/cli/src/index.ts"));
-    for (const rel of ["packages/npm-cli/src", "packages/catalog/src", "packages/compiler/src", "packages/application/src", "packages/domain/src", "packages/installer/src", "packages/sky-agents/src", "targets/opencode/src", "targets/opencode/resources"]) {
+    for (const rel of ["apps/cli/src", "packages/npm-cli/src", "packages/catalog/src", "packages/compiler/src", "packages/application/src", "packages/domain/src", "packages/installer/src", "packages/sky-agents/src", "packages/tasks/src", "packages/tasks-node/src", "targets/opencode/src", "targets/opencode/resources"]) {
       await import("node:fs/promises").then(({ cp }) => cp(join(repo, rel), join(workspace, rel), { recursive: true }));
     }
     const esbuildPackage = join(repo, "node_modules/.pnpm/esbuild@0.25.9/node_modules/esbuild");
@@ -163,6 +178,66 @@ async function verifyCleanWorkspaceBuildContract() {
   } finally {
     await rm(root, { recursive: true, force: true });
   }
+}
+
+async function verifyBuiltDistributionAndTarball(allowed, manifest) {
+  const failures = [];
+  try { await verifyBuild(allowed); }
+  catch (error) { failures.push(`built distribution: ${error.message}`); }
+
+  const root = await mkdtemp(join(tmpdir(), "skynex-package-contract-"));
+  try {
+    const env = await isolatedEnv(root), output = join(root, "pack");
+    await mkdir(output, { recursive: true });
+    const result = await run("npm", ["pack", packageRoot, "--pack-destination", output, "--ignore-scripts", "--json"], { cwd: root, env });
+    assert.equal(result.code, 0, result.stderr);
+    const files = await readdir(output), archives = files.filter((name) => name.endsWith(".tgz"));
+    assert.equal(archives.length, 1);
+    const entries = parseTar(await readFile(join(output, archives[0])));
+    try { verifyArchive(entries, allowed, manifest); }
+    catch (error) { failures.push(`npm tarball allowlist: ${error.message}`); }
+
+    const historicalSource = /^native\/plugins\/skynex-tasks\/(?:tasks\.js|tasks-node\.js|tasks-core\/|tasks-node-core\/)/;
+    const historicalTarget = /^skynex\/plugins\/skynex-tasks\/(?:tasks\.js|tasks-node\.js|tasks-core\/|tasks-node-core\/)/;
+    const historicalId = /^skynex-tasks-(?:tasks-js|tasks-node-js|core-|node-core-)/;
+    const sourceManifest = JSON.parse(await readFile(join(repo, "targets/opencode/resources/manifest.json"), "utf8"));
+    const sourceProvenance = JSON.parse(await readFile(join(repo, "targets/opencode/resources/provenance.json"), "utf8"));
+    const catalogLeaks = sourceManifest.resources.flatMap((entry) => [
+      ...(historicalId.test(entry.id) ? [`id ${entry.id}`] : []),
+      ...(historicalSource.test(entry.sourcePath) ? [`source ${entry.sourcePath}`] : []),
+      ...(entry.targets ?? []).filter((target) => historicalTarget.test(target.relativePath)).map((target) => `target ${target.relativePath}`),
+    ]);
+    if (catalogLeaks.length) failures.push(`catalog historical bundles: ${catalogLeaks.join(", ")}`);
+    const provenanceLeaks = sourceProvenance.generated.filter((entry) => historicalSource.test(entry.target) || historicalTarget.test(entry.target)).map((entry) => entry.target);
+    if (provenanceLeaks.length) failures.push(`provenance historical bundles: ${provenanceLeaks.join(", ")}`);
+
+    const distLeaks = [];
+    async function scanDistribution(dir, prefix = "") {
+      for (const entry of await readdir(dir, { withFileTypes: true })) {
+        const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+        if (entry.isDirectory()) await scanDistribution(join(dir, entry.name), rel);
+        else if (historicalSource.test(rel)) distLeaks.push(rel);
+      }
+    }
+    await scanDistribution(join(packageRoot, "dist/resources"));
+    if (distLeaks.length) failures.push(`built distribution historical sources: ${distLeaks.join(", ")}`);
+
+    const archiveLeaks = entries.filter((entry) => entry.type === "file" && /^package\/dist\/resources\/native\/plugins\/skynex-tasks\/(?:tasks\.js|tasks-node\.js|tasks-core\/|tasks-node-core\/)/.test(entry.name)).map((entry) => entry.name);
+    for (const entryName of ["package/dist/resources/manifest.json", "package/dist/resources/provenance.json"]) {
+      const entry = entries.find((item) => item.name === entryName);
+      if (!entry) continue;
+      const document = JSON.parse(entry.content.toString("utf8"));
+      const rows = entryName.endsWith("manifest.json") ? document.resources ?? [] : document.generated ?? [];
+      for (const row of rows) {
+        const identityLeak = entryName.endsWith("manifest.json") && historicalId.test(row.id);
+        const path = row.sourcePath ?? row.target ?? "";
+        if (identityLeak || historicalSource.test(path) || historicalTarget.test(path)) archiveLeaks.push(`${entryName}:${row.id ?? path}`);
+        for (const target of row.targets ?? []) if (historicalTarget.test(target.relativePath)) archiveLeaks.push(`${entryName}:${row.id}:${target.relativePath}`);
+      }
+    }
+    if (archiveLeaks.length) failures.push(`npm tarball historical bundles: ${archiveLeaks.join(", ")}`);
+  } finally { await rm(root, { recursive: true, force: true }); }
+  assert.deepEqual(failures, [], "historical task-reader bundles must be absent from built distribution and npm tarball");
 }
 
 function parseTar(tgz) {
@@ -318,7 +393,7 @@ async function exportAudit(packed) {
 }
 
 const manifest = await readContract();
-if (mode === "--contract") { assert(manifest); const npmOutputFailures = verifyNpmPackageOutputContract(); await verifyCleanWorkspaceBuildContract(); assert.deepEqual(npmOutputFailures, [], `npm error-bearing selected outputs were accepted: ${npmOutputFailures.join(", ")}`); console.log("PASS full npm CLI verifier contract entrypoint"); }
+if (mode === "--contract") { assert(manifest); const npmOutputFailures = verifyNpmPackageOutputContract(); await verifyCleanWorkspaceBuildContract(); await verifyBuiltDistributionAndTarball(await resourceAllowlist(), manifest); assert.deepEqual(npmOutputFailures, [], `npm error-bearing selected outputs were accepted: ${npmOutputFailures.join(", ")}`); console.log("PASS full npm CLI verifier contract entrypoint"); }
 else if (mode === "--publish-dry-run") await verifyPublishDryRun();
 else {
   const root = await mkdtemp(join(tmpdir(), "skynex-package-")); let evidencePath; try { const allowed = await resourceAllowlist(); await verifyBuild(allowed);

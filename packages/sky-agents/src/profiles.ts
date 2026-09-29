@@ -3,7 +3,7 @@ import { atomicWrite, readFileSafe, safeDirectory } from "./storage.js"
 
 export const MAX_PROFILE_BYTES = 64 * 1024
 export const MAX_PROFILES = 100
-export const APPROVED_AGENT_IDS = ["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "thalam", "task-classifier", "tech-planner", "test-engineer", "test-reviewer", "verifier"] as const
+export const APPROVED_AGENT_IDS = ["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "thalam", "tech-planner", "test-engineer", "test-reviewer", "verifier"] as const
 export interface Profile { name: string; created_at: string; updated_at: string; models: Record<string, string>; [key: string]: unknown }
 export interface ProfileStore { list(): Promise<Profile[]>; get(id: string): Promise<Profile | null>; save(profile: Profile): Promise<void>; update(profile: Profile): Promise<void>; remove(id: string): Promise<void> }
 export function validateProfileName(name: string): void {
@@ -14,7 +14,7 @@ export function validateProfile(profile: Profile): void {
   if (!Number.isFinite(Date.parse(profile.created_at)) || !Number.isFinite(Date.parse(profile.updated_at))) throw new Error("Invalid profile dates")
   if (!profile.models || Array.isArray(profile.models) || Object.getPrototypeOf(profile.models) !== Object.prototype) throw new Error("Invalid profile models")
   const ids = Object.keys(profile.models).sort()
-  if (ids.length !== APPROVED_AGENT_IDS.length || ids.some((id, index) => id !== [...APPROVED_AGENT_IDS].sort()[index])) throw new Error("Profile must contain exactly the approved 13 agents")
+  if (ids.length !== APPROVED_AGENT_IDS.length || ids.some((id, index) => id !== [...APPROVED_AGENT_IDS].sort()[index])) throw new Error("Profile must contain exactly the approved 12 agents")
   for (const [agent, model] of Object.entries(profile.models)) {
     if (!/^[a-zA-Z0-9._-]{1,128}$/.test(agent) || typeof model !== "string" || !/^[a-zA-Z0-9._-]{1,64}\/[a-zA-Z0-9._-]{1,128}(?:#[a-zA-Z0-9._-]{1,64})?$/.test(model)) throw new Error("Invalid profile model reference")
   }

@@ -5,7 +5,8 @@ import { readInstallLock, readInstallLockSnapshot } from "./state-store.js";
 export function createUninstallPlan(input: { readonly roots: InstallRoots; readonly lock: InstallLock; readonly allowedResources: ReadonlyMap<string, string>; readonly config?: { readonly resourceId: string; readonly relativePath: string; readonly currentContent: string; readonly removeManagedRegistration: (source: string) => string } }): InstallationPlan {
   if (!input.allowedResources) throw new Error("Trusted resource ownership map is required for uninstall");
   for (const resource of input.lock.resources) {
-    if (input.allowedResources.get(resource.id) !== resource.relativePath) throw new Error(`Lock resource identity/path does not match the installed catalog: ${resource.id}`);
+    const catalogPath = input.allowedResources.get(resource.id);
+    if (catalogPath !== undefined && catalogPath !== resource.relativePath) throw new Error(`Lock resource identity/path does not match the installed catalog: ${resource.id}`);
   }
   const configResource = input.lock.resources.find((resource) => resource.id === "opencode-config");
   if (configResource && (!input.config || input.config.resourceId !== configResource.id || input.config.relativePath !== configResource.relativePath)) {
@@ -26,7 +27,8 @@ export async function applyUninstallPlan(plan: InstallationPlan, allowedResource
   const planEntries = plan.allowedResources;
   if (planEntries === undefined || planEntries.length !== allowedResources.size || planEntries.some((entry) => allowedResources.get(entry.id) !== entry.relativePath) || [...allowedResources].some(([id, relativePath]) => !planEntries.some((entry) => entry.id === id && entry.relativePath === relativePath))) throw new Error("Uninstall plan trusted resource ownership map does not match supplied map");
   for (const operation of plan.operations) {
-    if (allowedResources.get(operation.artifact.resource.id) !== operation.relativePath) throw new Error(`Resource ownership mismatch: ${operation.artifact.resource.id}`);
+    const catalogPath = allowedResources.get(operation.artifact.resource.id);
+    if (catalogPath !== undefined && catalogPath !== operation.relativePath) throw new Error(`Resource ownership mismatch: ${operation.artifact.resource.id}`);
   }
   const snapshot = await readInstallLockSnapshot(roots, allowedResources);
   const old = snapshot?.lock;

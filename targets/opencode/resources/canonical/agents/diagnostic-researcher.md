@@ -2,18 +2,21 @@
 description: Investigates failures using diagnostic gateway tools only
 mode: subagent
 permissions:
-  - action: *
-    resource: *
-    effect: deny
-  - action: diagnostic_read
-    resource: *
-    effect: allow
-  - action: diagnostic_glob
-    resource: *
-    effect: allow
-  - action: diagnostic_grep
-    resource: *
-    effect: allow
+  - action: "*"
+    resource: "*"
+    effect: "ask"
+  - action: "external_directory"
+    resource: "*"
+    effect: "ask"
+  - action: "diagnostic_read"
+    resource: "*"
+    effect: "allow"
+  - action: "diagnostic_glob"
+    resource: "*"
+    effect: "allow"
+  - action: "diagnostic_grep"
+    resource: "*"
+    effect: "allow"
 ---
 DIAGNOSTIC RESEARCHER — SANDBOXED, READ-ONLY RESEARCH
 =====================================================

@@ -87,7 +87,7 @@ try {
       { package: "./skynex/plugins/runtime", options: { managedBy: "skynex" } },
       { package: "./skynex/plugins/sky-agents", options: { managedBy: "skynex" } },
     ],
-    agents: Object.fromEntries(["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "thalam", "task-classifier", "tech-planner", "test-engineer", "test-reviewer", "verifier"].map((id) => [id, { mode: id === "thalam" ? "all" : "subagent", permissions: [] }])),
+    agents: Object.fromEntries(["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "thalam", "tech-planner", "test-engineer", "test-reviewer", "verifier"].map((id) => [id, { mode: id === "thalam" ? "all" : "subagent", permissions: [] }])),
   }));
   const parseErrors = [];
   const config = parse(configBytes.toString(), parseErrors);
@@ -96,7 +96,7 @@ try {
   const registrations = config.plugins?.map((plugin) => typeof plugin === "string" ? plugin : plugin.package);
   assert.deepEqual(registrations, ["./skynex/plugins/runtime", "./skynex/plugins/sky-agents"],
     "Expected exactly the installed runtime and sky-agents registrations");
-  assert.equal(Object.keys(config.agents ?? {}).length, 13, "Expected all 13 installed agent policies");
+  assert.equal(Object.keys(config.agents ?? {}).length, 12, "Expected all 13 installed agent policies");
   await writeFile(join(configDir, configName), configBytes);
   evidence.digests.config = digest(configBytes);
   evidence.source = installed;

@@ -1,5 +1,5 @@
-import { writeFile, rm } from "node:fs/promises";
-import { createInstallPlan, applyInstallPlan, readInstallLock, readInstallLockSnapshot, prepareUpdatePlan } from "../packages/installer/dist/index.js";
+import { writeFile, rm, mkdir } from "node:fs/promises";
+import { createInstallPlan, applyInstallPlan, readInstallLock, readInstallLockSnapshot, prepareUpdatePlan, resolveInstallCollisions } from "../packages/installer/dist/index.js";
 import { assert, fixture, readFile, sha, fail, detection, snapshot, exists } from "./verify-installer-support.mjs";
 
 async function setup() {
@@ -34,6 +34,28 @@ function assertAccepted(resource) {
   assert.equal(resource.pendingVersion, undefined);
 }
 export async function verify(test) {
+  for (const decision of ["overwrite", "preserve"]) {
+    await test(`update-unmanaged-collision-${decision}-requires-explicit-choice`, async () => {
+      const f = await fixture(`update-collision-${decision}`);
+      let artifacts = [{ resource: { id: "existing", kind: "skill", version: "1" }, component: "skills", relativePath: "skills/existing.md", content: "existing" }];
+      const adapter = { detect: detection, desiredArtifacts: async () => artifacts };
+      await applyInstallPlan(await createInstallPlan(adapter, f.roots));
+      const path = "skills/new.md";
+      artifacts = [...artifacts, { resource: { id: "new", kind: "skill", version: "1" }, component: "skills", relativePath: path, content: "new" }];
+      await mkdir(f.target("skills"), { recursive: true });
+      await writeFile(f.target(path), "new");
+      const base = await createInstallPlan(adapter, f.roots);
+      assert.equal(base.operations.find((item) => item.relativePath === path).kind, "conflict");
+      const before = await snapshot(f.root);
+      const prior = await readInstallLock(f.roots);
+      await fail(() => applyInstallPlan(prepareUpdatePlan(base, prior)), "Unresolved update conflict");
+      assert.deepEqual(await snapshot(f.root), before);
+      const plan = prepareUpdatePlan(resolveInstallCollisions(base, new Map([[path, decision]])), prior);
+      await applyInstallPlan(plan);
+      assert.equal(await readFile(f.target(path), "utf8"), "new");
+      assert.equal((await readInstallLock(f.roots)).resources.some((item) => item.relativePath === path), decision === "overwrite");
+    });
+  }
   for (const decision of ["skip", "keep-local"]) {
     await test(`update-${decision}-actual-callback-and-pending`, async () => {
       const f = await setup();
@@ -100,14 +122,25 @@ export async function verify(test) {
     assert.deepEqual(await readFile(f.lockPath), replacementBytes);
     assert.deepEqual(await readFile(f.target("skill.md")), targetBytes);
   });
-  await test("project-rename-does-not-migrate-legacy-lock-ownership", async () => {
+  await test("legacy-lock-unknown-resource-tolerated-catalog-id-path-mismatch-refused", async () => {
     const f = await setup();
     const legacy = await f.lock();
-    legacy.resources[0] = { ...legacy.resources[0], id: "agents.skynex-orchestrator", relativePath: "agents/skynex-orchestrator.md" };
+    // A resource removed upstream is tolerated as prior state (no ownership of any
+    // catalog path is granted by an unknown id/path).
+    legacy.resources[0] = { ...legacy.resources[0], id: "agents.removed", relativePath: "agents/removed.md" };
     const bytes = Buffer.from(`${JSON.stringify(legacy)}\n`);
     await writeFile(f.lockPath, bytes);
-    await fail(() => readInstallLockSnapshot(f.roots, new Map([["agents.thalam", "agents/thalam.md"]])), "does not match the installed catalog");
+    const snapshot = await readInstallLockSnapshot(f.roots, new Map([["agents.thalam", "agents/thalam.md"]]));
+    assert(snapshot);
+    assert.equal(snapshot.lock.resources[0].id, "agents.removed");
     assert.deepEqual(await readFile(f.lockPath), bytes);
+    // A known catalog id pointing at a different path is still refused as tampered.
+    const forged = await f.lock();
+    forged.resources[0] = { ...forged.resources[0], id: "agents.thalam", relativePath: "agents/thalam-elsewhere.md" };
+    const forgedBytes = Buffer.from(`${JSON.stringify(forged)}\n`);
+    await writeFile(f.lockPath, forgedBytes);
+    await fail(() => readInstallLockSnapshot(f.roots, new Map([["agents.thalam", "agents/thalam.md"]])), "does not match the installed catalog");
+    assert.deepEqual(await readFile(f.lockPath), forgedBytes);
   });
   await test("update-target-reedit-and-missing-file-refused", async () => {
     const f = await setup();
@@ -121,5 +154,23 @@ export async function verify(test) {
     await fail(async () => prepareUpdatePlan(await f.plan(), await f.lock()), "Managed resource is missing");
     assert.deepEqual(await readFile(f.lockPath), lockBytes);
     assert.equal(await exists(f.target("skill.md")), false);
+  });
+  await test("update-removes-resource-dropped-from-upstream", async () => {
+    const f = await fixture("update-remove");
+    const make = (relativePath, content) => ({ resource: { id: relativePath === "keep.md" ? "keep" : "drop", kind: "skill", version: "1" }, component: "skills", relativePath, content, sourceDigest: sha(content) });
+    let resources = [make("keep.md", "keep"), make("drop.md", "drop")];
+    const adapter = { detect: detection, desiredArtifacts: async () => resources };
+    await applyInstallPlan(await createInstallPlan(adapter, f.roots));
+    assert.equal(await exists(f.target("drop.md")), true);
+    assert((await readInstallLock(f.roots)).resources.some((resource) => resource.relativePath === "drop.md"));
+    resources = [make("keep.md", "keep")];
+    const plan = await createInstallPlan(adapter, f.roots);
+    const removal = plan.operations.find((operation) => operation.kind === "remove");
+    assert(removal && removal.relativePath === "drop.md");
+    await applyInstallPlan(prepareUpdatePlan(plan, await readInstallLock(f.roots)));
+    assert.equal(await exists(f.target("drop.md")), false);
+    const after = await readInstallLock(f.roots);
+    assert(!after.resources.some((resource) => resource.relativePath === "drop.md"));
+    assert(after.resources.some((resource) => resource.relativePath === "keep.md"));
   });
 }

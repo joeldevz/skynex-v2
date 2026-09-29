@@ -75,7 +75,8 @@ export async function executeTransaction(options: TransactionOptions, dependenci
     if (plan.allowedResources === undefined || allowed.size !== plan.allowedResources.length || new Set(plan.allowedResources.map((entry) => entry.relativePath)).size !== plan.allowedResources.length) throw new Error("Missing or invalid trusted resource ownership map");
     for (const item of plan.operations) {
       const relativePath = item.relativePath ?? item.artifact.relativePath;
-      if (allowed.get(item.artifact.resource.id) !== relativePath) throw new Error(`Resource ownership mismatch: ${item.artifact.resource.id}`);
+      const catalogPath = allowed.get(item.artifact.resource.id);
+      if (catalogPath !== undefined && catalogPath !== relativePath) throw new Error(`Resource ownership mismatch: ${item.artifact.resource.id}`);
       const destination = await assertSafeMutationTarget(targetRoot, relativePath);
       const current = await present(destination) ? await readFile(destination) : null;
       if ((current ? hash(current) : null) !== (item.expectedPriorDigest ?? item.currentDigest)) throw new Error(`Target changed after planning: ${relativePath}`);

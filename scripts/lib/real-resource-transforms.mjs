@@ -9,10 +9,10 @@ const descriptions = {
   "infrastructure-engineer": "Maintains bounded infrastructure and developer tooling",
   mentor: "Provides practical, gradual Spanish-language mentoring",
   "pr-reviewer": "Reviews one adversarial code-quality dimension",
+  scout: "Scouts codebases for bounded, evidence-backed findings",
   security: "Reviews code for concrete security vulnerabilities",
   "skill-validator": "Validates implementation against project skills and conventions",
   thalam: "Coordinates work with small, explicit scopes",
-  "task-classifier": "Classifies requests for the orchestrator",
   "tech-planner": "Produces prescriptive implementation plans",
   "test-engineer": "Writes behavior-focused red test contracts",
   "test-reviewer": "Reviews test contracts for coherence and quality",
@@ -29,22 +29,31 @@ const sensitiveReadDenies = [
 ].map((resource) => ({ action: "read", resource, effect: "deny" }));
 const allowRead = [{ action: "read", resource: "*", effect: "allow" }, ...sensitiveReadDenies];
 const readOnly = [
-  { action: "*", resource: "*", effect: "deny" },
+  { action: "*", resource: "*", effect: "ask" },
   ...allowRead,
-  { action: "external_directory", resource: "*", effect: "deny" },
+  { action: "external_directory", resource: "*", effect: "ask" },
   { action: "glob", resource: "*", effect: "allow" },
   { action: "grep", resource: "*", effect: "allow" },
 ];
+const scout = [
+  ...readOnly,
+  { action: "subagent", resource: "*", effect: "deny" },
+  { action: "question", resource: "*", effect: "deny" },
+];
+const skynexTools = [
+  { action: "skynex_classify", resource: "*", effect: "allow" },
+];
 const diagnostic = [
-  { action: "*", resource: "*", effect: "deny" },
+  { action: "*", resource: "*", effect: "ask" },
+  { action: "external_directory", resource: "*", effect: "ask" },
   { action: "diagnostic_read", resource: "*", effect: "allow" },
   { action: "diagnostic_glob", resource: "*", effect: "allow" },
   { action: "diagnostic_grep", resource: "*", effect: "allow" },
 ];
 const coder = [
-  { action: "*", resource: "*", effect: "deny" },
+  { action: "*", resource: "*", effect: "ask" },
   ...allowRead,
-  { action: "external_directory", resource: "*", effect: "deny" },
+  { action: "external_directory", resource: "*", effect: "ask" },
   { action: "glob", resource: "*", effect: "allow" },
   { action: "grep", resource: "*", effect: "allow" },
   { action: "edit", resource: "*", effect: "allow" },
@@ -53,53 +62,55 @@ const coder = [
   { action: "question", resource: "*", effect: "deny" },
 ];
 const infrastructure = [
-  { action: "*", resource: "*", effect: "deny" },
+  { action: "*", resource: "*", effect: "ask" },
   ...allowRead,
-  { action: "external_directory", resource: "*", effect: "deny" },
+  { action: "external_directory", resource: "*", effect: "ask" },
   { action: "glob", resource: "*", effect: "allow" },
   { action: "grep", resource: "*", effect: "allow" },
   { action: "edit", resource: "*", effect: "allow" },
   { action: "shell", resource: "*", effect: "ask" },
 ];
 const testEngineer = [
-  { action: "*", resource: "*", effect: "deny" },
+  { action: "*", resource: "*", effect: "ask" },
   ...allowRead,
-  { action: "external_directory", resource: "*", effect: "deny" },
+  { action: "external_directory", resource: "*", effect: "ask" },
   { action: "glob", resource: "*", effect: "allow" },
   { action: "grep", resource: "*", effect: "allow" },
   { action: "edit", resource: "*", effect: "allow" },
   { action: "shell", resource: "*", effect: "ask" },
 ];
 const techPlanner = [
-  { action: "*", resource: "*", effect: "deny" },
+  { action: "*", resource: "*", effect: "ask" },
   ...allowRead,
-  { action: "external_directory", resource: "*", effect: "deny" },
+  { action: "external_directory", resource: "*", effect: "ask" },
   { action: "glob", resource: "*", effect: "allow" },
   { action: "grep", resource: "*", effect: "allow" },
   { action: "edit", resource: "*", effect: "ask" },
 ];
 const mentor = [
-  { action: "*", resource: "*", effect: "deny" },
+  { action: "*", resource: "*", effect: "ask" },
   ...allowRead,
-  { action: "external_directory", resource: "*", effect: "deny" },
+  { action: "external_directory", resource: "*", effect: "ask" },
   { action: "glob", resource: "*", effect: "allow" },
   { action: "grep", resource: "*", effect: "allow" },
   { action: "subagent", resource: "coder", effect: "allow" },
   { action: "question", resource: "*", effect: "deny" },
 ];
 const orchestrator = [
-  { action: "*", resource: "*", effect: "deny" },
+  { action: "*", resource: "*", effect: "ask" },
   ...allowRead,
-  { action: "external_directory", resource: "*", effect: "deny" },
+  { action: "external_directory", resource: "*", effect: "ask" },
   { action: "glob", resource: "*", effect: "allow" },
   { action: "grep", resource: "*", effect: "allow" },
   { action: "skill", resource: "*", effect: "allow" },
   { action: "subagent", resource: "coder", effect: "allow" },
   { action: "subagent", resource: "verifier", effect: "allow" },
   { action: "subagent", resource: "test-engineer", effect: "allow" },
+  { action: "subagent", resource: "scout", effect: "allow" },
   { action: "question", resource: "*", effect: "allow" },
   { action: "edit", resource: "*", effect: "ask" },
   { action: "shell", resource: "*", effect: "ask" },
+  ...skynexTools,
 ];
 const policy = (name) => {
   if (name === "coder") return coder;
@@ -108,15 +119,51 @@ const policy = (name) => {
   if (name === "test-engineer") return testEngineer;
   if (name === "tech-planner") return techPlanner;
   if (name === "mentor") return mentor;
+  if (name === "scout") return scout;
   if (name === "thalam") return orchestrator;
   return readOnly;
 };
 
+const thalamClassifyMarker = "JEV CLASSIFICATION (ORCHESTRATOR-OWNED)";
+const thalamClassifySection = `${thalamClassifyMarker}
+
+The orchestrator owns classification and is the only agent allowed to call
+\`skynex_classify\`. Never wait for the human partner to ask for it, and do not delegate
+the classification call to another agent.
+
+Trigger it for any request that will change code, configuration, or infrastructure,
+and for any request whose risk or route is not obvious. Do not classify a pure
+question, ordinary conversation, or a trivial read-only lookup.
+
+Call \`skynex_classify\` once with the request and any bounded context. It returns
+compact \`task_type\`, \`risk\`, \`route\`, and \`clarification\` choices; a null choice means
+the provider abstained, so report the gap instead of inventing a value, and treat
+\`clarification: "ask"\` as one required question for the human partner. Jev does not
+read the repository, so keep your own bounded discovery for paths and evidence.
+
+Classification is optional and configuration-driven. The runtime does not register the
+tool when the managed plugin entry sets \`options.classifier\` to \`off\`/\`false\` (or
+\`SKYNEX_CLASSIFIER=off\`). When it is disabled or unavailable because the operator has
+no TypeSafe access, fall back to the deterministic local classification above, record
+\`classifier_unavailable\`, and keep every safety gate.
+`;
+
+export function transformAgent(name, body) {
+  if (name === "thalam") {
+    const anchor = "\nEXECUTION FLOW\n";
+    if (!body.includes(anchor)) throw new Error("thalam execution-flow anchor mismatch");
+    const current = body.replace(/\n*(?:JEV CLASSIFICATION AND MODEL ROUTING \(ORCHESTRATOR-OWNED\)|JEV CLASSIFICATION \(ORCHESTRATOR-OWNED\)|JEV MODEL ROUTING)\n[\s\S]*?(?=\nEXECUTION FLOW\n)/, "");
+    return current.replace(anchor, `\n${thalamClassifySection}${anchor}`);
+  }
+  return body;
+}
+
 export function normalizeAgent(name, source) {
   const body = source.replace(/^---\n[\s\S]*?\n---\n\n?/, "");
   const mode = name === "thalam" ? "all" : "subagent";
-  const frontmatter = ["---", `description: ${descriptions[name] ?? `OpenCode ${name} agent`}`, `mode: ${mode}`, "permissions:", ...policy(name).map((item) => `  - action: ${item.action}\n    resource: ${item.resource}\n    effect: ${item.effect}`), "---", ""].join("\n");
-  return frontmatter + (name === "thalam" ? body.replace(/^SKYNEX ORCHESTRATOR[^\n]*\n=+\s*$/m, "# Thalam") : body);
+  const frontmatter = ["---", `description: ${descriptions[name] ?? `OpenCode ${name} agent`}`, `mode: ${mode}`, "permissions:", ...policy(name).map((item) => `  - action: "${item.action}"\n    resource: "${item.resource}"\n    effect: "${item.effect}"`), "---", ""].join("\n");
+  const resolved = name === "thalam" ? body.replace(/^SKYNEX ORCHESTRATOR[^\n]*\n=+\s*$/m, "# Thalam") : body;
+  return frontmatter + transformAgent(name, resolved);
 }
 
 export function managedAgents(agentNames) {

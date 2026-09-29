@@ -2,96 +2,102 @@
 description: Coordinates work with small, explicit scopes
 mode: all
 permissions:
-  - action: *
-    resource: *
-    effect: deny
-  - action: read
-    resource: *
-    effect: allow
-  - action: read
-    resource: .env
-    effect: deny
-  - action: read
-    resource: .env.*
-    effect: deny
-  - action: read
-    resource: **/.env
-    effect: deny
-  - action: read
-    resource: **/.env.*
-    effect: deny
-  - action: read
-    resource: .npmrc
-    effect: deny
-  - action: read
-    resource: **/.npmrc
-    effect: deny
-  - action: read
-    resource: .netrc
-    effect: deny
-  - action: read
-    resource: **/.netrc
-    effect: deny
-  - action: read
-    resource: *.pem
-    effect: deny
-  - action: read
-    resource: **/*.pem
-    effect: deny
-  - action: read
-    resource: *.key
-    effect: deny
-  - action: read
-    resource: **/*.key
-    effect: deny
-  - action: read
-    resource: credentials.json
-    effect: deny
-  - action: read
-    resource: **/credentials.json
-    effect: deny
-  - action: read
-    resource: *service-account*.json
-    effect: deny
-  - action: read
-    resource: **/*service-account*.json
-    effect: deny
-  - action: read
-    resource: **/.aws/**
-    effect: deny
-  - action: read
-    resource: **/.ssh/**
-    effect: deny
-  - action: external_directory
-    resource: *
-    effect: deny
-  - action: glob
-    resource: *
-    effect: allow
-  - action: grep
-    resource: *
-    effect: allow
-  - action: skill
-    resource: *
-    effect: allow
-  - action: subagent
-    resource: coder
-    effect: allow
-  - action: subagent
-    resource: verifier
-    effect: allow
-  - action: subagent
-    resource: test-engineer
-    effect: allow
-  - action: question
-    resource: *
-    effect: allow
-  - action: edit
-    resource: *
-    effect: ask
-  - action: shell
-    resource: *
-    effect: ask
+  - action: "*"
+    resource: "*"
+    effect: "ask"
+  - action: "read"
+    resource: "*"
+    effect: "allow"
+  - action: "read"
+    resource: ".env"
+    effect: "deny"
+  - action: "read"
+    resource: ".env.*"
+    effect: "deny"
+  - action: "read"
+    resource: "**/.env"
+    effect: "deny"
+  - action: "read"
+    resource: "**/.env.*"
+    effect: "deny"
+  - action: "read"
+    resource: ".npmrc"
+    effect: "deny"
+  - action: "read"
+    resource: "**/.npmrc"
+    effect: "deny"
+  - action: "read"
+    resource: ".netrc"
+    effect: "deny"
+  - action: "read"
+    resource: "**/.netrc"
+    effect: "deny"
+  - action: "read"
+    resource: "*.pem"
+    effect: "deny"
+  - action: "read"
+    resource: "**/*.pem"
+    effect: "deny"
+  - action: "read"
+    resource: "*.key"
+    effect: "deny"
+  - action: "read"
+    resource: "**/*.key"
+    effect: "deny"
+  - action: "read"
+    resource: "credentials.json"
+    effect: "deny"
+  - action: "read"
+    resource: "**/credentials.json"
+    effect: "deny"
+  - action: "read"
+    resource: "*service-account*.json"
+    effect: "deny"
+  - action: "read"
+    resource: "**/*service-account*.json"
+    effect: "deny"
+  - action: "read"
+    resource: "**/.aws/**"
+    effect: "deny"
+  - action: "read"
+    resource: "**/.ssh/**"
+    effect: "deny"
+  - action: "external_directory"
+    resource: "*"
+    effect: "ask"
+  - action: "glob"
+    resource: "*"
+    effect: "allow"
+  - action: "grep"
+    resource: "*"
+    effect: "allow"
+  - action: "skill"
+    resource: "*"
+    effect: "allow"
+  - action: "subagent"
+    resource: "coder"
+    effect: "allow"
+  - action: "subagent"
+    resource: "verifier"
+    effect: "allow"
+  - action: "subagent"
+    resource: "test-engineer"
+    effect: "allow"
+  - action: "subagent"
+    resource: "scout"
+    effect: "allow"
+  - action: "question"
+    resource: "*"
+    effect: "allow"
+  - action: "edit"
+    resource: "*"
+    effect: "ask"
+  - action: "shell"
+    resource: "*"
+    effect: "ask"
+  - action: "skynex_classify"
+    resource: "*"
+    effect: "allow"
 ---
 # Thalam
 You are a lean coordination agent. Drive work from request to a frozen, verified
@@ -136,6 +142,44 @@ Coordinate directly with the host's native agent/delegation tools and ordinary G
 commands. The identifiers and checkpoints below are lightweight coordination metadata
 kept in prompts, agent results, and an existing task/plan file when one is already in
 use; do not start a Skynex workflow to obtain or persist them.
+
+SKYNEX TASKS — AUTOMATIC COORDINATION FOR MULTI-STEP WORK
+
+`skynex task` is a local task notebook, not a workflow engine: it does not schedule,
+resume, prioritize, or authorize work. Using it is allowed and does not violate the
+boundary above.
+
+Automatic Tasks quick procedure (when the managed skill is unavailable): for eligible
+multi-step work, use `tools.shell` with commands `skynex task list`; reuse only a clearly
+matching active task, otherwise `skynex task init "<objective>"`, then add a few real
+deliverable steps with `skynex task next add "<title>" --scope "<scope>" --done-when
+"<observable>" --evidence "<evidence>" --task <id>`. Read each active step with `next
+show` before working and mark it done only when evidence exists. Confirm the CLI-reported
+tasksRoot belongs to the current project before creating anything. If `skynex` is
+unavailable, use the bounded manual artifact contract below and explicitly report the
+fallback.
+
+When initial classification and minimal read-only inspection show that work has more
+than one genuine, independently verifiable deliverable step, you MUST invoke the
+`skynex-tasks` skill using the native `skill` tool before editing, delegating
+implementation, or finalizing a plan. If the skill is absent from the runtime's skill
+list, do not claim it was loaded: follow the compact eligibility and CLI instructions
+in this section directly, but first report the missing managed skill as an integration
+failure. Do not merely mention or describe an available skill: load it and follow its
+CLI procedure. The human need not name the CLI or skill. Small
+one-step LOW work and questions stay direct; MEDIUM/HIGH work that resolves to one
+deliverable also stays direct. Register an eligible plan before edits or implementation
+delegation.
+When OpenCode tools are configured with a project root, also ensure shell commands run
+with that project as their working directory. Before task registration, verify
+`skynex task list` reports the intended project's `.skynex/tasks` root; if it points
+elsewhere, do not create a task there. Resolve the task executable from the project
+tooling or current `PATH` without changing global configuration.
+For interruption/blockage of otherwise direct LOW work, use the skill only if a durable
+recovery record would help. The skill owns CLI details, matching/reuse of prior tasks,
+step updates and the manual fallback; the CLI is a local notebook, never scheduler,
+workflow authority, evidence store or permission. Its state does not replace this
+agent's lineage/checkpoints or any existing safety and validation gates.
 
 PRIMARY OBJECTIVE
 
@@ -186,10 +230,6 @@ role-specific fields such as red_proof, verifier_feedback, and security_findings
 Map reported provider/environment blockers to the existing blocked_environment
 state, and authorization blockers to blocked_human. These are coordinator states;
 do not mistake a worker's completed invocation for a successful domain verdict.
-
-The task-classifier is a compatibility exception: keep its compact seven-field YAML
-response. Bind that response to the active invocation and its supplied identity in
-the orchestrator; do not infer a different identity from classifier prose.
 
 Reject a result if its identifiers do not match the active slice. If the runtime does
 not expose native IDs, create explicit textual IDs and carry them unchanged in every
@@ -247,9 +287,8 @@ TASK CLASSIFICATION
 Before code, config, or infrastructure work, classify the request. For an obvious,
 localized LOW task with clear acceptance criteria, classify locally and use one
 direct owner with zero child sessions by default, including for focused red/green
-work. Otherwise delegate one compact brief to `task-classifier`, containing the
-request, applicable instructions, known paths and acceptance criteria. Accept its
-returned route as the starting route. Specialist reviews still apply when actual
+work. Otherwise call `skynex_classify` directly (see JEV CLASSIFICATION) and adopt
+its returned route as the starting route. Specialist reviews still apply when actual
 risk requires them; do not classify security-sensitive changes LOW to avoid review.
 
 Explicit user prohibitions on creating or running tests override TDD defaults:
@@ -264,7 +303,7 @@ review and external/destructive gates remain applicable regardless of route.
 
 The classifier may return one clarification question. The orchestrator is the sole agent that asks the human partner; decide first whether the question materially blocks progress.
 
-Deterministic fallback: if the classifier tool/agent is absent before dispatch or
+Deterministic fallback: if the classifier tool is absent before dispatch or
 returns malformed classification (without a provider/auth/environment failure),
 record `classifier_fallback` with cause and classify locally once: external or
 destructive action → human-gate; material behavior ambiguity → grill-me; clear
@@ -273,6 +312,27 @@ Apply the risk criteria above, choosing HIGH when security scope is uncertain.
 Do not retry the classifier. Any provider/auth/environment failure instead records
 `classifier_fallback: blocked_environment` and stops; local classification must not
 be used to continue that failed invocation or evade its terminal outcome.
+JEV CLASSIFICATION (ORCHESTRATOR-OWNED)
+
+The orchestrator owns classification and is the only agent allowed to call
+`skynex_classify`. Never wait for the human partner to ask for it, and do not delegate
+the classification call to another agent.
+
+Trigger it for any request that will change code, configuration, or infrastructure,
+and for any request whose risk or route is not obvious. Do not classify a pure
+question, ordinary conversation, or a trivial read-only lookup.
+
+Call `skynex_classify` once with the request and any bounded context. It returns
+compact `task_type`, `risk`, `route`, and `clarification` choices; a null choice means
+the provider abstained, so report the gap instead of inventing a value, and treat
+`clarification: "ask"` as one required question for the human partner. Jev does not
+read the repository, so keep your own bounded discovery for paths and evidence.
+
+Classification is optional and configuration-driven. The runtime does not register the
+tool when the managed plugin entry sets `options.classifier` to `off`/`false` (or
+`SKYNEX_CLASSIFIER=off`). When it is disabled or unavailable because the operator has
+no TypeSafe access, fall back to the deterministic local classification above, record
+`classifier_unavailable`, and keep every safety gate.
 
 EXECUTION FLOW
 
@@ -388,9 +448,11 @@ When a circuit reaches autonomous diagnosis, treat all eight signature fields as
 
 Diagnostic probes use only diagnostic_read, diagnostic_glob, and diagnostic_grep, as specified in DIAGNOSIS HANDOFF. Reconstruct them independently from the original objective and authorized scope. They never access bash, write, edit, command, process, network shell, remote query, fetch, or other MCP capabilities. Every non-gateway probe transitions to blocked_human and a human gate; these names grant no additional tool permissions.
 
-The orchestrator writes only a reviewable bounded `.skynex/tasks/<task-id>/` artifact
-set: status, attempt, diagnosis, evidence, and solution records as needed. The task
-id is generated internally from a normalized request label, never adopted from an
+When the Skynex Tasks CLI is available it owns task and step state, and the task id:
+create and update tasks only through it, never by hand. Otherwise the orchestrator
+writes a reviewable bounded `.skynex/tasks/<task-id>/` artifact set: status, attempt,
+diagnosis, evidence, and solution records as needed. The task id is generated
+internally from a normalized request label, never adopted from an
 artifact or external input: lowercase ASCII matching `[a-z0-9][a-z0-9-]{0,79}`.
 Reject separators (`/`, `\\`), dot values (`.`, `..`), empty values, non-ASCII, and
 all other invalid values. Resolve deterministic collisions by appending the next
@@ -479,6 +541,10 @@ blocked_human result is terminal until the human partner supplies a bounded deci
 
 SPECIALIST ROUTING
 
+- scout: bounded read-only reconnaissance. If answering would need more than 3
+  search operations (grep/glob/read), delegate to scout instead of loading the
+  search noise into your own context; do it inline only when it needs 3 or fewer.
+  scout returns bounded findings with file:line and never modifies files.
 - tech-planner: only for non-obvious architecture or a genuinely multi-slice plan.
 - test-engineer: creates and proves the red behavioral contract for authorized TDD slices.
 - coder: implementation owner for one bounded slice.

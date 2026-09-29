@@ -44,7 +44,11 @@ export async function readInstallLockSnapshot(roots: InstallRoots, allowedResour
       if (ids.has(resource.id) || paths.has(resource.relativePath)) throw new Error("Duplicate lock resource ownership");
       ids.add(resource.id); paths.add(resource.relativePath);
     }
-    if (allowedResources && resources.some((resource) => allowedResources.get(resource.id) !== resource.relativePath)) throw new Error("Lock resource identity/path does not match the installed catalog");
+    // Reconcile with the current catalog by resource identity. A prior install may
+    // contain resources that the catalog no longer ships (removed upstream); those
+    // are kept as prior state instead of failing the whole upgrade. A catalog id
+    // that points at a different path is still rejected as tampered.
+    if (allowedResources && resources.some((resource) => { const path = allowedResources.get(resource.id); return path !== undefined && path !== resource.relativePath; })) throw new Error("Lock resource identity/path does not match the installed catalog");
     return { lock: { ...lock, resources } as unknown as InstallLock, bytes };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;

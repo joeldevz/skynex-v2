@@ -7,6 +7,7 @@ import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import { getManagedAgents, openCodeTarget, removeManagedPlugin } from "@skynex-internal/target-opencode";
 import { createProfileApplyService, createProfileStore, resolveGlobalSkynexRoots, type ProfileApplyRoots } from "@skynex-internal/sky-agents";
+import { runTaskCommand } from "./task-command.js";
 
 const args = process.argv.slice(2).filter((argument) => argument !== "--");
 const command = args[0]?.startsWith("-") ? undefined : args[0];
@@ -22,15 +23,17 @@ const scopeComponents = (scope: InstallScope): readonly InstallComponent[] => sc
   : ["configuration", "agents", "skills", "plugins"];
 const knownFlags = new Set(["--", "--global", "--project", "--state-dir", "--config", "--name", "--components", "--dry-run", "--yes", "--allow-executable-plugins", "--help", "-h", "--version", "-v", "--json"]);
 const valueFlags = new Set(["--project", "--state-dir", "--config", "--name", "--components"]);
-for (let index = positionalOffset; index < args.length; index += 1) {
-  const argument = args[index]!;
-  if (argument.startsWith("-") && !knownFlags.has(argument)) throw new Error(`Unknown flag: ${argument}`);
-  if (!valueFlags.has(argument)) continue;
-  const value = args[index + 1];
-  if (!value || value.startsWith("-")) throw new Error(`Missing value for ${argument}`);
-  index += 1;
+if (command !== "task") {
+  for (let index = positionalOffset; index < args.length; index += 1) {
+    const argument = args[index]!;
+    if (argument.startsWith("-") && !knownFlags.has(argument)) throw new Error(`Unknown flag: ${argument}`);
+    if (!valueFlags.has(argument)) continue;
+    const value = args[index + 1];
+    if (!value || value.startsWith("-")) throw new Error(`Missing value for ${argument}`);
+    index += 1;
+  }
+  if (has("--global") && args.includes("--project")) throw new Error("--global and --project are mutually exclusive");
 }
-if (has("--global") && args.includes("--project")) throw new Error("--global and --project are mutually exclusive");
 
 const help = `Skynex v2
 
@@ -41,6 +44,9 @@ Usage:
   skynex backup list|restore <transaction-id>
   skynex profile apply --name <profile> --global [--config json|jsonc]
   skynex doctor  [--global | --project <dir>] [--json]
+  skynex task init <title> | list | status | next show [<stepId>] | next done <stepId> [--task <id>] [--tasks-root <dir>] [--json]
+  skynex task next add <title> --scope <t> --done-when <t> --evidence <t> [--task <id>] [--tasks-root <dir>] [--json]
+  skynex task --help
 
 Options:
   --global         Install into ~/.config/opencode (required for profile apply)
@@ -63,11 +69,11 @@ const roots = (projectOverride?: string): InstallRoots => {
   return { scope, targetRoot, stateRoot };
 };
 
-if (has("--help") || has("-h") || (!command && !has("--version") && !has("-v"))) {
+if (command !== "task" && (has("--help") || has("-h") || (!command && !has("--version") && !has("-v")))) {
   console.log(help);
   process.exit(0);
 }
-if (has("--version") || has("-v")) {
+if (command !== "task" && (has("--version") || has("-v"))) {
   console.log("0.1.2");
   process.exit(0);
 }
@@ -200,7 +206,7 @@ const needsConfig = command === "install" || command === "update" || command ===
     const ownsConfiguration = lock.installedComponents?.includes("configuration") ?? lock.resources.some((resource) => resource.id === "opencode-config");
     const ownsPlugins = lock.installedComponents?.includes("plugins") ?? lock.resources.some((resource) => resource.kind === "native" && resource.id.includes("plugin"));
     const managedAgents = ownsConfiguration ? await getManagedAgents() : [];
-    const managedPlugins = ownsPlugins ? ["./skynex/plugins/runtime", "./skynex/plugins/sky-agents"] : [];
+    const managedPlugins = ownsPlugins ? ["./skynex/plugins/runtime", "./skynex/plugins/sky-agents", "./skynex/plugins/skynex-tasks"] : [];
     const config = configResource && configPath ? { resourceId: configResource.id, relativePath: configPath, currentContent: await readFile(resolve(installRoots.targetRoot, configPath), "utf8"), removeManagedRegistration: (source: string) => removeManagedPlugin(source, managedAgents, managedPlugins) } : undefined;
     await applyUninstallPlan(createUninstallPlan({ roots: installRoots, lock, allowedResources: catalogResources, ...(config ? { config } : {}) }), catalogResources);
     p.outro("Skynex managed resources removed");
@@ -240,7 +246,7 @@ const needsConfig = command === "install" || command === "update" || command ===
     selectedComponents = components;
   }
   if (installRoots.scope === "project" && selectedComponents.includes("plugins")) {
-    throw new Error("Sky Agents plugins can only be installed globally");
+    throw new Error("Skynex plugins can only be installed globally");
   }
 
   startSpinner("Preparing a safe installation plan");
@@ -317,12 +323,14 @@ const needsConfig = command === "install" || command === "update" || command ===
   const creates = plan.operations.filter((item) => item.kind === "create").length;
   const replaces = plan.operations.filter((item) => item.kind === "replace").length;
   const unchanged = plan.operations.filter((item) => item.kind === "unchanged").length;
+  const removes = plan.operations.filter((item) => item.kind === "remove").length;
   p.note([
     `+ ${creates} new`,
     `~ ${replaces} updates`,
+    `- ${removes} removed`,
     `= ${unchanged} unchanged`,
     "",
-    ...plan.operations.map((item) => `${item.kind === "create" ? "+" : item.kind === "replace" ? "~" : "="} ${item.destination}`),
+    ...plan.operations.map((item) => `${item.kind === "create" ? "+" : item.kind === "replace" ? "~" : item.kind === "remove" ? "-" : "="} ${item.destination}`),
   ].join("\n"), "Your installation");
   if (plan.operations.some((item) => item.artifact.component === "plugins" && item.kind !== "unchanged")) p.log.warn("This installs executable OpenCode 2 plugin and hook code from the verified Skynex catalog.");
 
@@ -361,7 +369,11 @@ const needsConfig = command === "install" || command === "update" || command ===
   }
 };
 
-run().catch((error: unknown) => {
-  p.log.error(error instanceof Error ? error.message : String(error));
-  process.exitCode = 1;
-});
+if (command === "task") {
+  process.exitCode = await runTaskCommand(args.slice(1), { cwd: process.cwd() });
+} else {
+  run().catch((error: unknown) => {
+    p.log.error(error instanceof Error ? error.message : String(error));
+    process.exitCode = 1;
+  });
+}

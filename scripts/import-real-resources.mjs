@@ -65,6 +65,8 @@ const nativeFiles = [
   ["skynex-sky-agents-jsonc-parser-license", "native", "native/plugins/sky-agents/vendor/jsonc-parser/LICENSE.md", "skynex/plugins/sky-agents/vendor/jsonc-parser/LICENSE.md"],
   ...["edit", "format", "parser", "scanner", "string-intern"].map((name) => ["skynex-sky-agents-jsonc-parser-impl-" + name, "native", `native/plugins/sky-agents/vendor/jsonc-parser/impl/${name}.js`, `skynex/plugins/sky-agents/vendor/jsonc-parser/impl/${name}.js`]),
   ...["catalog", "index", "profile-apply", "profiles", "roots", "rpc", "storage"].map((name) => [`skynex-sky-agents-core-${name}`, "native", `native/plugins/sky-agents/core/${name}.ts`, `skynex/plugins/sky-agents/core/${name}.ts`]),
+   ...[["package", "package.json"], ["index", "index.ts"], ["tui", "tui.tsx"], ["snapshot", "snapshot.ts"], ["controller", "controller.ts"]]
+     .map(([id, name]) => [`skynex-tasks-${id}`, "native", `native/plugins/skynex-tasks/${name}`, `skynex/plugins/skynex-tasks/${name}`]),
 ].map(([id, kind, sourcePath, relativePath]) => ({ id, kind, sourcePath, relativePath }));
 async function safeSource(path, expected) {
   let current = resolve(sourceRoot, path);
@@ -94,6 +96,12 @@ const managed = JSON.stringify(managedAgents(agentNames), null, 2) + "\n";
 generated.set("canonical/config/managed-agents.json", managed);
 const nativeRecords = [];
 const approvedNativePaths = new Set(nativeFiles.map((resource) => resource.sourcePath));
+const excludedPrototypePaths = new Set([
+  "native/plugins/skynex-tasks/tasks.js",
+  "native/plugins/skynex-tasks/tasks-node.js",
+  ...["errors", "index", "instruction", "ports", "schema", "service", "slug", "task"].map((name) => `native/plugins/skynex-tasks/tasks-core/${name}.js`),
+  ...["fs-safe", "index", "roots", "store", "system"].map((name) => `native/plugins/skynex-tasks/tasks-node-core/${name}.js`),
+]);
 async function assertNativeTree(dir, prefix) {
   const directoryInfo = await lstat(dir);
   if (directoryInfo.isSymbolicLink()) throw new Error(`Symlink native resource rejected: ${prefix}`);
@@ -104,7 +112,7 @@ async function assertNativeTree(dir, prefix) {
     if (info.isSymbolicLink()) throw new Error(`Symlink native resource rejected: ${sourcePath}`);
     if (info.isDirectory()) await assertNativeTree(join(dir, entry.name), sourcePath);
     else if (!info.isFile()) throw new Error(`Non-regular native resource rejected: ${sourcePath}`);
-    else if (!approvedNativePaths.has(sourcePath)) throw new Error(`Unexpected native resource: ${sourcePath}`);
+     else if (!approvedNativePaths.has(sourcePath) && !excludedPrototypePaths.has(sourcePath)) throw new Error(`Unexpected native resource: ${sourcePath}`);
   }
 }
 await assertNativeTree(nativeRoot, "native");

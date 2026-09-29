@@ -1,90 +1,90 @@
 {
   "schemaVersion": 1,
-  "inventorySha256": "e77b256d2b992b021eaa12c8e85e35cbf04ef2a69b9d49f8569363fe1f2022f2",
+  "inventorySha256": "e57dbd5f4ff15ea186f1bfe0b13464ebf59d17006c35d73616f7bbdac5b52997",
   "generated": [
     {
       "target": "canonical/agents/coder.md",
       "source": "agents/coder.md",
       "sourceSha256": "bc330513d8b3fa760b06b69942cf8e10388015ddcee2afe8c3361f5bed1e6714",
-      "generatedSha256": "ffdcea40f2b9c9dee47f32624707610b3f3fedde2914cdf529a6dcb3639e8cf4"
+      "generatedSha256": "e228d668fe9b45951c0303b0b1f1f1a59a662f0bd7f1734772c6fc51bf4c4f7b"
     },
     {
       "target": "canonical/agents/diagnostic-researcher.md",
       "source": "agents/diagnostic-researcher.md",
       "sourceSha256": "4d399e88d0f1d2668a566aa78c91f5e3205747124d926653dc1656c6dc537e7c",
-      "generatedSha256": "70f40e4fe7af9645e6bdf1d825929f752503576776d373dc4c250707671b0761"
+      "generatedSha256": "79846362b24783c92914c5153830cfe5ec59a925daee4d71e97c03b2479f0d08"
     },
     {
       "target": "canonical/agents/infrastructure-engineer.md",
       "source": "agents/infrastructure-engineer.md",
       "sourceSha256": "af54776386b264088d828c50e856ba7ee196e4143111ef1ede909f8a04f7173c",
-      "generatedSha256": "8a4d695eafe1064840550970810bb63a08aabc8b17979298bd86dd262a018804"
+      "generatedSha256": "594c0f6124d771e2b03a6d0c4f0fb4b477254d0f56708ee28ba4a6f8e9eca580"
     },
     {
       "target": "canonical/agents/mentor.md",
       "source": "agents/mentor.md",
       "sourceSha256": "fa06027932f47681022c1e55c3e7a0c912fc8124756a60a2038d9906f33e548f",
-      "generatedSha256": "9d619b7ddfb7bb735b3a4c6218364c50bbb7b67cc967b46d8a3428cd554bd034"
+      "generatedSha256": "9622a6210038b1cd0ab86933779603772e9feedc22e9f09d61166baf67c18887"
     },
     {
       "target": "canonical/agents/pr-reviewer.md",
       "source": "agents/pr-reviewer.md",
       "sourceSha256": "7c18cf1b2272debeba87088d4e501873b26c432053fa126ad28852a10c9ea568",
-      "generatedSha256": "a7e77de7dd5e3f58d63ea521746a93cce46379d563c4b3b656a431f44a472e67"
+      "generatedSha256": "df28b4d78a097d792f524c91903d84b0a0bea9eeb0c0cb1f68a576a64b04522b"
+    },
+    {
+      "target": "canonical/agents/scout.md",
+      "source": "generated",
+      "sourceSha256": null,
+      "generatedSha256": "577eec411a03dfb51fecc1b65d61d2add092cb01cb814c19f77b02d04c278ac5"
     },
     {
       "target": "canonical/agents/security.md",
       "source": "agents/security.md",
       "sourceSha256": "6278dfefac859a753ceb564f244d6beb733e481a4543a37822fbf1275c2aa601",
-      "generatedSha256": "16bddeea4aa0cedfde2447143bcc451a4dd9c7474fa1ca788a13351ca050c964"
+      "generatedSha256": "878e1cd0cdc06349b332120e78ce424dd90573c0946bbb193d95262ae99899aa"
     },
     {
       "target": "canonical/agents/skill-validator.md",
       "source": "agents/skill-validator.md",
       "sourceSha256": "e46be0762de44e0f5b545d9bb0e5547b492de45702ba9ca3def376640deff44d",
-      "generatedSha256": "45ccb69d9a4a26b7fad39d5c17a65e5877758cb4545565f8458b25b11730dd09"
-    },
-    {
-      "target": "canonical/agents/task-classifier.md",
-      "source": "agents/task-classifier.md",
-      "sourceSha256": "7ebea01e1a5189f8e512b786a35ab8360c43783294d578e811af050c8d6f71af",
-      "generatedSha256": "202e1695f1d79b145c362dcefa94118042d53227d4e971b48a444b78e7ea6891"
+      "generatedSha256": "3ab58659118a25433152fd9ea561274868fba48e762439bbf5ba2004763cc3db"
     },
     {
       "target": "canonical/agents/tech-planner.md",
       "source": "agents/tech-planner.md",
       "sourceSha256": "0d47fd9ce841766ac60eedf1fa0496aca85bd18b28a7682d44f8325dec10eacd",
-      "generatedSha256": "8792abc114d26b4208a8b4d796c39f6be8c9b5c0481dbbb3b85917bf83f0498b"
+      "generatedSha256": "d27655dbceeb50d6128f5f04ac59586d2dc818680c833c4fb61bf9822842460d"
     },
     {
       "target": "canonical/agents/test-engineer.md",
       "source": "agents/test-engineer.md",
       "sourceSha256": "87e6b9ba85ccc9830b6f4d0a3a0175cb4546ad5496b39d0c40171e22d485290e",
-      "generatedSha256": "3ff1cb1e8116c6d630b4166db1644acfbddd0920d74d05d7fa13f4dad692188f"
+      "generatedSha256": "3e31c9981c100a40f2bfb66972b20ea0335e2bb4fc562a3b3313055d0505638d"
     },
     {
       "target": "canonical/agents/test-reviewer.md",
       "source": "agents/test-reviewer.md",
       "sourceSha256": "c30b09d4caa188e7b39501ef8f5512de2975e625164670ec35bbca453a17b32e",
-      "generatedSha256": "bf4b9e2cfe0bcc5b4f79083f69f5810a7493262d441fce59ea49dd5e0dcdafdb"
+      "generatedSha256": "28715397d339820286e6f4c64ad8b9277f4bf3ae4ee2a3868812b0f6d99522a7"
     },
     {
       "target": "canonical/agents/thalam.md",
       "source": "agents/skynex-orchestrator.md",
       "sourceSha256": "eb46ce33b0cdc5713b1d42a5f89eec4bd4182e0dbd31acb42d8eba25f5be6170",
-      "generatedSha256": "fd40644aa58ef44083f152ace0da21a337531677034cb001e19a91fc56e0af6d"
+      "generatedSha256": "2e5122c0e7c9a1250269e59d203639c98bc6460739a205c615c3f567d0cf3a76"
     },
     {
       "target": "canonical/agents/verifier.md",
       "source": "agents/verifier.md",
       "sourceSha256": "f75381cf7aa64e7c1091b8c71fe17765bdd5e298564e285024f2ac8dcb6f4e2b",
-      "generatedSha256": "3212e31c745f565338262f2e8743726854f4acadf74386e2c94d7c12464932e1"
+      "generatedSha256": "2e13634b5863294a9641864f0c3fb5ad1e09d557fda1ca2df5a0da2ace7d4722"
     },
     {
       "target": "canonical/config/managed-agents.json",
       "source": "generated",
       "sourceSha256": null,
-      "generatedSha256": "adda0323007f1eeadc8f413381c52e756d8740d6d6c942e2173e1c8157e95504"
+      "generatedSha256": "99f36d54672d58845935d5e73a0ee980aaa2ff9416703fb644429e9205c7521f"
     },
     {
       "target": "canonical/skills/_shared/advisor-protocol.md",
@@ -177,6 +177,13 @@
       "generatedSha256": "fd087d21d4f75198bae9eeda49e2b99fea52690b1df6932d3379a624929fd7df"
     },
     {
+      "target": "canonical/skills/skynex-tasks/SKILL.md",
+      "source": "repository-authored",
+      "generatedSha256": "2c36116d3fbe5608c4110b174bafac146152978478cd3daeeb2d304e38ee158f",
+      "transformation": "authored-managed-skill",
+      "sourceReferences": []
+    },
+    {
       "target": "canonical/skills/tdd-discipline/SKILL.md",
       "source": "skills/tdd-discipline/SKILL.md",
       "sourceSha256": "b69d4b8c19d9ffc06393cc27c4b9b4ec7cae9f6eff2e30b29cc661a398932afc",
@@ -231,18 +238,109 @@
       "generatedSha256": "be8f20e66309258034b82a7db5040b03798aa40546f9d387662c2bd86be23123"
     },
     {
-      "target": "native/plugins/skynex-runtime.ts",
-      "source": "native/plugins/skynex-runtime.ts",
-      "sourceSha256": "ee2b4d72b4e7f0f859739a963633780a502422f04c300e7759947ad6ff458303",
-      "generatedSha256": "ee2b4d72b4e7f0f859739a963633780a502422f04c300e7759947ad6ff458303",
-      "transformation": "v2-adaptation",
-      "sourceReferences": []
-    },
-    {
       "target": "native/hooks/prompt.ts",
       "source": "native/hooks/prompt.ts",
       "sourceSha256": "831ba19799445754976bc4895e2c7358550272b0f4223db46f218d181943f68d",
       "generatedSha256": "831ba19799445754976bc4895e2c7358550272b0f4223db46f218d181943f68d",
+      "transformation": "v2-adaptation",
+      "sourceReferences": []
+    },
+    {
+      "target": "native/plugins/sky-agents/core/catalog.ts",
+      "source": "packages/sky-agents/src/catalog.ts",
+      "sourceSha256": "8b0cdb0de262b1992284de13258e9a8eff5c6b5fd25b0d14bfcbcf6a4c0bf9c8",
+      "generatedSha256": "8b0cdb0de262b1992284de13258e9a8eff5c6b5fd25b0d14bfcbcf6a4c0bf9c8",
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/catalog.ts",
+          "sha256": "8b0cdb0de262b1992284de13258e9a8eff5c6b5fd25b0d14bfcbcf6a4c0bf9c8"
+        }
+      ]
+    },
+    {
+      "target": "native/plugins/sky-agents/core/index.ts",
+      "source": "packages/sky-agents/src/index.ts",
+      "sourceSha256": "57a30bc2f3e402dc58ec9ba575450fb09d8052e97975ec1909a228e5b97474bf",
+      "generatedSha256": "57a30bc2f3e402dc58ec9ba575450fb09d8052e97975ec1909a228e5b97474bf",
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/index.ts",
+          "sha256": "57a30bc2f3e402dc58ec9ba575450fb09d8052e97975ec1909a228e5b97474bf"
+        }
+      ]
+    },
+    {
+      "target": "native/plugins/sky-agents/core/profile-apply.ts",
+      "source": "packages/sky-agents/src/profile-apply.ts",
+      "sourceSha256": "c8ea1ced18c5eae16d5d7c69daf4c28f8f9e50f39048f62815c063c871b9d90c",
+      "generatedSha256": "790cba8e9f16c55c62dbfd05eacfc70da8dd0cf3037390d1e98a4f5e27b68cb8",
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/profile-apply.ts",
+          "sha256": "c8ea1ced18c5eae16d5d7c69daf4c28f8f9e50f39048f62815c063c871b9d90c"
+        }
+      ]
+    },
+    {
+      "target": "native/plugins/sky-agents/core/profiles.ts",
+      "source": "packages/sky-agents/src/profiles.ts",
+      "sourceSha256": "49c0216749299a8ab2105ce2f003671507c6b44f8308c74999f7d9e871482068",
+      "generatedSha256": "49c0216749299a8ab2105ce2f003671507c6b44f8308c74999f7d9e871482068",
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/profiles.ts",
+          "sha256": "49c0216749299a8ab2105ce2f003671507c6b44f8308c74999f7d9e871482068"
+        }
+      ]
+    },
+    {
+      "target": "native/plugins/sky-agents/core/roots.ts",
+      "source": "packages/sky-agents/src/roots.ts",
+      "sourceSha256": "2024c780510cfb1320a0bde60132622ce4d9d49b914a83240442239bb18475c4",
+      "generatedSha256": "2024c780510cfb1320a0bde60132622ce4d9d49b914a83240442239bb18475c4",
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/roots.ts",
+          "sha256": "2024c780510cfb1320a0bde60132622ce4d9d49b914a83240442239bb18475c4"
+        }
+      ]
+    },
+    {
+      "target": "native/plugins/sky-agents/core/rpc.ts",
+      "source": "packages/sky-agents/src/rpc.ts",
+      "sourceSha256": "4a4db8cfe66514fa41c85daeb1196ab86baa3bcc046afac1a4eb15ca93239bcc",
+      "generatedSha256": "4a4db8cfe66514fa41c85daeb1196ab86baa3bcc046afac1a4eb15ca93239bcc",
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/rpc.ts",
+          "sha256": "4a4db8cfe66514fa41c85daeb1196ab86baa3bcc046afac1a4eb15ca93239bcc"
+        }
+      ]
+    },
+    {
+      "target": "native/plugins/sky-agents/core/storage.ts",
+      "source": "packages/sky-agents/src/storage.ts",
+      "sourceSha256": "3883fd3e475ce517e6e0be77ee4aba20c1d477cb68d8bcdcd0792fde185875e9",
+      "generatedSha256": "3883fd3e475ce517e6e0be77ee4aba20c1d477cb68d8bcdcd0792fde185875e9",
+      "transformation": "v2-adaptation",
+      "sourceReferences": [
+        {
+          "path": "packages/sky-agents/src/storage.ts",
+          "sha256": "3883fd3e475ce517e6e0be77ee4aba20c1d477cb68d8bcdcd0792fde185875e9"
+        }
+      ]
+    },
+    {
+      "target": "native/plugins/sky-agents/index.ts",
+      "source": "native/plugins/sky-agents/index.ts",
+      "sourceSha256": "310d26ca105f828e077d519d64e857f0ccc6c8a26e93ef59f5f92bfad1fe04e0",
+      "generatedSha256": "310d26ca105f828e077d519d64e857f0ccc6c8a26e93ef59f5f92bfad1fe04e0",
       "transformation": "v2-adaptation",
       "sourceReferences": []
     },
@@ -255,85 +353,20 @@
       "sourceReferences": []
     },
     {
-      "target": "native/plugins/sky-agents/index.ts",
-      "source": "native/plugins/sky-agents/index.ts",
-      "sourceSha256": "310d26ca105f828e077d519d64e857f0ccc6c8a26e93ef59f5f92bfad1fe04e0",
-      "generatedSha256": "310d26ca105f828e077d519d64e857f0ccc6c8a26e93ef59f5f92bfad1fe04e0",
+      "target": "native/plugins/sky-agents/rpc.ts",
+      "source": "native/plugins/sky-agents/rpc.ts",
+      "sourceSha256": "3fbdb8ee3eb99c92bfb2a61cbecd8c49ad8ce74f315ac5cfc3fd3640fe0c4304",
+      "generatedSha256": "3fbdb8ee3eb99c92bfb2a61cbecd8c49ad8ce74f315ac5cfc3fd3640fe0c4304",
       "transformation": "v2-adaptation",
       "sourceReferences": []
     },
     {
       "target": "native/plugins/sky-agents/tui.tsx",
       "source": "native/plugins/sky-agents/tui.tsx",
-      "sourceSha256": "6d9bd3448709d4054ba4552a95e642836200fb3236804513806f4e7f4934edb6",
-      "generatedSha256": "6d9bd3448709d4054ba4552a95e642836200fb3236804513806f4e7f4934edb6",
+      "sourceSha256": "974d027b5198a4b5664054f862e7cdbdab903dd947acf88fd91fe84b72e1beb4",
+      "generatedSha256": "974d027b5198a4b5664054f862e7cdbdab903dd947acf88fd91fe84b72e1beb4",
       "transformation": "v2-adaptation",
       "sourceReferences": []
-    },
-    {
-      "target": "native/plugins/sky-agents/rpc.ts",
-      "source": "native/plugins/sky-agents/rpc.ts",
-      "sourceSha256": "1d813a7707c038068c0b3347a3aed2c646d3b98afe278de7df7423daeaedc009",
-      "generatedSha256": "1d813a7707c038068c0b3347a3aed2c646d3b98afe278de7df7423daeaedc009",
-      "transformation": "v2-adaptation",
-      "sourceReferences": []
-    },
-    {
-      "target": "native/plugins/sky-agents/vendor/jsonc-parser/main.js",
-      "source": "npm:jsonc-parser@3.3.1/lib/esm/main.js",
-      "sourceSha256": "d09565a36368b66aedf0a800b8556239f86c8571ded62218ff93483cfe965844",
-      "generatedSha256": "d09565a36368b66aedf0a800b8556239f86c8571ded62218ff93483cfe965844",
-      "transformation": "vendored-jsonc-parser-3.3.1",
-      "sourceReferences": [
-        {
-          "path": "npm:jsonc-parser@3.3.1/lib/esm/main.js",
-          "sha256": "d09565a36368b66aedf0a800b8556239f86c8571ded62218ff93483cfe965844"
-        }
-      ],
-      "package": "jsonc-parser",
-      "packageVersion": "3.3.1",
-      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
-      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
-      "upstreamTag": "v3.3.1",
-      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
-    },
-    {
-      "target": "native/plugins/sky-agents/vendor/jsonc-parser/main.d.ts",
-      "source": "npm:jsonc-parser@3.3.1/lib/esm/main.d.ts",
-      "sourceSha256": "f1d603af05e59e26aae3d9fa7bb0138e744bfbfc9f4793ddeaabe5c85da1d30f",
-      "generatedSha256": "f1d603af05e59e26aae3d9fa7bb0138e744bfbfc9f4793ddeaabe5c85da1d30f",
-      "transformation": "vendored-jsonc-parser-3.3.1",
-      "sourceReferences": [
-        {
-          "path": "npm:jsonc-parser@3.3.1/lib/esm/main.d.ts",
-          "sha256": "f1d603af05e59e26aae3d9fa7bb0138e744bfbfc9f4793ddeaabe5c85da1d30f"
-        }
-      ],
-      "package": "jsonc-parser",
-      "packageVersion": "3.3.1",
-      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
-      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
-      "upstreamTag": "v3.3.1",
-      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
-    },
-    {
-      "target": "native/plugins/sky-agents/vendor/jsonc-parser/LICENSE.md",
-      "source": "npm:jsonc-parser@3.3.1/LICENSE.md",
-      "sourceSha256": "d0e26984080b12c7830983ef4de2ec522e1aa94047f2753347953b278e9c66e0",
-      "generatedSha256": "d0e26984080b12c7830983ef4de2ec522e1aa94047f2753347953b278e9c66e0",
-      "transformation": "vendored-jsonc-parser-3.3.1",
-      "sourceReferences": [
-        {
-          "path": "npm:jsonc-parser@3.3.1/LICENSE.md",
-          "sha256": "d0e26984080b12c7830983ef4de2ec522e1aa94047f2753347953b278e9c66e0"
-        }
-      ],
-      "package": "jsonc-parser",
-      "packageVersion": "3.3.1",
-      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
-      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
-      "upstreamTag": "v3.3.1",
-      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
     },
     {
       "target": "native/plugins/sky-agents/vendor/jsonc-parser/impl/edit.js",
@@ -431,95 +464,109 @@
       "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
     },
     {
-      "target": "native/plugins/sky-agents/core/catalog.ts",
-      "source": "packages/sky-agents/src/catalog.ts",
-      "sourceSha256": "8b0cdb0de262b1992284de13258e9a8eff5c6b5fd25b0d14bfcbcf6a4c0bf9c8",
-      "generatedSha256": "8b0cdb0de262b1992284de13258e9a8eff5c6b5fd25b0d14bfcbcf6a4c0bf9c8",
-      "transformation": "v2-adaptation",
+      "target": "native/plugins/sky-agents/vendor/jsonc-parser/LICENSE.md",
+      "source": "npm:jsonc-parser@3.3.1/LICENSE.md",
+      "sourceSha256": "d0e26984080b12c7830983ef4de2ec522e1aa94047f2753347953b278e9c66e0",
+      "generatedSha256": "d0e26984080b12c7830983ef4de2ec522e1aa94047f2753347953b278e9c66e0",
+      "transformation": "vendored-jsonc-parser-3.3.1",
       "sourceReferences": [
         {
-          "path": "packages/sky-agents/src/catalog.ts",
-          "sha256": "8b0cdb0de262b1992284de13258e9a8eff5c6b5fd25b0d14bfcbcf6a4c0bf9c8"
+          "path": "npm:jsonc-parser@3.3.1/LICENSE.md",
+          "sha256": "d0e26984080b12c7830983ef4de2ec522e1aa94047f2753347953b278e9c66e0"
         }
-      ]
+      ],
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
     },
     {
-      "target": "native/plugins/sky-agents/core/index.ts",
-      "source": "packages/sky-agents/src/index.ts",
-      "sourceSha256": "57a30bc2f3e402dc58ec9ba575450fb09d8052e97975ec1909a228e5b97474bf",
-      "generatedSha256": "57a30bc2f3e402dc58ec9ba575450fb09d8052e97975ec1909a228e5b97474bf",
-      "transformation": "v2-adaptation",
+      "target": "native/plugins/sky-agents/vendor/jsonc-parser/main.d.ts",
+      "source": "npm:jsonc-parser@3.3.1/lib/esm/main.d.ts",
+      "sourceSha256": "f1d603af05e59e26aae3d9fa7bb0138e744bfbfc9f4793ddeaabe5c85da1d30f",
+      "generatedSha256": "f1d603af05e59e26aae3d9fa7bb0138e744bfbfc9f4793ddeaabe5c85da1d30f",
+      "transformation": "vendored-jsonc-parser-3.3.1",
       "sourceReferences": [
         {
-          "path": "packages/sky-agents/src/index.ts",
-          "sha256": "57a30bc2f3e402dc58ec9ba575450fb09d8052e97975ec1909a228e5b97474bf"
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/main.d.ts",
+          "sha256": "f1d603af05e59e26aae3d9fa7bb0138e744bfbfc9f4793ddeaabe5c85da1d30f"
         }
-      ]
+      ],
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
     },
     {
-      "target": "native/plugins/sky-agents/core/profile-apply.ts",
-      "source": "packages/sky-agents/src/profile-apply.ts",
-      "sourceSha256": "c8ea1ced18c5eae16d5d7c69daf4c28f8f9e50f39048f62815c063c871b9d90c",
-      "generatedSha256": "790cba8e9f16c55c62dbfd05eacfc70da8dd0cf3037390d1e98a4f5e27b68cb8",
-      "transformation": "v2-adaptation",
+      "target": "native/plugins/sky-agents/vendor/jsonc-parser/main.js",
+      "source": "npm:jsonc-parser@3.3.1/lib/esm/main.js",
+      "sourceSha256": "d09565a36368b66aedf0a800b8556239f86c8571ded62218ff93483cfe965844",
+      "generatedSha256": "d09565a36368b66aedf0a800b8556239f86c8571ded62218ff93483cfe965844",
+      "transformation": "vendored-jsonc-parser-3.3.1",
       "sourceReferences": [
         {
-          "path": "packages/sky-agents/src/profile-apply.ts",
-          "sha256": "c8ea1ced18c5eae16d5d7c69daf4c28f8f9e50f39048f62815c063c871b9d90c"
+          "path": "npm:jsonc-parser@3.3.1/lib/esm/main.js",
+          "sha256": "d09565a36368b66aedf0a800b8556239f86c8571ded62218ff93483cfe965844"
         }
-      ]
+      ],
+      "package": "jsonc-parser",
+      "packageVersion": "3.3.1",
+      "packageIntegrity": "sha512-HUgH65KyejrUFPvHFPbqOY0rsFip3Bo5wb4ngvdi1EpCYWUQDC5V+Y7mZws+DLkr4M//zQJoanu1SP+87Dv1oQ==",
+      "upstreamRepository": "https://github.com/microsoft/node-jsonc-parser",
+      "upstreamTag": "v3.3.1",
+      "npmTarball": "https://registry.npmjs.org/jsonc-parser/-/jsonc-parser-3.3.1.tgz"
     },
     {
-      "target": "native/plugins/sky-agents/core/profiles.ts",
-      "source": "packages/sky-agents/src/profiles.ts",
-      "sourceSha256": "7916fafac31dd7a99267a2e186c3f0d12124564d231ebfab4b31174960076624",
-      "generatedSha256": "7916fafac31dd7a99267a2e186c3f0d12124564d231ebfab4b31174960076624",
+      "target": "native/plugins/skynex-tasks/index.ts",
+      "source": "native/plugins/skynex-tasks/index.ts",
+      "sourceSha256": "84d81fac53ce9af625641483f7ae2c777a56acb9cbf655860b854edcb75f739f",
+      "generatedSha256": "84d81fac53ce9af625641483f7ae2c777a56acb9cbf655860b854edcb75f739f",
       "transformation": "v2-adaptation",
-      "sourceReferences": [
-        {
-          "path": "packages/sky-agents/src/profiles.ts",
-          "sha256": "7916fafac31dd7a99267a2e186c3f0d12124564d231ebfab4b31174960076624"
-        }
-      ]
+      "sourceReferences": []
     },
     {
-      "target": "native/plugins/sky-agents/core/roots.ts",
-      "source": "packages/sky-agents/src/roots.ts",
-      "sourceSha256": "2024c780510cfb1320a0bde60132622ce4d9d49b914a83240442239bb18475c4",
-      "generatedSha256": "2024c780510cfb1320a0bde60132622ce4d9d49b914a83240442239bb18475c4",
+      "target": "native/plugins/skynex-tasks/package.json",
+      "source": "native/plugins/skynex-tasks/package.json",
+      "sourceSha256": "b61edcdcc0c3b78ada5fd12205e485944b1d61a7f7c1838906b4dd85190c1882",
+      "generatedSha256": "b61edcdcc0c3b78ada5fd12205e485944b1d61a7f7c1838906b4dd85190c1882",
       "transformation": "v2-adaptation",
-      "sourceReferences": [
-        {
-          "path": "packages/sky-agents/src/roots.ts",
-          "sha256": "2024c780510cfb1320a0bde60132622ce4d9d49b914a83240442239bb18475c4"
-        }
-      ]
+      "sourceReferences": []
     },
     {
-      "target": "native/plugins/sky-agents/core/rpc.ts",
-      "source": "packages/sky-agents/src/rpc.ts",
-      "sourceSha256": "3737fecef45d39be1de7302360d90bb8cbcb55e5741b224a8696c698eed28e29",
-      "generatedSha256": "3737fecef45d39be1de7302360d90bb8cbcb55e5741b224a8696c698eed28e29",
+      "target": "native/plugins/skynex-tasks/tui.tsx",
+      "source": "native/plugins/skynex-tasks/tui.tsx",
+      "sourceSha256": "41e294be1beac06ecf24ea893056713bbd83e39723bc1cd2dca8dd97df101f14",
+      "generatedSha256": "41e294be1beac06ecf24ea893056713bbd83e39723bc1cd2dca8dd97df101f14",
       "transformation": "v2-adaptation",
-      "sourceReferences": [
-        {
-          "path": "packages/sky-agents/src/rpc.ts",
-          "sha256": "3737fecef45d39be1de7302360d90bb8cbcb55e5741b224a8696c698eed28e29"
-        }
-      ]
+      "sourceReferences": []
     },
     {
-      "target": "native/plugins/sky-agents/core/storage.ts",
-      "source": "packages/sky-agents/src/storage.ts",
-      "sourceSha256": "3883fd3e475ce517e6e0be77ee4aba20c1d477cb68d8bcdcd0792fde185875e9",
-      "generatedSha256": "3883fd3e475ce517e6e0be77ee4aba20c1d477cb68d8bcdcd0792fde185875e9",
+      "target": "native/plugins/skynex-tasks/snapshot.ts",
+      "source": "native/plugins/skynex-tasks/snapshot.ts",
+      "sourceSha256": "cbbb4aeabebf13a3bd8ceec44b017a6435deca321ee99db8bb1c85fdde021cc5",
+      "generatedSha256": "cbbb4aeabebf13a3bd8ceec44b017a6435deca321ee99db8bb1c85fdde021cc5",
       "transformation": "v2-adaptation",
-      "sourceReferences": [
-        {
-          "path": "packages/sky-agents/src/storage.ts",
-          "sha256": "3883fd3e475ce517e6e0be77ee4aba20c1d477cb68d8bcdcd0792fde185875e9"
-        }
-      ]
+      "sourceReferences": []
+    },
+    {
+      "target": "native/plugins/skynex-tasks/controller.ts",
+      "source": "native/plugins/skynex-tasks/controller.ts",
+      "sourceSha256": "7a9e73f5890e4f67b77e289fae72dec79bec908711f41f7bc895cdf3e1b0cd60",
+      "generatedSha256": "7a9e73f5890e4f67b77e289fae72dec79bec908711f41f7bc895cdf3e1b0cd60",
+      "transformation": "v2-adaptation",
+      "sourceReferences": []
+    },
+    {
+      "target": "native/plugins/skynex-runtime.ts",
+      "source": "native/plugins/skynex-runtime.ts",
+      "sourceSha256": "43a8edcb41f8185a912ae50042c0120d34c3fbe5a4888399ebfa7670000760a2",
+      "generatedSha256": "43a8edcb41f8185a912ae50042c0120d34c3fbe5a4888399ebfa7670000760a2",
+      "transformation": "v2-adaptation",
+      "sourceReferences": []
     }
   ]
 }

@@ -1,0 +1,9 @@
+{
+  "name": "@skynex-internal/tasks-node",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./dist/index.js" },
+  "dependencies": { "@skynex-internal/tasks": "workspace:*" },
+  "scripts": { "test": "node --test dist/read-service.test.js dist/fs-safe.test.js" }
+}
