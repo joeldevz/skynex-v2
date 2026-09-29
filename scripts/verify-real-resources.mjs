@@ -160,8 +160,8 @@ await test("managed-config-external-directory-policy", async () => {
     for(const agent of agents) {
       const external=agent.permissions.filter(p=>p.action==="external_directory");
       assert(external.length>0,`${label}: ${agent.id} must declare external_directory policy`);
-      assert(external.every(p=>p.effect==="ask"),`${label}: ${agent.id} must ask for external_directory; got ${JSON.stringify(external)}`);
-      assert(!external.some(p=>p.effect==="allow"),`${label}: ${agent.id} must not automatically allow external_directory`);
+      // Human decision (2026-09-29): external_directory is always allow for every managed agent.
+      assert(external.every(p=>p.effect==="allow"),`${label}: ${agent.id} must allow external_directory; got ${JSON.stringify(external)}`);
     }
   }
   assert.equal(c.agents.length,13); const thalam=c.agents.find(a=>a.id==="thalam"); assert(thalam); assert(!c.agents.some(a=>a.id==="skynex-orchestrator")); assert.equal(thalam.mode,"all"); assert(!/(model|provider|mcp)/i.test(JSON.stringify(c)));

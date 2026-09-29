@@ -6,85 +6,85 @@
       "target": "canonical/agents/coder.md",
       "source": "agents/coder.md",
       "sourceSha256": "bc330513d8b3fa760b06b69942cf8e10388015ddcee2afe8c3361f5bed1e6714",
-      "generatedSha256": "e228d668fe9b45951c0303b0b1f1f1a59a662f0bd7f1734772c6fc51bf4c4f7b"
+      "generatedSha256": "bda823203f901db2a3ffdc2c86c26935061ecc85a3842a59377b7d1d4ed8836b"
     },
     {
       "target": "canonical/agents/diagnostic-researcher.md",
       "source": "agents/diagnostic-researcher.md",
       "sourceSha256": "4d399e88d0f1d2668a566aa78c91f5e3205747124d926653dc1656c6dc537e7c",
-      "generatedSha256": "79846362b24783c92914c5153830cfe5ec59a925daee4d71e97c03b2479f0d08"
+      "generatedSha256": "ad430f70309ef0b60b6366f1e44f4007b64b12570ebf9eb81117e28f2d249913"
     },
     {
       "target": "canonical/agents/infrastructure-engineer.md",
       "source": "agents/infrastructure-engineer.md",
       "sourceSha256": "af54776386b264088d828c50e856ba7ee196e4143111ef1ede909f8a04f7173c",
-      "generatedSha256": "594c0f6124d771e2b03a6d0c4f0fb4b477254d0f56708ee28ba4a6f8e9eca580"
+      "generatedSha256": "ecefd8896c3f90ddcd9075f18b5c48873cf4c54aceb431821a55fd1913c0d63f"
     },
     {
       "target": "canonical/agents/mentor.md",
       "source": "agents/mentor.md",
       "sourceSha256": "fa06027932f47681022c1e55c3e7a0c912fc8124756a60a2038d9906f33e548f",
-      "generatedSha256": "9622a6210038b1cd0ab86933779603772e9feedc22e9f09d61166baf67c18887"
+      "generatedSha256": "37b374cedcde3746c95b853a0c8675ac92b3db3530cc8cfb22b65a42706896e8"
     },
     {
       "target": "canonical/agents/pr-reviewer.md",
       "source": "agents/pr-reviewer.md",
       "sourceSha256": "7c18cf1b2272debeba87088d4e501873b26c432053fa126ad28852a10c9ea568",
-      "generatedSha256": "df28b4d78a097d792f524c91903d84b0a0bea9eeb0c0cb1f68a576a64b04522b"
+      "generatedSha256": "f781195ba1f91f4a6f9ab47850136c38d3d832620705f680d81053df3a82267a"
     },
     {
       "target": "canonical/agents/scout.md",
       "source": "generated",
       "sourceSha256": null,
-      "generatedSha256": "577eec411a03dfb51fecc1b65d61d2add092cb01cb814c19f77b02d04c278ac5"
+      "generatedSha256": "9b8894b1455b7eae99ac43d0e79beef07a03523e8942799ce543d4a70d216ddc"
     },
     {
       "target": "canonical/agents/security.md",
       "source": "agents/security.md",
       "sourceSha256": "6278dfefac859a753ceb564f244d6beb733e481a4543a37822fbf1275c2aa601",
-      "generatedSha256": "878e1cd0cdc06349b332120e78ce424dd90573c0946bbb193d95262ae99899aa"
+      "generatedSha256": "e3b9dea3fd0f15148098f81452ed455f5f382cecd45e0e82f679db8698cdc115"
     },
     {
       "target": "canonical/agents/skill-validator.md",
       "source": "agents/skill-validator.md",
       "sourceSha256": "e46be0762de44e0f5b545d9bb0e5547b492de45702ba9ca3def376640deff44d",
-      "generatedSha256": "3ab58659118a25433152fd9ea561274868fba48e762439bbf5ba2004763cc3db"
+      "generatedSha256": "74b010f9608c9cbe15fc5bfe8163192a008c15ed7d9153d1785f3b631b662961"
     },
     {
       "target": "canonical/agents/tech-planner.md",
       "source": "agents/tech-planner.md",
       "sourceSha256": "0d47fd9ce841766ac60eedf1fa0496aca85bd18b28a7682d44f8325dec10eacd",
-      "generatedSha256": "d27655dbceeb50d6128f5f04ac59586d2dc818680c833c4fb61bf9822842460d"
+      "generatedSha256": "fc678de608b79a567fe587012a75b72e010d8a5de86483cfd8cc30ef98e13b40"
     },
     {
       "target": "canonical/agents/test-engineer.md",
       "source": "agents/test-engineer.md",
       "sourceSha256": "87e6b9ba85ccc9830b6f4d0a3a0175cb4546ad5496b39d0c40171e22d485290e",
-      "generatedSha256": "3e31c9981c100a40f2bfb66972b20ea0335e2bb4fc562a3b3313055d0505638d"
+      "generatedSha256": "8255a513db511cc7b6ce4198b14336f534938b44632e1f520ac568426aa21667"
     },
     {
       "target": "canonical/agents/test-reviewer.md",
       "source": "agents/test-reviewer.md",
       "sourceSha256": "c30b09d4caa188e7b39501ef8f5512de2975e625164670ec35bbca453a17b32e",
-      "generatedSha256": "28715397d339820286e6f4c64ad8b9277f4bf3ae4ee2a3868812b0f6d99522a7"
+      "generatedSha256": "cd3e67a55b855c0b6cb79bf7f5d0ff070011c0bbfc9730dd6be9472681145e40"
     },
     {
       "target": "canonical/agents/thalam.md",
       "source": "agents/skynex-orchestrator.md",
       "sourceSha256": "eb46ce33b0cdc5713b1d42a5f89eec4bd4182e0dbd31acb42d8eba25f5be6170",
-      "generatedSha256": "85332a713228cfed20ddd532dafe46470dc51f71ed0a210d756d20413fe33b94"
+      "generatedSha256": "f404e0a4225da14815917c288cf2cf221a4b6ffb03678b2c42c927883a4dcca7"
     },
     {
       "target": "canonical/agents/verifier.md",
       "source": "agents/verifier.md",
       "sourceSha256": "f75381cf7aa64e7c1091b8c71fe17765bdd5e298564e285024f2ac8dcb6f4e2b",
-      "generatedSha256": "2e13634b5863294a9641864f0c3fb5ad1e09d557fda1ca2df5a0da2ace7d4722"
+      "generatedSha256": "a0476240c607fe878e83b11a784da0343559b92e14f4a2d5318e3670159a94ff"
     },
     {
       "target": "canonical/config/managed-agents.json",
       "source": "generated",
       "sourceSha256": null,
-      "generatedSha256": "99f36d54672d58845935d5e73a0ee980aaa2ff9416703fb644429e9205c7521f"
+      "generatedSha256": "0ddec8beb0ed36b0d912bfce7f4523543d49c173dcf1d27dccafc0727f18d977"
     },
     {
       "target": "canonical/skills/_shared/advisor-protocol.md",

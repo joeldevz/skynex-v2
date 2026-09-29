@@ -7,7 +7,7 @@ permissions:
     effect: "ask"
   - action: "external_directory"
     resource: "*"
-    effect: "ask"
+    effect: "allow"
   - action: "diagnostic_read"
     resource: "*"
     effect: "allow"

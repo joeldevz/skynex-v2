@@ -64,7 +64,7 @@ permissions:
     effect: "deny"
   - action: "external_directory"
     resource: "*"
-    effect: "ask"
+    effect: "allow"
   - action: "glob"
     resource: "*"
     effect: "allow"
