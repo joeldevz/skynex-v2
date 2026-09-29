@@ -17,10 +17,12 @@ import type {
   StepDraft,
   StepInstructionView,
   Task,
+  TaskBoardView,
   TaskListEntry,
+  TaskSummary,
   TaskStatusView,
 } from "./task.js";
-import type { InstructionFile, TaskServiceDependencies, TaskStore } from "./ports.js";
+import type { InstructionFile, TaskReader, TaskServiceDependencies, TaskStore } from "./ports.js";
 
 export interface TaskService {
   createTask(input: CreateTaskInput): Promise<{
@@ -29,6 +31,7 @@ export interface TaskService {
     readonly instructionPaths: readonly string[];
   }>;
   listTasks(): Promise<readonly TaskListEntry[]>;
+  getBoard(): Promise<TaskBoardView>;
   getStatus(taskId: string | null): Promise<TaskStatusView>;
   readStepInstruction(taskId: string | null, stepId: string | null): Promise<StepInstructionView>;
   addStep(
@@ -102,25 +105,15 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
       return store.list();
     },
 
+    async getBoard() {
+      return createTaskBoardView(await store.list());
+    },
+
     async getStatus(taskId) {
       if (taskId === null) {
         throw new TaskError("NO_ACTIVE_TASK", "No active task is selected");
       }
-      const task = await store.read(taskId);
-      return {
-        taskId: task.id,
-        title: task.title,
-        status: task.status,
-        revision: task.revision,
-        nextStepId: computeNextStepId(task.steps),
-        blockedStepIds: task.steps.filter((step) => step.status === "blocked").map((step) => step.id),
-        steps: task.steps.map((step) => ({
-          id: step.id,
-          title: step.title,
-          status: step.status,
-          dependsOn: [...step.dependsOn],
-        })),
-      };
+      return createTaskStatusView(await store.read(taskId));
     },
 
     async readStepInstruction(taskId, stepId) {
@@ -248,6 +241,54 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
       };
     },
   };
+}
+
+/** Read-only facade for UIs which must not receive task mutation capabilities. */
+export interface TaskReadService {
+  getBoard(): Promise<TaskBoardView>;
+  getStatus(taskId: string): Promise<TaskStatusView>;
+}
+
+export function createTaskReadService(store: TaskReader): TaskReadService {
+  return {
+    async getBoard() {
+      return createTaskBoardView(await store.list());
+    },
+    async getStatus(taskId) {
+      return createTaskStatusView(await store.read(taskId));
+    },
+  };
+}
+
+export function createTaskBoardView(entries: readonly TaskListEntry[]): TaskBoardView {
+  const tasks = entries.filter(isTaskSummary);
+  return { tasks, omittedCount: entries.length - tasks.length };
+}
+
+export function createTaskStatusView(task: Task): TaskStatusView {
+  return {
+    taskId: task.id,
+    title: task.title,
+    status: task.status,
+    revision: task.revision,
+    nextStepId: computeNextStepId(task.steps),
+    blockedStepIds: task.steps.filter((step) => step.status === "blocked").map((step) => step.id),
+    steps: task.steps.map(toStatusStep),
+  };
+}
+
+function toStatusStep(step: Step): TaskStatusView["steps"][number] {
+  return {
+    id: step.id,
+    title: step.title,
+    status: step.status,
+    dependsOn: [...step.dependsOn],
+    ...(step.blockReason === undefined ? {} : { blockReason: step.blockReason }),
+  };
+}
+
+function isTaskSummary(entry: TaskListEntry): entry is TaskSummary {
+  return entry.format === "task" && entry.title !== undefined && entry.status !== undefined && entry.revision !== undefined && entry.stepCount !== undefined && entry.doneCount !== undefined;
 }
 
 function buildPendingStep(id: string, draft: StepDraft): Step {

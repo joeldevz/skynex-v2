@@ -6,6 +6,7 @@ import { assert, fresh, readFile, join, sha, snapshot, exists } from "./verify-i
 
 const cli = resolve("apps/cli/dist/index.js");
 const nonPluginComponents = ["configuration", "agents", "skills"];
+const globalPluginPackages = ["./skynex/plugins/runtime", "./skynex/plugins/sky-agents", "./skynex/plugins/skynex-tasks"];
 function configValue(text) {
   const errors = [];
   const value = parse(text, errors);
@@ -162,7 +163,7 @@ export async function verify(test) {
     const before = await snapshot(f.root);
     const args = f.args("install");
     args.splice(args.indexOf("--components"), 2, "--components", "plugins");
-    f.run(args, "Sky Agents plugins can only be installed globally");
+    f.run(args, "Skynex plugins can only be installed globally");
     assert.deepEqual(await snapshot(f.root), before);
   });
   await test("cli-project-default-yes-installs-nonempty-nonplugin-components", async () => {
@@ -210,7 +211,7 @@ export async function verify(test) {
     assert.equal(result.status, 0, result.output);
     assert.deepEqual(await snapshot(f.root), before);
   });
-  await test("cli-global-default-yes-includes-both-plugins-and-no-commands", async () => {
+  await test("cli-global-default-yes-includes-all-plugins-and-no-commands", async () => {
     const f = await setup("global-default");
     f.run(["install", "--global", "--state-dir", f.state, "--yes", "--allow-executable-plugins"]);
     const lock = JSON.parse(await readFile(f.lockPath));
@@ -219,7 +220,24 @@ export async function verify(test) {
     const configResource = lock.resources.find((resource) => resource.id === "opencode-config");
     assert(configResource);
     const plugins = configValue(await readFile(join(f.root, "xdg-config", "opencode", configResource.relativePath), "utf8")).plugins;
-    assert.deepEqual(plugins.map((plugin) => plugin.package), ["./skynex/plugins/runtime", "./skynex/plugins/sky-agents"]);
+    assert.deepEqual(plugins.map((plugin) => plugin.package), globalPluginPackages);
+    const taskPackage = join(f.root, "xdg-config", "opencode", "skynex/plugins/skynex-tasks/package.json");
+    const taskMetadata = JSON.parse(await readFile(taskPackage, "utf8"));
+    assert.equal(taskMetadata.exports["./tui"], "./tui.tsx");
+    const taskTui = await readFile(join(f.root, "xdg-config", "opencode", "skynex/plugins/skynex-tasks/tui.tsx"), "utf8");
+     assert.match(taskTui, /from "\.\/snapshot\.ts"/);
+     assert.match(taskTui, /from "\.\/controller\.ts"/);
+     assert.match(taskTui, /append: "sidebar\.content"/);
+     assert.match(taskTui, /sessionID=\{slot\.sessionID\}/);
+     for (const file of ["index.ts", "tui.tsx", "snapshot.ts", "controller.ts"]) {
+       const content = await readFile(join(f.root, "xdg-config", "opencode", "skynex/plugins/skynex-tasks", file), "utf8");
+       assert.equal(content, await readFile(resolve("targets/opencode/resources/native/plugins/skynex-tasks", file), "utf8"), `installed ${file} differs from source`);
+       assert.doesNotMatch(content, /node:|tasks-node|tasks-core|\.\/tasks\.js|readFile|readdir|session\.panel|palette|listTasks|getTask\(/);
+     }
+    // The historical filesystem-reader prototype bundles must never be installed.
+    for (const path of ["tasks.js", "tasks-node.js", "tasks-core", "tasks-node-core"]) {
+      assert(!await exists(join(f.root, "xdg-config", "opencode", "skynex/plugins/skynex-tasks", path)), `prototype ${path} must not be installed`);
+    }
   });
   const invalid = [
     ["unknown-flag", ["--not-a-real-flag"], "Unknown flag: --not-a-real-flag"],

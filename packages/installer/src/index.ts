@@ -42,10 +42,10 @@ const componentFor = (relativePath: string): InstallComponent =>
 
 export const createInstallPlan = async (target: TargetAdapter, roots: InstallRoots, components?: readonly InstallComponent[], options?: { readonly configPreference?: "json" | "jsonc" }): Promise<InstallPlan> => {
   const selected = components ?? (roots.scope === "project" ? ["configuration", "agents", "skills"] : ["configuration", "agents", "skills", "plugins"] satisfies InstallComponent[]);
-  // The OpenCode adapter's default catalog includes the bundled Sky runtime.
+  // The OpenCode adapter's default catalog includes the bundled Skynex plugins.
   // Other adapters may omit plugins even when no component filter is supplied.
   const selectsPlugins = components?.includes("plugins") ?? false;
-  if (roots.scope === "project" && selectsPlugins) throw new Error("Sky Agents plugins can only be installed globally");
+  if (roots.scope === "project" && selectsPlugins) throw new Error("Skynex plugins can only be installed globally");
   await assertSafeRoot(roots.targetRoot); await assertSafeRoot(roots.stateRoot);
   const detection = await target.detect(roots); const artifacts = await target.desiredArtifacts(roots, components, options);
   // Ownership must come from the complete trusted catalog, not just selected operations.
@@ -103,10 +103,11 @@ export const applyInstallPlan = async (plan: InstallPlan): Promise<ApplyResult> 
   for (const item of plan.operations) {
     const owned = installed?.resources.find((resource) => resource.id === item.artifact.resource.id && resource.relativePath === item.relativePath);
     const reviewed = plan.updateMode && ["accept-upstream", "keep-local", "skip", "preserve"].includes(item.decision ?? "");
+    const authorizedCollision = !owned && ((item.kind === "replace" && item.decision === "accept-upstream") || (item.kind === "preserve" && item.decision === "preserve")) && authorizedCollisionPlans.get(plan) === collisionAuthorization(plan);
     if (item.currentDigest !== null && !owned && !isSharedOpenCodeConfig(plan.target, item.artifact) && !((item.kind === "replace" && item.decision === "accept-upstream") || (item.kind === "preserve" && item.decision === "preserve"))) throw new Error(`Unmanaged existing resource collision: ${item.relativePath}`);
     if (owned && item.currentDigest !== owned.installedDigest && item.currentDigest !== item.desiredDigest && !reviewed) throw new Error(`Locally edited managed resource: ${item.relativePath}`);
     if (owned && !plan.updateMode && item.currentDigest !== item.desiredDigest && (owned.pendingSourceDigest !== undefined || item.currentDigest !== owned.sourceDigest)) throw new Error(`Customized managed resource requires an explicit update decision: ${item.relativePath}`);
-    if (plan.updateMode && reviewed && (!owned || item.previous?.id !== owned.id || item.previous.relativePath !== owned.relativePath)) throw new Error(`Reviewed update requires the reviewed resource: ${item.relativePath}`);
+    if (plan.updateMode && reviewed && !authorizedCollision && (!owned || item.previous?.id !== owned.id || item.previous.relativePath !== owned.relativePath)) throw new Error(`Reviewed update requires the reviewed resource: ${item.relativePath}`);
   }
   const result = await executeTransaction({ plan: plan as unknown as InstallationPlan, lockBytes: `${JSON.stringify(lock)}\n`, expectedPreviousLockDigest: plan.expectedPreviousLockDigest ?? (snapshot ? sha256(snapshot.bytes) : null) });
   return { transactionId: result.transactionId, changed: result.changed, backupRoot: result.backupRoot, lockPath: result.lockPath };

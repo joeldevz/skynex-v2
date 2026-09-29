@@ -77,7 +77,13 @@ export interface TaskStatusView {
     readonly title: string;
     readonly status: StepStatus;
     readonly dependsOn: readonly string[];
+    readonly blockReason?: string;
   }[];
+}
+
+export interface TaskBoardView {
+  readonly tasks: readonly TaskSummary[];
+  readonly omittedCount: number;
 }
 
 export interface StepInstructionView {

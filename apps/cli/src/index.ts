@@ -206,7 +206,7 @@ const needsConfig = command === "install" || command === "update" || command ===
     const ownsConfiguration = lock.installedComponents?.includes("configuration") ?? lock.resources.some((resource) => resource.id === "opencode-config");
     const ownsPlugins = lock.installedComponents?.includes("plugins") ?? lock.resources.some((resource) => resource.kind === "native" && resource.id.includes("plugin"));
     const managedAgents = ownsConfiguration ? await getManagedAgents() : [];
-    const managedPlugins = ownsPlugins ? ["./skynex/plugins/runtime", "./skynex/plugins/sky-agents"] : [];
+    const managedPlugins = ownsPlugins ? ["./skynex/plugins/runtime", "./skynex/plugins/sky-agents", "./skynex/plugins/skynex-tasks"] : [];
     const config = configResource && configPath ? { resourceId: configResource.id, relativePath: configPath, currentContent: await readFile(resolve(installRoots.targetRoot, configPath), "utf8"), removeManagedRegistration: (source: string) => removeManagedPlugin(source, managedAgents, managedPlugins) } : undefined;
     await applyUninstallPlan(createUninstallPlan({ roots: installRoots, lock, allowedResources: catalogResources, ...(config ? { config } : {}) }), catalogResources);
     p.outro("Skynex managed resources removed");
@@ -246,7 +246,7 @@ const needsConfig = command === "install" || command === "update" || command ===
     selectedComponents = components;
   }
   if (installRoots.scope === "project" && selectedComponents.includes("plugins")) {
-    throw new Error("Sky Agents plugins can only be installed globally");
+    throw new Error("Skynex plugins can only be installed globally");
   }
 
   startSpinner("Preparing a safe installation plan");

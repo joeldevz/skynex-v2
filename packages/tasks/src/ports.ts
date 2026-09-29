@@ -5,11 +5,14 @@ export interface InstructionFile {
   readonly content: string;
 }
 
-export interface TaskStore {
+export interface TaskReader {
   list(): Promise<readonly TaskListEntry[]>;
+  read(taskId: string): Promise<Task>;
+}
+
+export interface TaskStore extends TaskReader {
   exists(taskId: string): Promise<boolean>;
   create(task: Task, instructions: readonly InstructionFile[]): Promise<void>;
-  read(taskId: string): Promise<Task>;
   readInstruction(taskId: string, relativePath: string): Promise<string>;
   save(task: Task, expectedRevision: number, instructions?: readonly InstructionFile[]): Promise<void>;
 }

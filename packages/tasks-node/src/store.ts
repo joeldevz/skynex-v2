@@ -61,9 +61,9 @@ async function lstatOrUndefined(path: string): Promise<Stats | undefined> {
   }
 }
 
-async function readOutcome(path: string, maximum: number): Promise<ReadOutcome> {
+async function readOutcome(path: string, maximum: number, root: string): Promise<ReadOutcome> {
   try {
-    const text = await readFileSafe(path, maximum);
+    const text = await readFileSafe(path, maximum, undefined, root);
     return text === undefined ? { kind: "missing" } : { kind: "text", text };
   } catch (error) {
     return { kind: "error", note: messageOf(error) };
@@ -121,7 +121,7 @@ export function createFileTaskStore(options: FileTaskStoreOptions): TaskStore {
         result.push({ id, format: "unknown", note: "not a regular directory" });
         continue;
       }
-      const taskOutcome = await readOutcome(join(directory, TASK_FILE), MAX_TASK_JSON_BYTES);
+      const taskOutcome = await readOutcome(join(directory, TASK_FILE), MAX_TASK_JSON_BYTES, tasksRoot);
       if (taskOutcome.kind === "text") {
         try {
           result.push(summarize(parseTask(taskOutcome.text, id)));
@@ -134,7 +134,7 @@ export function createFileTaskStore(options: FileTaskStoreOptions): TaskStore {
         result.push({ id, format: "unknown", note: taskOutcome.note });
         continue;
       }
-      const legacyOutcome = await readOutcome(join(directory, STATUS_FILE), MAX_TASK_JSON_BYTES);
+      const legacyOutcome = await readOutcome(join(directory, STATUS_FILE), MAX_TASK_JSON_BYTES, tasksRoot);
       if (legacyOutcome.kind === "text") {
         result.push({ id, format: "legacy", note: "status.json present; not a managed task" });
         continue;
@@ -176,9 +176,9 @@ export function createFileTaskStore(options: FileTaskStoreOptions): TaskStore {
     if (!info.isDirectory()) {
       throw new TaskError("TASK_NOT_FOUND", `Task not found: ${taskId}`);
     }
-    const text = await readFileSafe(join(directory, TASK_FILE), MAX_TASK_JSON_BYTES);
+    const text = await readFileSafe(join(directory, TASK_FILE), MAX_TASK_JSON_BYTES, undefined, tasksRoot);
     if (text === undefined) {
-      const legacy = await readFileSafe(join(directory, STATUS_FILE), MAX_TASK_JSON_BYTES);
+      const legacy = await readFileSafe(join(directory, STATUS_FILE), MAX_TASK_JSON_BYTES, undefined, tasksRoot);
       if (legacy !== undefined) {
         throw new TaskError("LEGACY_FORMAT", `Task ${taskId} uses the legacy status.json format`);
       }
@@ -194,7 +194,7 @@ export function createFileTaskStore(options: FileTaskStoreOptions): TaskStore {
     }
     const directory = await assertSafeTarget(tasksRoot, taskId);
     const target = await resolveContained(directory, relativePath);
-    const text = await readFileSafe(target, MAX_INSTRUCTION_BYTES);
+    const text = await readFileSafe(target, MAX_INSTRUCTION_BYTES, undefined, tasksRoot);
     if (text === undefined) {
       throw new TaskError("STEP_NOT_FOUND", `Instruction not found: ${relativePath}`);
     }
@@ -261,7 +261,7 @@ export function createFileTaskStore(options: FileTaskStoreOptions): TaskStore {
       throw asTaskError(error);
     }
     try {
-      const currentText = await readFileSafe(join(taskDirectory, TASK_FILE), MAX_TASK_JSON_BYTES);
+      const currentText = await readFileSafe(join(taskDirectory, TASK_FILE), MAX_TASK_JSON_BYTES, undefined, tasksRoot);
       if (currentText === undefined) {
         throw new TaskError("TASK_NOT_FOUND", `Task not found: ${task.id}`);
       }
@@ -309,4 +309,8 @@ export function createFileTaskStore(options: FileTaskStoreOptions): TaskStore {
   }
 
   return { list, exists, create, read, readInstruction, save };
+}
+
+export function createFileTaskReader(options: FileTaskStoreOptions): Pick<TaskStore, "list" | "read"> {
+  return createFileTaskStore(options);
 }

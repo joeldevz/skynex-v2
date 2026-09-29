@@ -1,5 +1,5 @@
-import { writeFile, rm } from "node:fs/promises";
-import { createInstallPlan, applyInstallPlan, readInstallLock, readInstallLockSnapshot, prepareUpdatePlan } from "../packages/installer/dist/index.js";
+import { writeFile, rm, mkdir } from "node:fs/promises";
+import { createInstallPlan, applyInstallPlan, readInstallLock, readInstallLockSnapshot, prepareUpdatePlan, resolveInstallCollisions } from "../packages/installer/dist/index.js";
 import { assert, fixture, readFile, sha, fail, detection, snapshot, exists } from "./verify-installer-support.mjs";
 
 async function setup() {
@@ -34,6 +34,28 @@ function assertAccepted(resource) {
   assert.equal(resource.pendingVersion, undefined);
 }
 export async function verify(test) {
+  for (const decision of ["overwrite", "preserve"]) {
+    await test(`update-unmanaged-collision-${decision}-requires-explicit-choice`, async () => {
+      const f = await fixture(`update-collision-${decision}`);
+      let artifacts = [{ resource: { id: "existing", kind: "skill", version: "1" }, component: "skills", relativePath: "skills/existing.md", content: "existing" }];
+      const adapter = { detect: detection, desiredArtifacts: async () => artifacts };
+      await applyInstallPlan(await createInstallPlan(adapter, f.roots));
+      const path = "skills/new.md";
+      artifacts = [...artifacts, { resource: { id: "new", kind: "skill", version: "1" }, component: "skills", relativePath: path, content: "new" }];
+      await mkdir(f.target("skills"), { recursive: true });
+      await writeFile(f.target(path), "new");
+      const base = await createInstallPlan(adapter, f.roots);
+      assert.equal(base.operations.find((item) => item.relativePath === path).kind, "conflict");
+      const before = await snapshot(f.root);
+      const prior = await readInstallLock(f.roots);
+      await fail(() => applyInstallPlan(prepareUpdatePlan(base, prior)), "Unresolved update conflict");
+      assert.deepEqual(await snapshot(f.root), before);
+      const plan = prepareUpdatePlan(resolveInstallCollisions(base, new Map([[path, decision]])), prior);
+      await applyInstallPlan(plan);
+      assert.equal(await readFile(f.target(path), "utf8"), "new");
+      assert.equal((await readInstallLock(f.roots)).resources.some((item) => item.relativePath === path), decision === "overwrite");
+    });
+  }
   for (const decision of ["skip", "keep-local"]) {
     await test(`update-${decision}-actual-callback-and-pending`, async () => {
       const f = await setup();

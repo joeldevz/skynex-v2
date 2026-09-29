@@ -1,7 +1,7 @@
 import { applyEdits, createScanner, getNodeValue, modify, parse, parseTree, printParseErrorCode, type Node, type ParseError, type FormattingOptions } from "jsonc-parser";
 const formatting: FormattingOptions = { insertSpaces: true, tabSize: 2, eol: "\n" };
 const enum JsoncToken { CommaToken = 5, EndOfFile = 17 }
-export const MANAGED_PLUGINS = ["./skynex/plugins/runtime", "./skynex/plugins/sky-agents"] as const;
+export const MANAGED_PLUGINS = ["./skynex/plugins/runtime", "./skynex/plugins/sky-agents", "./skynex/plugins/skynex-tasks"] as const;
 export interface ManagedAgent { readonly id: string; readonly mode: string; readonly permissions: readonly Record<string, string>[]; }
 export function parseManagedAgents(source: string): readonly ManagedAgent[] {
   const policy = JSON.parse(source) as { agents?: unknown };

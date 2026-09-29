@@ -44,8 +44,12 @@ async function freshRoot() {
 }
 
 function runCli(args, options = {}) {
+  // Isolated roots live outside the repo; run from the root itself so the
+  // --tasks-root containment rule (root must be inside the project) holds.
+  const rootIndex = args.indexOf("--tasks-root");
+  const defaultCwd = rootIndex >= 0 ? args[rootIndex + 1] : repoRoot;
   return spawnSync(process.execPath, [cli, "task", ...args], {
-    cwd: options.cwd ?? repoRoot,
+    cwd: options.cwd ?? defaultCwd,
     encoding: "utf8",
     timeout: 20000,
   });
@@ -740,7 +744,7 @@ await test("special-file-does-not-hang", async () => {
     const statusResult = spawnSync(
       process.execPath,
       [cli, "task", "status", "--task", "fifo-task", "--tasks-root", root, "--json"],
-      { cwd: repoRoot, encoding: "utf8", timeout: 5000 },
+      { cwd: root, encoding: "utf8", timeout: 5000 },
     );
     assert.equal(statusResult.error, undefined, `status timed out: ${statusResult.error && statusResult.error.code}`);
     assert.equal(statusResult.signal, null, `status killed by ${statusResult.signal}`);
@@ -750,7 +754,7 @@ await test("special-file-does-not-hang", async () => {
     const listResult = spawnSync(
       process.execPath,
       [cli, "task", "list", "--tasks-root", root, "--json"],
-      { cwd: repoRoot, encoding: "utf8", timeout: 5000 },
+      { cwd: root, encoding: "utf8", timeout: 5000 },
     );
     assert.equal(listResult.error, undefined, `list timed out: ${listResult.error && listResult.error.code}`);
     assert.equal(listResult.signal, null, `list killed by ${listResult.signal}`);
@@ -1113,6 +1117,19 @@ await test("instruction-file-nested-legitimate-still-works", async () => {
     assert.equal(await treeContains(join(root, "nested-task"), body), true);
   } finally {
     await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("tasks-root-outside-project-rejected", async () => {
+  const external = await freshRoot();
+  try {
+    const target = join(external, "tasks");
+    const result = runCli(["init", "Outside Task", "--tasks-root", target, "--json"], { cwd: repoRoot });
+    assert.equal(result.status, 5, result.stderr);
+    assert.equal(parseJson(result).code, "INVALID_PATH");
+    assert.deepEqual(await readdir(external), []);
+  } finally {
+    await rm(external, { recursive: true, force: true });
   }
 });
 
