@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -117,12 +118,8 @@ try {
     ["skills/skynex-tasks/SKILL.md", "canonical/skills/skynex-tasks/SKILL.md"],
     ...["core/catalog.ts", "core/index.ts", "core/profile-apply.ts", "core/profiles.ts", "core/roots.ts", "core/rpc.ts", "core/storage.ts", "index.ts", "package.json", "rpc.ts", "tui.tsx", "vendor/jsonc-parser/impl/edit.js", "vendor/jsonc-parser/impl/format.js", "vendor/jsonc-parser/impl/parser.js", "vendor/jsonc-parser/impl/scanner.js", "vendor/jsonc-parser/impl/string-intern.js", "vendor/jsonc-parser/LICENSE.md", "vendor/jsonc-parser/main.d.ts", "vendor/jsonc-parser/main.js"]
       .map((name) => [`skynex/plugins/sky-agents/${name}`, `native/plugins/sky-agents/${name}`]),
-    ...["index.ts", "package.json", "snapshot.ts", "controller.ts", "review-gate.ts", "tasks.js", "tasks-node.js", "tui.tsx"]
+    ...["index.ts", "package.json", "snapshot.ts", "controller.ts", "review-gate.ts", "tui.tsx"]
       .map((name) => [`skynex/plugins/skynex-tasks/${name}`, `native/plugins/skynex-tasks/${name}`]),
-    ...["errors.js", "index.js", "instruction.js", "ports.js", "schema.js", "service.js", "slug.js", "task.js"]
-      .map((name) => [`skynex/plugins/skynex-tasks/tasks-core/${name}`, `native/plugins/skynex-tasks/tasks-core/${name}`]),
-    ...["fs-safe.js", "index.js", "roots.js", "store.js", "system.js"]
-      .map((name) => [`skynex/plugins/skynex-tasks/tasks-node-core/${name}`, `native/plugins/skynex-tasks/tasks-node-core/${name}`]),
   ];
   for (const [relative, source] of resources) {
     const bytes = await regularFile(installed ? join(installed, relative) : join(evidence.source, source));
@@ -262,10 +259,8 @@ try {
        const source = (await regularFile(join(configDir, "skynex/plugins/skynex-tasks", name))).toString();
        assert.doesNotMatch(source, /node:|tasks-node|tasks-core|\.\/tasks\.js|child_process|readFile|readdir|session\.panel|palette|listTasks|getTask\(/);
      }
-    for (const name of ["tasks.js", "tasks-node.js"]) {
-       const wrapper = (await regularFile(join(configDir, "skynex/plugins/skynex-tasks", name))).toString();
-      assert(!/\.\.\//.test(wrapper), `Tasks ${name} must not escape its installed package`);
-    }
+    for (const name of ["tasks.js", "tasks-node.js", "tasks-core", "tasks-node-core"])
+      assert(!existsSync(join(configDir, "skynex/plugins/skynex-tasks", name)), `Prototype ${name} must not be installed`);
       evidence.tuiImport = { covered: "static-limited", cliLoaderVerified: false, packageExport: tasksPackage.exports["./tui"], source: tasksTuiPath, slot: "sidebar.content", reason: "The server /api/plugin proves only server activation; CLI loading and sidebar rendering require a separate isolated CLI/PTY check." };
   const skillPath = join(configDir, "skills/skynex-tasks/SKILL.md");
   const skillText = (await regularFile(skillPath)).toString();

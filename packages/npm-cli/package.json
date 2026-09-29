@@ -1,6 +1,6 @@
 {
   "name": "@skynex-ai/cli",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Install and manage Skynex resources for OpenCode 2",
   "license": "Apache-2.0",
   "type": "module",
