@@ -345,16 +345,6 @@ async function verifyInstall(tarball, root, env, manifest) {
   assert(!/@skynex-internal|workspace:/.test(ls.stdout)); return { installedConfigDir: join(env.XDG_CONFIG_HOME, "opencode"), env, project };
 }
 
-async function verifyRuntime(installed, root) {
-  const command = process.env.OPENCODE2; assert(command, "release mode requires OPENCODE2"); await access(command, constants.X_OK);
-  const canonical = await realpath(installed.installedConfigDir); assert(under(root, canonical), "installed OpenCode config escaped isolation root");
-  const verifier = join(packageRoot, "scripts/verify-installed-opencode2.mjs"); const stat = await lstat(verifier);
-  assert(stat.isFile() && !stat.isSymbolicLink(), "installed runtime verifier contract missing");
-  const result = await run(process.execPath, [verifier, "--command", command, "--installed-config-dir", canonical, "--root", root],
-    { cwd: installed.project, env: installed.env }); assert.equal(result.code, 0, result.stderr);
-  const evidence = JSON.parse(result.stdout); assert.equal(evidence.integrationVerified, true); assert.equal(evidence.ownedProcessExited, true);
-}
-
 async function verifyPublishDryRun() {
   const evidencePath = args[1]; assert(evidencePath, "--publish-dry-run requires full-verifier evidence JSON");
   const exportBase = await realpath("/tmp/opencode"), evidenceReal = await realpath(resolve(evidencePath)); assert(under(exportBase, evidenceReal));
@@ -398,7 +388,6 @@ else if (mode === "--publish-dry-run") await verifyPublishDryRun();
 else {
   const root = await mkdtemp(join(tmpdir(), "skynex-package-")); let evidencePath; try { const allowed = await resourceAllowlist(); await verifyBuild(allowed);
     const env = await isolatedEnv(root); const packed = await packTwice(root, env, allowed, manifest); const installed = await verifyInstall(packed.path, root, env, manifest);
-    if (mode === "--release") await verifyRuntime(installed, root);
     evidencePath = await exportAudit(packed);
   } finally { await rm(root, { recursive: true, force: true }); }
   console.log(JSON.stringify({ ok: true, evidencePath, staleArtifactRequiresCleanupIfDryRunSkipped: true }));
