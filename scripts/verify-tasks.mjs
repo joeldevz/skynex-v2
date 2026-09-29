@@ -621,7 +621,7 @@ await test("cli-json-shapes-and-exit-codes", async () => {
     const status = runCli(["status", "--task", "shapes-task", "--tasks-root", root, "--json"]);
     assert.equal(status.status, 0, status.stderr);
     assert.deepEqual(keysOf(parseJson(status)), [
-      "ok", "command", "tasksRoot", "taskId", "title", "status", "revision", "nextStepId", "blockedStepIds", "steps",
+      "ok", "command", "tasksRoot", "taskId", "title", "status", "revision", "nextStepId", "blockedStepIds", "steps", "reviews",
     ].sort());
 
     const show = runCli(["next", "show", "step-001", "--task", "shapes-task", "--tasks-root", root, "--json"]);
@@ -906,6 +906,7 @@ await test("instruction-file-sensitive-rejected", async () => {
   try {
     assert.equal(runCli(["init", "Sensitive Task", "--tasks-root", root, "--json"]).status, 0);
     await writeFile(join(root, ".env"), "SENSITIVE-ENV-MARKER\n");
+    await writeFile(join(root, ".envrc"), "SENSITIVE-ENVRC-MARKER\n");
     await writeFile(join(root, "private.pem"), "SENSITIVE-PEM-MARKER\n");
     const added = runCli([
       "next", "add", "Safe title", "--scope", "S", "--done-when", "D", "--evidence", "E",
@@ -914,7 +915,7 @@ await test("instruction-file-sensitive-rejected", async () => {
     assert.equal(added.status, 0, added.stderr);
     const taskPath = join(root, "sensitive-task", "task.json");
     const before = await readFile(taskPath);
-    for (const candidate of [".env", "private.pem"]) {
+    for (const candidate of [".env", ".envrc", "private.pem"]) {
       const result = runCli([
         "next", "add", "Sensitive title", "--scope", "S", "--done-when", "D", "--evidence", "E",
         "--instruction-file", candidate, "--task", "sensitive-task", "--tasks-root", root, "--json",
@@ -936,6 +937,7 @@ await test("instruction-file-sensitive-rejected", async () => {
     const shown = parseJson(show);
     assert.equal(shown.instruction.includes("SAFE-BODY-MARKER"), true);
     assert.equal(shown.instruction.includes("SENSITIVE-ENV-MARKER"), false);
+    assert.equal(shown.instruction.includes("SENSITIVE-ENVRC-MARKER"), false);
     assert.equal(shown.instruction.includes("SENSITIVE-PEM-MARKER"), false);
   } finally {
     await rm(root, { recursive: true, force: true });
@@ -1130,6 +1132,131 @@ await test("tasks-root-outside-project-rejected", async () => {
     assert.deepEqual(await readdir(external), []);
   } finally {
     await rm(external, { recursive: true, force: true });
+  }
+});
+
+await test("reviews-legacy-task-reads-auto", async () => {
+  const root = await freshRoot();
+  try {
+    await mkdir(join(root, "old-reviews"));
+    await writeFile(join(root, "old-reviews", "task.json"), JSON.stringify({
+      schemaVersion: 1, id: "old-reviews", title: "Old", status: "open", revision: 1,
+      createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", steps: [],
+    }));
+    const json = runCli(["status", "--task", "old-reviews", "--tasks-root", root, "--json"]);
+    assert.equal(json.status, 0, json.stderr);
+    assert.deepEqual(parseJson(json).reviews, { security: "auto" });
+    const text = runCli(["status", "--task", "old-reviews", "--tasks-root", root]);
+    assert.equal(text.status, 0, text.stderr);
+    assert.equal(/^Revisiones: security=auto$/m.test(text.stdout), true, text.stdout);
+    assert.equal("reviews" in (await readTaskJson(root, "old-reviews")), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("reviews-set-valid-bumps-revision", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Rev Task", "--tasks-root", root, "--json"]).status, 0);
+    const set = runCli(["reviews", "set", "security=off", "--task", "rev-task", "--tasks-root", root, "--json"]);
+    assert.equal(set.status, 0, set.stderr);
+    const setJson = parseJson(set);
+    assert.deepEqual(keysOf(setJson), ["ok", "command", "tasksRoot", "taskId", "reviews", "revision"].sort());
+    assert.equal(setJson.command, "task.reviews.set");
+    assert.deepEqual(setJson.reviews, { security: "off" });
+    assert.equal(setJson.revision, 2);
+    const both = runCli(["reviews", "set", "security=on", "--task", "rev-task", "--tasks-root", root]);
+    assert.equal(both.status, 0, both.stderr);
+    const stored = await readTaskJson(root, "rev-task");
+    assert.deepEqual(stored.reviews, { security: "on" });
+    assert.equal(stored.revision, 3);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("reviews-set-rejects-invalid", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Bad Rev", "--tasks-root", root, "--json"]).status, 0);
+    const before = await readTaskJson(root, "bad-rev");
+    for (const args of [["security=maybe"], ["colour=on"], ["skills=on"], ["conventions=on"], ["security=on", "skills=off"], ["security=on", "conventions=off"], ["security"], [], ["security=on", "security=off"]]) {
+      const result = runCli(["reviews", "set", ...args, "--task", "bad-rev", "--tasks-root", root, "--json"]);
+      assert.notEqual(result.status, 0, `accepted ${args.join(" ")}`);
+      assert.equal(parseJson(result).code, "INVALID_ARGUMENT");
+    }
+    const unknownSub = runCli(["reviews", "get", "--task", "bad-rev", "--tasks-root", root, "--json"]);
+    assert.notEqual(unknownSub.status, 0);
+    assert.deepEqual(await readTaskJson(root, "bad-rev"), before);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("reviews-legacy-skills-conventions-keys-ignored", async () => {
+  const root = await freshRoot();
+  try {
+    await mkdir(join(root, "legacy-skills"));
+    await writeFile(join(root, "legacy-skills", "task.json"), JSON.stringify({
+      schemaVersion: 1, id: "legacy-skills", title: "Legacy", status: "open", revision: 1,
+      createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", steps: [],
+      reviews: { security: "on", skills: "off", conventions: "off" },
+    }));
+    const json = runCli(["status", "--task", "legacy-skills", "--tasks-root", root, "--json"]);
+    assert.equal(json.status, 0, json.stderr);
+    assert.deepEqual(parseJson(json).reviews, { security: "on" });
+    const text = runCli(["status", "--task", "legacy-skills", "--tasks-root", root]);
+    assert.equal(/^Revisiones: security=on$/m.test(text.stdout), true, text.stdout);
+    const set = runCli(["reviews", "set", "security=off", "--task", "legacy-skills", "--tasks-root", root, "--json"]);
+    assert.equal(set.status, 0, set.stderr);
+    const stored = await readTaskJson(root, "legacy-skills");
+    assert.deepEqual(stored.reviews, { security: "off" });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("reviews-set-rejects-skills-and-conventions-keys", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Skills Rev", "--tasks-root", root, "--json"]).status, 0);
+    const before = await readTaskJson(root, "skills-rev");
+    const result = runCli(["reviews", "set", "skills=off", "--task", "skills-rev", "--tasks-root", root, "--json"]);
+    assert.equal(result.status, 2, result.stderr);
+    assert.equal(parseJson(result).code, "INVALID_ARGUMENT");
+    assert.deepEqual(await readTaskJson(root, "skills-rev"), before);
+    const init = runCli(["init", "Skills Flag", "--skills", "off", "--tasks-root", root, "--json"]);
+    assert.equal(init.status, 2, init.stderr);
+    assert.equal(parseJson(init).code, "INVALID_ARGUMENT");
+    assert.equal(await exists(join(root, "skills-flag")), false);
+    const convSet = runCli(["reviews", "set", "conventions=off", "--task", "skills-rev", "--tasks-root", root, "--json"]);
+    assert.equal(convSet.status, 2, convSet.stderr);
+    assert.equal(parseJson(convSet).code, "INVALID_ARGUMENT");
+    assert.deepEqual(await readTaskJson(root, "skills-rev"), before);
+    const convInit = runCli(["init", "Conv Flag", "--conventions", "on", "--tasks-root", root, "--json"]);
+    assert.equal(convInit.status, 2, convInit.stderr);
+    assert.equal(parseJson(convInit).code, "INVALID_ARGUMENT");
+    assert.equal(await exists(join(root, "conv-flag")), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("init-accepts-review-flags", async () => {
+  const root = await freshRoot();
+  try {
+    const init = runCli(["init", "Flag Task", "--security", "off", "--tasks-root", root, "--json"]);
+    assert.equal(init.status, 0, init.stderr);
+    assert.deepEqual((await readTaskJson(root, "flag-task")).reviews, { security: "off" });
+    const status = runCli(["status", "--task", "flag-task", "--tasks-root", root, "--json"]);
+    assert.deepEqual(parseJson(status).reviews, { security: "off" });
+    const bad = runCli(["init", "Bad Flag", "--security", "never", "--tasks-root", root, "--json"]);
+    assert.equal(bad.status, 2);
+    assert.equal(parseJson(bad).code, "INVALID_ARGUMENT");
+    assert.equal(await exists(join(root, "bad-flag")), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
   }
 });
 

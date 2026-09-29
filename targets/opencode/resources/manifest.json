@@ -1053,7 +1053,7 @@
       ],
       "transformation": "v2-adaptation",
       "sourceReferences": [],
-      "generatedSha256": "84d81fac53ce9af625641483f7ae2c777a56acb9cbf655860b854edcb75f739f"
+      "generatedSha256": "ba47375b61246f9e06d589a17f4990711f20b537af59e01c468712d9d8411373"
     },
     {
       "id": "skynex-tasks-package",
@@ -1089,7 +1089,7 @@
       ],
       "transformation": "v2-adaptation",
       "sourceReferences": [],
-      "generatedSha256": "41e294be1beac06ecf24ea893056713bbd83e39723bc1cd2dca8dd97df101f14"
+      "generatedSha256": "96490da2bbfb32fd78004c437d4382ab4f74615f89c8275f2565a0d26a2ea8e5"
     },
     {
       "id": "skynex-tasks-snapshot",
@@ -1107,7 +1107,7 @@
       ],
       "transformation": "v2-adaptation",
       "sourceReferences": [],
-      "generatedSha256": "cbbb4aeabebf13a3bd8ceec44b017a6435deca321ee99db8bb1c85fdde021cc5"
+      "generatedSha256": "31b7b747bb27d57eaa88774ca9d06c7c89f1d0972e450c78ad9b1f4dd017aa0a"
     },
     {
       "id": "skynex-tasks-controller",

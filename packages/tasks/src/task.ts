@@ -5,6 +5,19 @@ export const SCHEMA_VERSION = 1 as const;
 export type StepStatus = "pending" | "in_progress" | "done" | "blocked";
 export type TaskStatus = "open" | "in_progress" | "done" | "blocked";
 
+export type ReviewMode = "on" | "off" | "auto";
+export type ReviewKey = "security";
+export const REVIEW_MODES: readonly ReviewMode[] = ["on", "off", "auto"];
+export const REVIEW_KEYS: readonly ReviewKey[] = ["security"];
+
+export interface TaskReviews {
+  readonly security: ReviewMode;
+}
+
+export type TaskReviewsPatch = Partial<TaskReviews>;
+
+export const DEFAULT_REVIEWS: TaskReviews = { security: "auto" };
+
 export interface Step {
   readonly id: string;
   readonly title: string;
@@ -27,6 +40,8 @@ export interface Task {
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly steps: readonly Step[];
+  /** Optional review toggles; absent means every review is "auto". */
+  readonly reviews?: TaskReviews;
 }
 
 export interface StepDraft {
@@ -41,6 +56,19 @@ export interface StepDraft {
 export interface CreateTaskInput {
   readonly title: string;
   readonly steps?: readonly StepDraft[];
+  readonly reviews?: TaskReviewsPatch;
+}
+
+export interface TaskReviewsView {
+  readonly taskId: string;
+  readonly revision: number;
+  readonly reviews: TaskReviews;
+}
+
+export interface SetReviewsResult {
+  readonly taskId: string;
+  readonly reviews: TaskReviews;
+  readonly revision: number;
 }
 
 export interface TaskListEntry {
@@ -162,4 +190,35 @@ function assertTextField(value: string, label: string): void {
   if (value.length > MAX_TEXT_FIELD_LENGTH) {
     throw new TaskError("INVALID_ARGUMENT", `Step ${label} exceeds ${MAX_TEXT_FIELD_LENGTH} characters`);
   }
+}
+
+export function isReviewMode(value: unknown): value is ReviewMode {
+  return typeof value === "string" && (REVIEW_MODES as readonly string[]).includes(value);
+}
+
+export function isReviewKey(value: unknown): value is ReviewKey {
+  return typeof value === "string" && (REVIEW_KEYS as readonly string[]).includes(value);
+}
+
+export function resolveReviews(task: Pick<Task, "reviews">): TaskReviews {
+  return task.reviews ?? DEFAULT_REVIEWS;
+}
+
+/** Validate an untrusted patch; unknown keys or values throw INVALID_ARGUMENT. */
+export function assertReviewsPatch(patch: unknown, label = "reviews"): TaskReviewsPatch {
+  if (typeof patch !== "object" || patch === null || Array.isArray(patch)) {
+    throw new TaskError("INVALID_ARGUMENT", `${label} must be an object`);
+  }
+  const result: { security?: ReviewMode } = {};
+  for (const [key, value] of Object.entries(patch)) {
+    if (!isReviewKey(key)) {
+      throw new TaskError("INVALID_ARGUMENT", `Unknown review key: ${JSON.stringify(key)}`);
+    }
+    if (value === undefined) continue;
+    if (!isReviewMode(value)) {
+      throw new TaskError("INVALID_ARGUMENT", `${label}.${key} must be one of ${REVIEW_MODES.join("|")}: ${JSON.stringify(value)}`);
+    }
+    result[key] = value;
+  }
+  return result;
 }

@@ -9,7 +9,8 @@ import {
   SCHEMA_VERSION,
   STEP_ID_PATTERN,
 } from "./task.js";
-import type { Step, StepStatus, Task, TaskStatus } from "./task.js";
+import { DEFAULT_REVIEWS, assertReviewsPatch } from "./task.js";
+import type { Step, StepStatus, Task, TaskReviews, TaskStatus } from "./task.js";
 
 const STEP_STATUSES: readonly StepStatus[] = ["pending", "in_progress", "done", "blocked"];
 const TASK_STATUSES: readonly TaskStatus[] = ["open", "in_progress", "done", "blocked"];
@@ -74,7 +75,12 @@ export function parseTask(text: string, expectedId: string): Task {
     seen.add(step.id);
   }
 
-  return { schemaVersion: SCHEMA_VERSION, id, title, status, revision, createdAt, updatedAt, steps };
+  const reviews = parseReviews(raw["reviews"]);
+
+  return {
+    schemaVersion: SCHEMA_VERSION, id, title, status, revision, createdAt, updatedAt, steps,
+    ...(reviews === undefined ? {} : { reviews }),
+  };
 }
 
 export function serializeTask(task: Task): string {
@@ -87,8 +93,25 @@ export function serializeTask(task: Task): string {
     createdAt: task.createdAt,
     updatedAt: task.updatedAt,
     steps: task.steps.map(serializeStep),
+    ...(task.reviews === undefined ? {} : { reviews: { security: task.reviews.security } }),
   };
   return `${JSON.stringify(serialized, null, 2)}\n`;
+}
+
+function parseReviews(value: unknown): TaskReviews | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  return { ...DEFAULT_REVIEWS, ...assertReviewsPatch(migrateLegacyReviews(value)) };
+}
+
+/** Legacy task.json files may carry removed `skills`/`conventions` switches; ignore them on read. */
+function migrateLegacyReviews(value: unknown): unknown {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    return value;
+  }
+  const { skills: _skills, conventions: _conventions, ...rest } = value as Record<string, unknown>;
+  return rest;
 }
 
 function serializeStep(step: Step): Record<string, unknown> {

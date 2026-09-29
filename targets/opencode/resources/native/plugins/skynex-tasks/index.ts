@@ -18,7 +18,7 @@ type Host = {
     getSessionTask(input: unknown): Promise<Snapshot | null>
   }): Promise<Registration> }
 }
-const instruction = "Skynex Tasks: al iniciar/reanudar o cambiar pasos, usa la CLI skynex task: skynex task status --task <id> --json; luego publica con skynex_task_update id,title,status,doneCount,total,current,next,blockers (id/title; máx.20) y steps con TODOS los pasos id/title/status en orden CLI (máx.999). No inventes estados ni envíes cuerpos, instrucciones o evidencias, sesión ni ruta. Sin tarea asignada: task:null. Es una instantánea, no lectura en vivo."
+const instruction = "Skynex Tasks: al iniciar/reanudar o cambiar pasos, usa la CLI skynex task: skynex task status --task <id> --json; luego publica con skynex_task_update id,title,status,doneCount,total,current,next,blockers (id/title; máx.20) y steps con TODOS los pasos id/title/status en orden CLI (máx.999); opcional reviews {security} con on|off|auto tal como lo da la CLI. No inventes estados ni envíes cuerpos, instrucciones o evidencias, sesión ni ruta. Sin tarea asignada: task:null. Es una instantánea, no lectura en vivo."
 
 export default {
   id: "skynex-tasks.server",
