@@ -72,7 +72,7 @@
       "target": "canonical/agents/thalam.md",
       "source": "agents/skynex-orchestrator.md",
       "sourceSha256": "eb46ce33b0cdc5713b1d42a5f89eec4bd4182e0dbd31acb42d8eba25f5be6170",
-      "generatedSha256": "dca0593cf98f5d33491d66da08e0cb6c5bafd115db784257586c9eb91d06a516"
+      "generatedSha256": "85332a713228cfed20ddd532dafe46470dc51f71ed0a210d756d20413fe33b94"
     },
     {
       "target": "canonical/agents/verifier.md",
@@ -179,7 +179,7 @@
     {
       "target": "canonical/skills/skynex-tasks/SKILL.md",
       "source": "repository-authored",
-      "generatedSha256": "f20b55d80a5843c6aaae7b433fff9d031947bc3a9441603f2025fc9f89b29d6b",
+      "generatedSha256": "6afb4ebee1e6efce34b8f5eecf969613f169e9b847e29e377e960ba809b8b111",
       "transformation": "authored-managed-skill",
       "sourceReferences": []
     },
@@ -523,8 +523,8 @@
     {
       "target": "native/plugins/skynex-tasks/index.ts",
       "source": "native/plugins/skynex-tasks/index.ts",
-      "sourceSha256": "ba47375b61246f9e06d589a17f4990711f20b537af59e01c468712d9d8411373",
-      "generatedSha256": "ba47375b61246f9e06d589a17f4990711f20b537af59e01c468712d9d8411373",
+      "sourceSha256": "0e9f7b9a62408c2cff43ecd3888ca62dc76df224130e017c621c6495bae23dc2",
+      "generatedSha256": "0e9f7b9a62408c2cff43ecd3888ca62dc76df224130e017c621c6495bae23dc2",
       "transformation": "v2-adaptation",
       "sourceReferences": []
     },
@@ -547,8 +547,8 @@
     {
       "target": "native/plugins/skynex-tasks/snapshot.ts",
       "source": "native/plugins/skynex-tasks/snapshot.ts",
-      "sourceSha256": "31b7b747bb27d57eaa88774ca9d06c7c89f1d0972e450c78ad9b1f4dd017aa0a",
-      "generatedSha256": "31b7b747bb27d57eaa88774ca9d06c7c89f1d0972e450c78ad9b1f4dd017aa0a",
+      "sourceSha256": "6eb6db3518abe69a7355d8983657d05c8de5498e4fa200807a4d0b7fb18153f7",
+      "generatedSha256": "6eb6db3518abe69a7355d8983657d05c8de5498e4fa200807a4d0b7fb18153f7",
       "transformation": "v2-adaptation",
       "sourceReferences": []
     },
@@ -557,6 +557,14 @@
       "source": "native/plugins/skynex-tasks/controller.ts",
       "sourceSha256": "7a9e73f5890e4f67b77e289fae72dec79bec908711f41f7bc895cdf3e1b0cd60",
       "generatedSha256": "7a9e73f5890e4f67b77e289fae72dec79bec908711f41f7bc895cdf3e1b0cd60",
+      "transformation": "v2-adaptation",
+      "sourceReferences": []
+    },
+    {
+      "target": "native/plugins/skynex-tasks/review-gate.ts",
+      "source": "native/plugins/skynex-tasks/review-gate.ts",
+      "sourceSha256": "32cca28c99d0428cc12cd47ddc822b4b36b621a1efbf72d4e265f5a53a2da8b3",
+      "generatedSha256": "32cca28c99d0428cc12cd47ddc822b4b36b621a1efbf72d4e265f5a53a2da8b3",
       "transformation": "v2-adaptation",
       "sourceReferences": []
     },
