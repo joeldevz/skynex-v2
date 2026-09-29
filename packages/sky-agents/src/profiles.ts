@@ -3,7 +3,7 @@ import { atomicWrite, readFileSafe, safeDirectory } from "./storage.js"
 
 export const MAX_PROFILE_BYTES = 64 * 1024
 export const MAX_PROFILES = 100
-export const APPROVED_AGENT_IDS = ["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "thalam", "tech-planner", "test-engineer", "test-reviewer", "verifier"] as const
+export const APPROVED_AGENT_IDS = ["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "scout", "security", "skill-validator", "thalam", "tech-planner", "test-engineer", "test-reviewer", "verifier"] as const
 export interface Profile { name: string; created_at: string; updated_at: string; models: Record<string, string>; [key: string]: unknown }
 export interface ProfileStore { list(): Promise<Profile[]>; get(id: string): Promise<Profile | null>; save(profile: Profile): Promise<void>; update(profile: Profile): Promise<void>; remove(id: string): Promise<void> }
 export function validateProfileName(name: string): void {
@@ -14,7 +14,7 @@ export function validateProfile(profile: Profile): void {
   if (!Number.isFinite(Date.parse(profile.created_at)) || !Number.isFinite(Date.parse(profile.updated_at))) throw new Error("Invalid profile dates")
   if (!profile.models || Array.isArray(profile.models) || Object.getPrototypeOf(profile.models) !== Object.prototype) throw new Error("Invalid profile models")
   const ids = Object.keys(profile.models).sort()
-  if (ids.length !== APPROVED_AGENT_IDS.length || ids.some((id, index) => id !== [...APPROVED_AGENT_IDS].sort()[index])) throw new Error("Profile must contain exactly the approved 12 agents")
+  if (ids.length !== APPROVED_AGENT_IDS.length || ids.some((id, index) => id !== [...APPROVED_AGENT_IDS].sort()[index])) throw new Error("Profile must contain exactly the approved 13 agents")
   for (const [agent, model] of Object.entries(profile.models)) {
     if (!/^[a-zA-Z0-9._-]{1,128}$/.test(agent) || typeof model !== "string" || !/^[a-zA-Z0-9._-]{1,64}\/[a-zA-Z0-9._-]{1,128}(?:#[a-zA-Z0-9._-]{1,64})?$/.test(model)) throw new Error("Invalid profile model reference")
   }
@@ -25,6 +25,9 @@ export function normalizeProfileAgentIdentity(profile: Profile): { profile: Prof
   if (old && current) throw new Error("Profile agent identity conflict: both skynex-orchestrator and thalam are present")
   const models = { ...profile.models }
   if (old) { models.thalam = models["skynex-orchestrator"]!; delete models["skynex-orchestrator"] }
+  // Profiles saved before scout joined the approved set: scout inherits the diagnostic-researcher model on read.
+  const legacyScout = !Object.hasOwn(models, "scout") && typeof models["diagnostic-researcher"] === "string"
+  if (legacyScout) models.scout = models["diagnostic-researcher"]!
   return { profile: { ...profile, models }, migrated: old }
 }
 function decode(text: string, name: string): Profile { const value: unknown = JSON.parse(text); if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid profile"); const profile = normalizeProfileAgentIdentity(value as Profile).profile; if (profile.name !== name) throw new Error("Invalid profile name"); validateProfile(profile); return profile }

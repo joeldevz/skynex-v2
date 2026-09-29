@@ -287,13 +287,13 @@
     {
       "target": "native/plugins/sky-agents/core/profiles.ts",
       "source": "packages/sky-agents/src/profiles.ts",
-      "sourceSha256": "49c0216749299a8ab2105ce2f003671507c6b44f8308c74999f7d9e871482068",
-      "generatedSha256": "49c0216749299a8ab2105ce2f003671507c6b44f8308c74999f7d9e871482068",
+      "sourceSha256": "1712164a1d23f0c196f76df59d48a08105b505dd4874525e271a24c2fcedec36",
+      "generatedSha256": "1712164a1d23f0c196f76df59d48a08105b505dd4874525e271a24c2fcedec36",
       "transformation": "v2-adaptation",
       "sourceReferences": [
         {
           "path": "packages/sky-agents/src/profiles.ts",
-          "sha256": "49c0216749299a8ab2105ce2f003671507c6b44f8308c74999f7d9e871482068"
+          "sha256": "1712164a1d23f0c196f76df59d48a08105b505dd4874525e271a24c2fcedec36"
         }
       ]
     },
@@ -313,13 +313,13 @@
     {
       "target": "native/plugins/sky-agents/core/rpc.ts",
       "source": "packages/sky-agents/src/rpc.ts",
-      "sourceSha256": "4a4db8cfe66514fa41c85daeb1196ab86baa3bcc046afac1a4eb15ca93239bcc",
-      "generatedSha256": "4a4db8cfe66514fa41c85daeb1196ab86baa3bcc046afac1a4eb15ca93239bcc",
+      "sourceSha256": "8f989a613943f8c6a8a12bb0784be67724acf056ad9daeaf50f9df42edb2b05c",
+      "generatedSha256": "8f989a613943f8c6a8a12bb0784be67724acf056ad9daeaf50f9df42edb2b05c",
       "transformation": "v2-adaptation",
       "sourceReferences": [
         {
           "path": "packages/sky-agents/src/rpc.ts",
-          "sha256": "4a4db8cfe66514fa41c85daeb1196ab86baa3bcc046afac1a4eb15ca93239bcc"
+          "sha256": "8f989a613943f8c6a8a12bb0784be67724acf056ad9daeaf50f9df42edb2b05c"
         }
       ]
     },
@@ -355,16 +355,16 @@
     {
       "target": "native/plugins/sky-agents/rpc.ts",
       "source": "native/plugins/sky-agents/rpc.ts",
-      "sourceSha256": "3fbdb8ee3eb99c92bfb2a61cbecd8c49ad8ce74f315ac5cfc3fd3640fe0c4304",
-      "generatedSha256": "3fbdb8ee3eb99c92bfb2a61cbecd8c49ad8ce74f315ac5cfc3fd3640fe0c4304",
+      "sourceSha256": "3bbb3cc6cf9a1765b4f178d76a962981b42f71900032722ccbbf6fea859f9855",
+      "generatedSha256": "3bbb3cc6cf9a1765b4f178d76a962981b42f71900032722ccbbf6fea859f9855",
       "transformation": "v2-adaptation",
       "sourceReferences": []
     },
     {
       "target": "native/plugins/sky-agents/tui.tsx",
       "source": "native/plugins/sky-agents/tui.tsx",
-      "sourceSha256": "974d027b5198a4b5664054f862e7cdbdab903dd947acf88fd91fe84b72e1beb4",
-      "generatedSha256": "974d027b5198a4b5664054f862e7cdbdab903dd947acf88fd91fe84b72e1beb4",
+      "sourceSha256": "09973c97db080122667d3261f276182574e6434c73c69a0475398b0aee9abb60",
+      "generatedSha256": "09973c97db080122667d3261f276182574e6434c73c69a0475398b0aee9abb60",
       "transformation": "v2-adaptation",
       "sourceReferences": []
     },
