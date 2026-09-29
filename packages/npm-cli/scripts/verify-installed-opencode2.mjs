@@ -34,10 +34,10 @@ async function regularFile(path) {
   return readFile(path);
 }
 
-async function request(base, path, method = "GET") {
+async function request(base, path, method = "GET", body) {
   const url = new URL(path, base);
-  if (path !== "/api/health") url.searchParams.set("location[directory]", project);
-  const response = await fetch(url, { method, headers: { authorization }, signal: AbortSignal.timeout(10_000), redirect: "error" });
+  url.searchParams.set("directory", project);
+  const response = await fetch(url, { method, headers: { authorization, ...(body ? { "content-type": "application/json" } : {}) }, ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(10_000), redirect: "error" });
   assert(response.ok, `${method} ${path}: HTTP ${response.status}`);
   return response.status === 204 ? null : response.json();
 }
@@ -86,18 +86,20 @@ try {
     plugins: [
       { package: "./skynex/plugins/runtime", options: { managedBy: "skynex" } },
       { package: "./skynex/plugins/sky-agents", options: { managedBy: "skynex" } },
+      { package: "./skynex/plugins/skynex-tasks", options: { managedBy: "skynex" } },
     ],
-    agents: Object.fromEntries(["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "security", "skill-validator", "thalam", "tech-planner", "test-engineer", "test-reviewer", "verifier"].map((id) => [id, { mode: id === "thalam" ? "all" : "subagent", permissions: [] }])),
+    agents: Object.fromEntries(["coder", "diagnostic-researcher", "infrastructure-engineer", "mentor", "pr-reviewer", "scout", "security", "skill-validator", "thalam", "tech-planner", "test-engineer", "test-reviewer", "verifier"].map((id) => [id, { mode: id === "thalam" ? "all" : "subagent", permissions: [] }])),
   }));
   const parseErrors = [];
   const config = parse(configBytes.toString(), parseErrors);
   assert.equal(parseErrors.length, 0, "Installed JSON/C must parse without errors");
-  assert(Object.keys(config).every((key) => ["$schema", "plugins", "agents"].includes(key)), "Use a clean installer fixture config (schema/plugins/agents only)");
+  assert(Object.keys(config).every((key) => ["$schema", "plugins", "agents", "experimental"].includes(key)), "Use a clean installer fixture config (schema/plugins/agents/experimental only)");
   const registrations = config.plugins?.map((plugin) => typeof plugin === "string" ? plugin : plugin.package);
-  assert.deepEqual(registrations, ["./skynex/plugins/runtime", "./skynex/plugins/sky-agents"],
-    "Expected exactly the installed runtime and sky-agents registrations");
-  assert.equal(Object.keys(config.agents ?? {}).length, 12, "Expected all 13 installed agent policies");
-  await writeFile(join(configDir, configName), configBytes);
+  assert.deepEqual(registrations, ["./skynex/plugins/runtime", "./skynex/plugins/sky-agents", "./skynex/plugins/skynex-tasks"],
+    "Expected exactly the installed runtime, sky-agents, and Tasks server registrations");
+  assert.equal(Object.keys(config.agents ?? {}).length, 13, "Expected all 13 installed agent policies");
+  // OpenCode 2 serves the HTTP API only when experimental.http is enabled; add it to the isolated server copy only.
+  await writeFile(join(configDir, configName), Buffer.from(JSON.stringify({ ...config, experimental: { http: { enabled: true, hostname: "127.0.0.1", port: 0 } } })));
   evidence.digests.config = digest(configBytes);
   evidence.source = installed;
   const resources = [
@@ -105,6 +107,8 @@ try {
     ["skynex/plugins/runtime/prompt.ts", "native/hooks/prompt.ts"],
     ...["core/catalog.ts", "core/index.ts", "core/profile-apply.ts", "core/profiles.ts", "core/roots.ts", "core/rpc.ts", "core/storage.ts", "index.ts", "package.json", "rpc.ts", "tui.tsx", "vendor/jsonc-parser/impl/edit.js", "vendor/jsonc-parser/impl/format.js", "vendor/jsonc-parser/impl/parser.js", "vendor/jsonc-parser/impl/scanner.js", "vendor/jsonc-parser/impl/string-intern.js", "vendor/jsonc-parser/LICENSE.md", "vendor/jsonc-parser/main.d.ts", "vendor/jsonc-parser/main.js"]
       .map((name) => [`skynex/plugins/sky-agents/${name}`, `native/plugins/sky-agents/${name}`]),
+    ...["index.ts", "package.json", "snapshot.ts", "controller.ts", "review-gate.ts", "tui.tsx"]
+      .map((name) => [`skynex/plugins/skynex-tasks/${name}`, `native/plugins/skynex-tasks/${name}`]),
   ];
   for (const [relative, source] of resources) {
     const bytes = await regularFile(join(installed, relative));
@@ -112,8 +116,8 @@ try {
     await mkdir(dirname(join(configDir, relative)), { recursive: true });
     await writeFile(join(configDir, relative), bytes);
   }
-  child = spawn(command, ["serve", "--hostname", "127.0.0.1", "--port", "0"], {
-    cwd: project, env, stdio: ["ignore", "pipe", "pipe"],
+  child = spawn(command, ["serve", "--hostname", "127.0.0.1", "--port", "0", "--print-logs"], {
+    cwd: project, env: { ...env, OPENCODE_CONFIG_DIR: configDir }, stdio: ["ignore", "pipe", "pipe"],
   });
   evidence.pid = child.pid;
   closed = new Promise((resolveExit) => {
@@ -140,11 +144,19 @@ try {
   assert(base, "No explicit loopback URL from foreground server within 20s");
   assert(authorization, "No foreground server password within 20s");
   evidence.server = base;
-  evidence.health = await request(base, "/api/health");
-  assert.equal(evidence.health.healthy, true);
-  assert.equal(evidence.health.pid, child.pid, "Refusing a server not owned by this probe");
-  await request(base, "/api/plugin/await-activation", "POST");
-  const plugins = await request(base, "/api/plugin");
+  assert.equal(new URL(base).hostname, "127.0.0.1", "Refusing a non-loopback server");
+  assert.equal(child.exitCode, null, "Owned server must still be running");
+  assert(output.includes(`http://127.0.0.1:${new URL(base).port}`), "Server URL must originate from owned child output");
+  evidence.info = await request(base, "/api/info");
+  await request(base, "/api/session", "POST", { title: "OpenCode v2 installed plugin verification" });
+  let plugins;
+  const pluginReadyEnd = Date.now() + 5_000;
+  while (Date.now() < pluginReadyEnd) {
+    plugins = await request(base, "/api/plugin");
+    const ids = new Set(plugins.data.map((plugin) => plugin.id));
+    if (ids.has("skynex.runtime") && ids.has("skynex-sky-agents.server") && ids.has("skynex-tasks.server")) break;
+    await delay(100);
+  }
   evidence.plugins = plugins;
   assert.equal(plugins.location.directory, project);
    const runtime = plugins.data.filter((plugin) => plugin.id === "skynex.runtime");
@@ -159,12 +171,21 @@ try {
    assert.equal(skyAgents[0].features.server, true);
    assert(skyAgents[0].source.path.startsWith(join(configDir, "skynex/plugins/sky-agents")), "Sky Agents must resolve from snapshot");
     const localPlugins = plugins.data.filter((plugin) => plugin.source.type === "local");
-    assert.deepEqual(new Set(localPlugins.map((plugin) => plugin.id)), new Set(["skynex.runtime", "skynex-sky-agents.server"]), "Unexpected local plugin activation");
+    assert.deepEqual(new Set(localPlugins.map((plugin) => plugin.id)), new Set(["skynex.runtime", "skynex-sky-agents.server", "skynex-tasks.server"]), "Unexpected local plugin activation");
+     const tasksServer = plugins.data.filter((plugin) => plugin.id === "skynex-tasks.server");
+     assert.equal(tasksServer.length, 1, "Expected exactly one actual skynex-tasks.server export from the installed Tasks package");
+     assert.equal(tasksServer[0].state.status, "active", "Tasks server setup must complete successfully");
+     assert.equal(tasksServer[0].features.server, true);
+     assert.equal(tasksServer[0].source.type, "local");
+     assert(tasksServer[0].source.path.startsWith(join(configDir, "skynex/plugins/skynex-tasks")), "Tasks server must resolve from the isolated snapshot");
     const rpcEnvelope = await rpcRequest(base, "skynex.sky-agents", "listProfiles", {});
      evidence.rpc = { registered: skyAgents[0].features.rpc === true, listProfiles: { called: true, result: rpcEnvelope.output } };
     assert.equal(evidence.rpc.registered, true, "Sky Agents RPC feature must be registered");
      assert.deepEqual(evidence.rpc.listProfiles.result, [], "Fresh isolated profile store must be empty");
-     const mutationProfile = { name: "rpc-contract", created_at: new Date(0).toISOString(), updated_at: new Date(1).toISOString(), models: Object.fromEntries(Object.keys(config.agents).map((id) => [id, "openai/gpt-5"])) };
+     // The sky-agents profile store approves exactly 12 agents; scout is installed but not profile-managed (mirrors repo verifier fixture).
+     const PROFILE_EXCLUDED_AGENTS = new Set(["scout"]);
+     evidence.rpc.profileExcludedAgents = [...PROFILE_EXCLUDED_AGENTS];
+     const mutationProfile = { name: "rpc-contract", created_at: new Date(0).toISOString(), updated_at: new Date(1).toISOString(), models: Object.fromEntries(Object.keys(config.agents).filter((id) => !PROFILE_EXCLUDED_AGENTS.has(id)).map((id) => [id, "openai/gpt-5"])) };
      const saveEnvelope = await rpcRequest(base, "skynex.sky-agents", "saveProfile", { profile: mutationProfile });
      assert.deepEqual(saveEnvelope.output, { ok: true }, "saveProfile must return an explicit JSON success envelope");
      assert.deepEqual((await rpcRequest(base, "skynex.sky-agents", "getProfile", { name: mutationProfile.name })).output, mutationProfile, "saveProfile mutation must be observable");
@@ -198,9 +219,8 @@ try {
    assert.equal(packageJson.exports?.["./tui"], "./tui.tsx", "Installed package must export its TUI entry");
    evidence.tuiImport = { covered: "static-limited", bareImports: false, packageExport: packageJson.exports["./tui"], reason: "Foreground server loads server exports only; no noninteractive CLI-plugin activation surface was established." };
   evidence.integrationVerified = true;
-  evidence.ownedProcessExited = true;
 } catch (error) {
-  evidence.error = error.message;
+  evidence.error = String(error.message).replace(/server password \S+/g, "server password [REDACTED]");
   process.exitCode = 1;
 } finally {
   if (child && closed) {
@@ -215,8 +235,13 @@ try {
     }
   }
   clearTimeout(deadline);
+  evidence.ownedProcessExited = Boolean(child && evidence.processExit && !evidence.processExit.error && (child.exitCode !== null || child.signalCode !== null));
+  if (child && !evidence.ownedProcessExited) process.exitCode = 1;
   evidence.digests.script = digest(await readFile(fileURLToPath(import.meta.url)));
   await writeFile(join(root, "server.log"), output.replace(/server password \S+/g, "server password [REDACTED]"));
-  await writeFile(join(root, "evidence.json"), JSON.stringify(evidence, null, 2) + "\n");
-  console.log(JSON.stringify(evidence, null, 2));
+  let serializedEvidence = JSON.stringify(evidence, null, 2);
+  const credentials = [authorization, ...[...output.matchAll(/server password (\S+)/g)].map((match) => match[1])].filter(Boolean);
+  for (const credential of credentials) serializedEvidence = serializedEvidence.replaceAll(credential, "[REDACTED]");
+  await writeFile(join(root, "evidence.json"), serializedEvidence + "\n");
+  console.log(serializedEvidence);
 }

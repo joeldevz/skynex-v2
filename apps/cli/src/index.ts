@@ -74,7 +74,7 @@ if (command !== "task" && (has("--help") || has("-h") || (!command && !has("--ve
   process.exit(0);
 }
 if (command !== "task" && (has("--version") || has("-v"))) {
-  console.log("0.1.2");
+  console.log("0.2.0");
   process.exit(0);
 }
 if (command === "profile" && args[1] === "apply" && (!has("--global") || has("--project"))) throw new Error("Profile apply requires --global and does not accept --project")
