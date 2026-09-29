@@ -1053,7 +1053,7 @@
       ],
       "transformation": "v2-adaptation",
       "sourceReferences": [],
-      "generatedSha256": "ba47375b61246f9e06d589a17f4990711f20b537af59e01c468712d9d8411373"
+      "generatedSha256": "bc6aa3b0b60547d09f96de2aa35d56e99ada72df3db41e95e1a0aef8340efcd5"
     },
     {
       "id": "skynex-tasks-package",
@@ -1126,6 +1126,24 @@
       "transformation": "v2-adaptation",
       "sourceReferences": [],
       "generatedSha256": "7a9e73f5890e4f67b77e289fae72dec79bec908711f41f7bc895cdf3e1b0cd60"
+    },
+    {
+      "id": "skynex-tasks-review-gate",
+      "kind": "native",
+      "sourcePath": "native/plugins/skynex-tasks/review-gate.ts",
+      "relativePath": "skynex/plugins/skynex-tasks/review-gate.ts",
+      "version": "0.1.0",
+      "origin": "native",
+      "component": "plugins",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skynex/plugins/skynex-tasks/review-gate.ts"
+        }
+      ],
+      "transformation": "v2-adaptation",
+      "sourceReferences": [],
+      "generatedSha256": "f06c42f306b1b6ef93eccb68dca5dcb285ce00f8bced37a767d4ff702351017f"
     },
     {
       "id": "skynex-sky-agents-tui",

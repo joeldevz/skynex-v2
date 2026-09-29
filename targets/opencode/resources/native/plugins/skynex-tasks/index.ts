@@ -1,5 +1,6 @@
 import { identifier, projection, record, SessionTask, snapshot, updateSchema } from "./snapshot.ts"
 import type { Snapshot } from "./snapshot.ts"
+import { shouldBlock } from "./review-gate.ts"
 
 type Registration = { dispose(): Promise<void> }
 type Location = { directory: string; workspaceID?: string }
@@ -10,7 +11,11 @@ type Host = {
     get(input: { sessionID: string }): Promise<{ id: string; projectID: string; location: Location }>
     hook(name: "context", callback: (event: { agent: string; system: { type: "text"; text: string }[] }) => void): Promise<Registration>
   }
-  tool: { transform(callback: (editor: { add(tool: {
+  tool: {
+    hook(name: "execute.before", callback: (event: {
+      tool: string; readonly sessionID: string; readonly agent: string; readonly messageID: string; readonly id: string; input: unknown
+    }) => Promise<void> | void): Promise<Registration>
+    transform(callback: (editor: { add(tool: {
     name: string; description: string; input: typeof updateSchema
     execute(input: unknown, context: { sessionID: string; signal: AbortSignal }): Promise<{ content: string }>
   }): void }) => void): Promise<Registration> }
@@ -53,6 +58,18 @@ export default {
       })))
       registrations.push(await ctx.session.hook("context", (event) => {
         if (event.agent === "thalam") event.system.push({ type: "text", text: instruction })
+      }))
+      // E1/E4: enforce reviews.security=off; any failure resolving the task allows the call.
+      registrations.push(await ctx.tool.hook("execute.before", async (event) => {
+        if (event.tool !== "subagent") return
+        let snapshotTaskId: string | undefined
+        try {
+          const key = await keyFor(identifier(event.sessionID, true))
+          const stored = key ? await ctx.storage.get(key) : undefined
+          snapshotTaskId = stored === undefined || stored === null ? undefined : snapshot(stored).task.id
+        } catch { return }
+        if (await shouldBlock({ tool: event.tool, input: event.input, snapshotTaskId, cwd: ctx.location.directory }))
+          throw new Error("Revisión de seguridad desactivada por la tarea (reviews.security=off).")
       }))
       registrations.push(await ctx.rpc.register(SessionTask, {
         async getSessionTask(input) {

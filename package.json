@@ -18,6 +18,7 @@
     "verify:real-resources": "node scripts/verify-real-resources.mjs",
     "verify:sky-agents": "node scripts/verify-sky-agents.mjs",
     "verify:tasks": "node scripts/verify-tasks.mjs",
+    "verify:review-gate": "node scripts/verify-review-gate.mjs",
     "verify:opencode": "node scripts/verify-opencode2.mjs",
     "pack:cli": "pnpm build:distribution && pnpm --filter @skynex-ai/cli pack --pack-destination /tmp/opencode/skynex-pack",
     "build:distribution": "pnpm --filter @skynex-ai/cli build:distribution",

@@ -46,7 +46,7 @@ await test("catalog-every-leaf-owned-and-digested", async () => {
   await walk(join(root,"canonical"),"canonical"); await walk(join(root,"native"),"native");
 });
 await test("provenance-hashes-and-portability", async () => {
-   assert.equal(provenance.generated.length, 65);
+   assert.equal(provenance.generated.length, 66);
    for (const e of provenance.generated) { assert(!e.source.startsWith("/")); assert(!e.target.startsWith("/")); assert.equal(sha(await readFile(join(root,e.target))),e.generatedSha256); }
    assert.equal(new Set(provenance.generated.map(e => e.target)).size, provenance.generated.length);
    assert.deepEqual(new Set(provenance.generated.map(e => e.target)), new Set(manifest.resources.map(e => e.sourcePath)));
@@ -113,20 +113,29 @@ await test("skynex-tasks-session-sidebar-contract-and-portable-imports", async (
   assert.match(server,/event\.agent === "thalam"/);
   assert.match(server,/skynex task status --task <id> --json/);
   for (const method of ["get", "set", "remove"]) assert(server.includes(`ctx.storage.${method}(`));
+  const gate = await readFile(join(root,"native/plugins/skynex-tasks/review-gate.ts"),"utf8");
+  // E3: review-gate.ts is the only module allowed to touch the system, via node:child_process only.
+  assert.deepEqual([...gate.matchAll(/\bfrom\s+["']([^"']+)["']/g)].map(m => m[1]), ["node:child_process"]);
+  assert.doesNotMatch(gate,/node:(?!child_process)|readFile|readdir|writeFile|\bspawn\b|\bexec\(|execSync|shell:\s*true|Bun\.|\beval\(/);
+  assert.match(gate,/shell: false, timeout: 2000, maxBuffer: 65536/);
+  assert.match(server,/from "\.\/review-gate\.ts"/); assert.match(server,/ctx\.tool\.hook\("execute\.before"/);
   const active = new Map([["index.ts", server], ["tui.tsx", tui], ["snapshot.ts", snapshot], ["controller.ts", controller]]);
-  for (const [name, source] of active) {
-    assert.doesNotMatch(source,/node:|tasks-node|tasks-core|\.\/tasks\.js|child_process|readFile|readdir|Bun\.|\beval\(|\bexec\(/);
-    assert.doesNotMatch(source,/session\.panel|keymap|palette|session\.root|listTasks|getTask\(/);
-    for (const [, dependency] of source.matchAll(/\bfrom\s+["']([^"']+)["']/g)) {
-      const hostImport = name === "tui.tsx" && ["solid-js", "@opencode/plugin/tui"].includes(dependency);
-      assert(hostImport || (dependency.startsWith("./") && active.has(dependency.slice(2))), `unexpected active import: ${name} -> ${dependency}`);
-    }
+  for (const [name, source] of [...active, ["review-gate.ts", gate]]) {
     const path = `native/plugins/skynex-tasks/${name}`;
     const entry = manifest.resources.find(e => e.sourcePath === path);
     assert(entry, `missing active resource: ${path}`);
     assert.equal(entry.targets[0].relativePath, `skynex/plugins/skynex-tasks/${name}`);
     const record = provenance.generated.find(e => e.target === path);
     assert.equal(record.source, path); assert.equal(record.sourceSha256, sha(source));
+  }
+  for (const [name, source] of active) {
+    assert.doesNotMatch(source,/node:|tasks-node|tasks-core|\.\/tasks\.js|child_process|readFile|readdir|Bun\.|\beval\(|\bexec\(/);
+    assert.doesNotMatch(source,/session\.panel|keymap|palette|session\.root|listTasks|getTask\(/);
+    for (const [, dependency] of source.matchAll(/\bfrom\s+["']([^"']+)["']/g)) {
+      const hostImport = name === "tui.tsx" && ["solid-js", "@opencode/plugin/tui"].includes(dependency);
+      const gateImport = name === "index.ts" && dependency === "./review-gate.ts";
+      assert(hostImport || gateImport || (dependency.startsWith("./") && active.has(dependency.slice(2))), `unexpected active import: ${name} -> ${dependency}`);
+    }
   }
 });
 await test("skynex-tasks-filesystem-reader-prototype-is-excluded-from-resources", async () => {
@@ -173,9 +182,9 @@ await test("resources-have-no-placeholders-or-commands", async () => {
 });
 await test("catalog-exact-category-counts",async()=>{
    const counts=Object.fromEntries(["agent","skill","configuration","native","hook","mcp","command"].map(k=>[k,manifest.resources.filter(x=>x.kind===k).length]));
-    assert.deepEqual(counts,{agent:13,skill:25,configuration:1,native:25,hook:1,mcp:0,command:0});
-    assert.equal(counts.native+counts.hook,26);
-    assert.equal(manifest.resources.length,65);
+    assert.deepEqual(counts,{agent:13,skill:25,configuration:1,native:26,hook:1,mcp:0,command:0});
+    assert.equal(counts.native+counts.hook,27);
+    assert.equal(manifest.resources.length,66);
 });
 await test("tdd-and-diagnosis-routing-semantics",async()=>{
   const tdd=await readFile(join(root,"canonical/skills/tdd-discipline/SKILL.md"),"utf8");

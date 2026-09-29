@@ -72,7 +72,7 @@
       "target": "canonical/agents/thalam.md",
       "source": "agents/skynex-orchestrator.md",
       "sourceSha256": "eb46ce33b0cdc5713b1d42a5f89eec4bd4182e0dbd31acb42d8eba25f5be6170",
-      "generatedSha256": "dca0593cf98f5d33491d66da08e0cb6c5bafd115db784257586c9eb91d06a516"
+      "generatedSha256": "7f472744a6f5316df5f03aa3692ec8f4b6529629703b37f29340451b782514d9"
     },
     {
       "target": "canonical/agents/verifier.md",
@@ -179,7 +179,7 @@
     {
       "target": "canonical/skills/skynex-tasks/SKILL.md",
       "source": "repository-authored",
-      "generatedSha256": "f20b55d80a5843c6aaae7b433fff9d031947bc3a9441603f2025fc9f89b29d6b",
+      "generatedSha256": "724c44cd2d1f42ece8d126f98128a6dc4ac6e27b7644ebafe7cae93a60107edf",
       "transformation": "authored-managed-skill",
       "sourceReferences": []
     },
@@ -523,8 +523,8 @@
     {
       "target": "native/plugins/skynex-tasks/index.ts",
       "source": "native/plugins/skynex-tasks/index.ts",
-      "sourceSha256": "ba47375b61246f9e06d589a17f4990711f20b537af59e01c468712d9d8411373",
-      "generatedSha256": "ba47375b61246f9e06d589a17f4990711f20b537af59e01c468712d9d8411373",
+      "sourceSha256": "bc6aa3b0b60547d09f96de2aa35d56e99ada72df3db41e95e1a0aef8340efcd5",
+      "generatedSha256": "bc6aa3b0b60547d09f96de2aa35d56e99ada72df3db41e95e1a0aef8340efcd5",
       "transformation": "v2-adaptation",
       "sourceReferences": []
     },
@@ -557,6 +557,14 @@
       "source": "native/plugins/skynex-tasks/controller.ts",
       "sourceSha256": "7a9e73f5890e4f67b77e289fae72dec79bec908711f41f7bc895cdf3e1b0cd60",
       "generatedSha256": "7a9e73f5890e4f67b77e289fae72dec79bec908711f41f7bc895cdf3e1b0cd60",
+      "transformation": "v2-adaptation",
+      "sourceReferences": []
+    },
+    {
+      "target": "native/plugins/skynex-tasks/review-gate.ts",
+      "source": "native/plugins/skynex-tasks/review-gate.ts",
+      "sourceSha256": "f06c42f306b1b6ef93eccb68dca5dcb285ce00f8bced37a767d4ff702351017f",
+      "generatedSha256": "f06c42f306b1b6ef93eccb68dca5dcb285ce00f8bced37a767d4ff702351017f",
       "transformation": "v2-adaptation",
       "sourceReferences": []
     },

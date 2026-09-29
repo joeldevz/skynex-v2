@@ -117,7 +117,7 @@ try {
     ["skills/skynex-tasks/SKILL.md", "canonical/skills/skynex-tasks/SKILL.md"],
     ...["core/catalog.ts", "core/index.ts", "core/profile-apply.ts", "core/profiles.ts", "core/roots.ts", "core/rpc.ts", "core/storage.ts", "index.ts", "package.json", "rpc.ts", "tui.tsx", "vendor/jsonc-parser/impl/edit.js", "vendor/jsonc-parser/impl/format.js", "vendor/jsonc-parser/impl/parser.js", "vendor/jsonc-parser/impl/scanner.js", "vendor/jsonc-parser/impl/string-intern.js", "vendor/jsonc-parser/LICENSE.md", "vendor/jsonc-parser/main.d.ts", "vendor/jsonc-parser/main.js"]
       .map((name) => [`skynex/plugins/sky-agents/${name}`, `native/plugins/sky-agents/${name}`]),
-    ...["index.ts", "package.json", "snapshot.ts", "controller.ts", "tasks.js", "tasks-node.js", "tui.tsx"]
+    ...["index.ts", "package.json", "snapshot.ts", "controller.ts", "review-gate.ts", "tasks.js", "tasks-node.js", "tui.tsx"]
       .map((name) => [`skynex/plugins/skynex-tasks/${name}`, `native/plugins/skynex-tasks/${name}`]),
     ...["errors.js", "index.js", "instruction.js", "ports.js", "schema.js", "service.js", "slug.js", "task.js"]
       .map((name) => [`skynex/plugins/skynex-tasks/tasks-core/${name}`, `native/plugins/skynex-tasks/tasks-core/${name}`]),

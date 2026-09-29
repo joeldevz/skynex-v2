@@ -65,7 +65,7 @@ const nativeFiles = [
   ["skynex-sky-agents-jsonc-parser-license", "native", "native/plugins/sky-agents/vendor/jsonc-parser/LICENSE.md", "skynex/plugins/sky-agents/vendor/jsonc-parser/LICENSE.md"],
   ...["edit", "format", "parser", "scanner", "string-intern"].map((name) => ["skynex-sky-agents-jsonc-parser-impl-" + name, "native", `native/plugins/sky-agents/vendor/jsonc-parser/impl/${name}.js`, `skynex/plugins/sky-agents/vendor/jsonc-parser/impl/${name}.js`]),
   ...["catalog", "index", "profile-apply", "profiles", "roots", "rpc", "storage"].map((name) => [`skynex-sky-agents-core-${name}`, "native", `native/plugins/sky-agents/core/${name}.ts`, `skynex/plugins/sky-agents/core/${name}.ts`]),
-   ...[["package", "package.json"], ["index", "index.ts"], ["tui", "tui.tsx"], ["snapshot", "snapshot.ts"], ["controller", "controller.ts"]]
+   ...[["package", "package.json"], ["index", "index.ts"], ["tui", "tui.tsx"], ["snapshot", "snapshot.ts"], ["controller", "controller.ts"], ["review-gate", "review-gate.ts"]]
      .map(([id, name]) => [`skynex-tasks-${id}`, "native", `native/plugins/skynex-tasks/${name}`, `skynex/plugins/skynex-tasks/${name}`]),
 ].map(([id, kind, sourcePath, relativePath]) => ({ id, kind, sourcePath, relativePath }));
 async function safeSource(path, expected) {

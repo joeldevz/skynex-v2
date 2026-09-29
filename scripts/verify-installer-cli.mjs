@@ -234,6 +234,11 @@ export async function verify(test) {
        assert.equal(content, await readFile(resolve("targets/opencode/resources/native/plugins/skynex-tasks", file), "utf8"), `installed ${file} differs from source`);
        assert.doesNotMatch(content, /node:|tasks-node|tasks-core|\.\/tasks\.js|readFile|readdir|session\.panel|palette|listTasks|getTask\(/);
      }
+     // E3: review-gate.ts is the only plugin module allowed to import node:*, and only node:child_process.
+     const gate = await readFile(join(f.root, "xdg-config", "opencode", "skynex/plugins/skynex-tasks/review-gate.ts"), "utf8");
+     assert.equal(gate, await readFile(resolve("targets/opencode/resources/native/plugins/skynex-tasks/review-gate.ts"), "utf8"), "installed review-gate.ts differs from source");
+     assert.deepEqual([...gate.matchAll(/\bfrom\s+["']([^"']+)["']/g)].map((m) => m[1]), ["node:child_process"]);
+     assert.doesNotMatch(gate, /node:(?!child_process)|readFile|readdir|writeFile|node:net|shell:\s*true|tasks-node|tasks-core/);
     // The historical filesystem-reader prototype bundles must never be installed.
     for (const path of ["tasks.js", "tasks-node.js", "tasks-core", "tasks-node-core"]) {
       assert(!await exists(join(f.root, "xdg-config", "opencode", "skynex/plugins/skynex-tasks", path)), `prototype ${path} must not be installed`);
