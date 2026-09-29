@@ -1,0 +1,223 @@
+{
+  "source": "skynex-v2",
+  "generatedAt": "2026-09-29",
+  "releases": [
+    {
+      "version": "v0.2.2",
+      "date": "2026-09-29",
+      "unreleased": false,
+      "changes": [
+        {
+          "hash": "e6b708f",
+          "date": "2026-09-29",
+          "type": "fix",
+          "scope": "cli",
+          "summary": "prompt-free skynex update for existing installs"
+        }
+      ]
+    },
+    {
+      "version": "v0.2.1",
+      "date": "2026-09-29",
+      "unreleased": false,
+      "changes": [
+        {
+          "hash": "baa2f4b",
+          "date": "2026-09-29",
+          "type": "feat",
+          "scope": "profiles",
+          "summary": "include scout; drop live OpenCode release probe"
+        }
+      ]
+    },
+    {
+      "version": "v0.2.0",
+      "date": "2026-09-29",
+      "unreleased": false,
+      "changes": [
+        {
+          "hash": "186fc98",
+          "date": "2026-09-29",
+          "type": "fix",
+          "scope": "agents",
+          "summary": "external_directory is always allow"
+        },
+        {
+          "hash": "714ce9b",
+          "date": "2026-09-29",
+          "type": "feat",
+          "scope": "tasks",
+          "summary": "live sidebar from CLI with event-driven refresh"
+        },
+        {
+          "hash": "21864da",
+          "date": "2026-09-29",
+          "type": "feat",
+          "scope": "tasks",
+          "summary": "plugin enforces reviews.security=off"
+        },
+        {
+          "hash": "ef0c390",
+          "date": "2026-09-29",
+          "type": "feat",
+          "scope": "tasks",
+          "summary": "per-task security review switch"
+        },
+        {
+          "hash": "ff6a3b4",
+          "date": "2026-09-29",
+          "type": "feat",
+          "scope": "tasks",
+          "summary": "session sidebar, task CLI hardening and ask-only external access"
+        },
+        {
+          "hash": "43e8d43",
+          "date": "2026-09-26",
+          "type": "feat",
+          "scope": "thalam",
+          "summary": "let Thalam use the Skynex Tasks CLI"
+        },
+        {
+          "hash": "b1ba7d1",
+          "date": "2026-09-26",
+          "type": "feat",
+          "scope": "tasks",
+          "summary": "minimal functional vertical for Skynex Tasks"
+        },
+        {
+          "hash": "6ebd119",
+          "date": "2026-09-26",
+          "type": "docs",
+          "scope": "skynex-tasks",
+          "summary": "versioned spec for Tasks steps and checkpoints"
+        },
+        {
+          "hash": "373c836",
+          "date": "2026-09-19",
+          "type": "feat",
+          "scope": null,
+          "summary": "scout recon agent, external directory access, and scout delegation threshold"
+        },
+        {
+          "hash": "f4f32c0",
+          "date": "2026-09-19",
+          "type": "fix",
+          "scope": null,
+          "summary": "upgrade older installs without manual surgery"
+        },
+        {
+          "hash": "46e3b62",
+          "date": "2026-09-19",
+          "type": "feat",
+          "scope": null,
+          "summary": "default managed agent permissions to ask"
+        },
+        {
+          "hash": "677fac2",
+          "date": "2026-09-18",
+          "type": "refactor",
+          "scope": null,
+          "summary": "drop the task-classifier agent"
+        },
+        {
+          "hash": "c9430f5",
+          "date": "2026-09-18",
+          "type": "feat",
+          "scope": null,
+          "summary": "orchestrator-only Jev request classifier"
+        }
+      ]
+    },
+    {
+      "version": "v0.1.2",
+      "date": "2026-09-16",
+      "unreleased": false,
+      "changes": [
+        {
+          "hash": "c503079",
+          "date": "2026-09-16",
+          "type": "fix",
+          "scope": null,
+          "summary": "resolve catalog containment and directory sync on Windows"
+        },
+        {
+          "hash": "29e3c3d",
+          "date": "2026-09-15",
+          "type": "fix",
+          "scope": null,
+          "summary": "order plugin registration around resource installation"
+        },
+        {
+          "hash": "953d6cb",
+          "date": "2026-09-15",
+          "type": "feat",
+          "scope": null,
+          "summary": "add public npm CLI package"
+        },
+        {
+          "hash": "6a78ca1",
+          "date": "2026-09-14",
+          "type": "fix",
+          "scope": null,
+          "summary": "return explicit Sky Agents RPC mutation results"
+        },
+        {
+          "hash": "a71905e",
+          "date": "2026-09-14",
+          "type": "feat",
+          "scope": null,
+          "summary": "rename orchestrator agent to Thalam"
+        },
+        {
+          "hash": "669b8c8",
+          "date": "2026-09-14",
+          "type": "fix",
+          "scope": null,
+          "summary": "resolve installer collisions interactively"
+        },
+        {
+          "hash": "1922e14",
+          "date": "2026-09-13",
+          "type": "feat",
+          "scope": null,
+          "summary": "ship real OpenCode resources and Sky Agents"
+        },
+        {
+          "hash": "9633a77",
+          "date": "2026-09-11",
+          "type": "ci",
+          "scope": null,
+          "summary": "use pinned actions with native Node 24 runtimes"
+        },
+        {
+          "hash": "6071bab",
+          "date": "2026-09-11",
+          "type": "fix",
+          "scope": null,
+          "summary": "initialize installer verification temporary directory"
+        },
+        {
+          "hash": "0d69bc9",
+          "date": "2026-09-11",
+          "type": "feat",
+          "scope": null,
+          "summary": "add verified OpenCode 2 installer lifecycle"
+        },
+        {
+          "hash": "421b6ce",
+          "date": "2026-09-10",
+          "type": "chore",
+          "scope": null,
+          "summary": "keep generated outputs out of source"
+        },
+        {
+          "hash": "a44cc26",
+          "date": "2026-09-10",
+          "type": "chore",
+          "scope": null,
+          "summary": "bootstrap skynex v2 architecture"
+        }
+      ]
+    }
+  ]
+}
