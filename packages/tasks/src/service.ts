@@ -4,21 +4,27 @@ import { slugify, withCollisionSuffix } from "./slug.js";
 import {
   MAX_STEPS,
   MAX_TITLE_LENGTH,
+  DEFAULT_REVIEWS,
   SCHEMA_VERSION,
+  assertReviewsPatch,
   assertStepDraft,
   computeNextStepId,
   deriveTaskStatus,
+  resolveReviews,
   stepIdAt,
 } from "./task.js";
 import type {
   CreateTaskInput,
   MarkStepDoneResult,
+  SetReviewsResult,
   Step,
   StepDraft,
   StepInstructionView,
   Task,
   TaskBoardView,
   TaskListEntry,
+  TaskReviewsPatch,
+  TaskReviewsView,
   TaskSummary,
   TaskStatusView,
 } from "./task.js";
@@ -49,6 +55,12 @@ export interface TaskService {
     stepId: string,
     options?: { readonly expectedRevision?: number },
   ): Promise<MarkStepDoneResult>;
+  getReviews(taskId: string | null): Promise<TaskReviewsView>;
+  setReviews(
+    taskId: string | null,
+    patch: TaskReviewsPatch,
+    options?: { readonly expectedRevision?: number },
+  ): Promise<SetReviewsResult>;
 }
 
 const MAX_COLLISION_ATTEMPTS = 100;
@@ -65,6 +77,7 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
           `Task title must be non-empty and at most ${MAX_TITLE_LENGTH} characters`,
         );
       }
+      const reviewsPatch = input.reviews === undefined ? undefined : assertReviewsPatch(input.reviews);
       const steps: Step[] = [];
       const instructionFiles: InstructionFile[] = [];
       const drafts = input.steps ?? [];
@@ -96,6 +109,7 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
         createdAt: now,
         updatedAt: now,
         steps,
+        ...(reviewsPatch === undefined ? {} : { reviews: { ...DEFAULT_REVIEWS, ...reviewsPatch } }),
       };
       await store.create(task, instructionFiles);
       return { taskId: id, task, instructionPaths: instructionFiles.map((file) => file.relativePath) };
@@ -239,6 +253,35 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
         changed: true,
         revision: newTask.revision,
       };
+    },
+
+    async getReviews(taskId) {
+      if (taskId === null) {
+        throw new TaskError("NO_ACTIVE_TASK", "No active task is selected");
+      }
+      const task = await store.read(taskId);
+      return { taskId: task.id, revision: task.revision, reviews: resolveReviews(task) };
+    },
+
+    async setReviews(taskId, patch, options) {
+      if (taskId === null) {
+        throw new TaskError("NO_ACTIVE_TASK", "No active task is selected");
+      }
+      const validated = assertReviewsPatch(patch);
+      if (validated.security === undefined) {
+        throw new TaskError("INVALID_ARGUMENT", "A review value (security) is required");
+      }
+      const task = await store.read(taskId);
+      if (options?.expectedRevision !== undefined && options.expectedRevision !== task.revision) {
+        throw new TaskError(
+          "REVISION_CONFLICT",
+          `Expected revision ${options.expectedRevision} but current revision is ${task.revision}`,
+        );
+      }
+      const reviews = { ...resolveReviews(task), ...validated };
+      const newTask: Task = { ...task, reviews, revision: task.revision + 1, updatedAt: clock.nowIso() };
+      await store.save(newTask, task.revision);
+      return { taskId: task.id, reviews, revision: newTask.revision };
     },
   };
 }

@@ -28,9 +28,14 @@ function SessionTaskView(props: { sessionID: string }) {
     const pending = task ? task.total - task.doneCount : 0
     return `${expanded() ? "▼" : "▶"} Tarea${task ? ` · ${pending} ${pending === 1 ? "pendiente" : "pendientes"} · ${task.doneCount}/${task.total}` : ""}`
   }
+  const reviewMarker = () => {
+    const reviews = state().task?.task.reviews
+    return reviews?.security === "off" ? "🔓 Omitido: seguridad" : ""
+  }
   const detail = () => expanded() ? state().task?.task : undefined
   return <box flexDirection="column" marginTop={1}>
     <text fg={context.theme.text.base} onMouseDown={toggle}><strong>{heading()}</strong></text>
+    <Show when={reviewMarker()}><text fg={context.theme.text.muted}>{reviewMarker()}</text></Show>
     <Show when={state().loading}><text fg={context.theme.text.muted}>Cargando…</text></Show>
     <Show when={state().error}><text fg={context.theme.text.muted}>Error al cargar tarea</text></Show>
     <Show when={!state().loading && !state().error && !state().task}><text fg={context.theme.text.muted}>Sin tarea asignada</text></Show>

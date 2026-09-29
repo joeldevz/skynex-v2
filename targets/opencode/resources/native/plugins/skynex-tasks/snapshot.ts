@@ -11,7 +11,10 @@ export type TaskProjection = {
   next: Step | null
   blockers: Step[]
   steps?: ListedStep[]
+  reviews?: Reviews
 }
+export type ReviewMode = "on" | "off" | "auto"
+export type Reviews = { security?: ReviewMode }
 export type Snapshot = { task: TaskProjection; updatedAt: number }
 const invalid = () => new Error("Resumen de tarea inválido")
 
@@ -61,10 +64,21 @@ function steps(value: unknown): ListedStep[] {
   if (new Set(result.map((item) => item.id)).size !== result.length) throw invalid()
   return result
 }
+function reviewMode(value: unknown): ReviewMode {
+  if (value !== "on" && value !== "off" && value !== "auto") throw invalid()
+  return value
+}
+function reviews(value: unknown): Reviews {
+  const has = (key: string) => value !== null && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, key)
+  const item = record(value, ["security"].filter(has))
+  return has("security") ? { security: reviewMode(item.security) } : {}
+}
 export function projection(value: unknown, requireSteps = false): TaskProjection {
   const hasSteps = value !== null && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, "steps")
+  const hasReviews = value !== null && typeof value === "object" && Object.prototype.hasOwnProperty.call(value, "reviews")
   if (requireSteps && !hasSteps) throw invalid()
-  const item = record(value, ["id", "title", "status", "doneCount", "total", "current", "next", "blockers", ...(hasSteps ? ["steps"] : [])])
+  const item = record(value, ["id", "title", "status", "doneCount", "total", "current", "next", "blockers",
+    ...(hasSteps ? ["steps"] : []), ...(hasReviews ? ["reviews"] : [])])
   const status = item.status
   if (status !== "open" && status !== "in_progress" && status !== "done" && status !== "blocked") throw invalid()
   const doneCount = count(item.doneCount), total = count(item.total)
@@ -79,7 +93,8 @@ export function projection(value: unknown, requireSteps = false): TaskProjection
   const list = hasSteps ? steps(item.steps) : undefined
   if (list && (list.length !== total || list.filter((item) => item.status === "done").length !== doneCount)) throw invalid()
   return { id: identifier(item.id), title: text(item.title, 160), status, doneCount, total,
-    current: step(item.current), next: step(item.next), blockers, ...(list ? { steps: list } : {}) }
+    current: step(item.current), next: step(item.next), blockers, ...(list ? { steps: list } : {}),
+    ...(hasReviews ? { reviews: reviews(item.reviews) } : {}) }
 }
 export function snapshot(value: unknown): Snapshot {
   const item = record(value, ["task", "updatedAt"])
@@ -96,12 +111,15 @@ const id = { type: "string", minLength: 1, maxLength: 128 }
 const stepSchema = object({ id, title: { type: "string", minLength: 1, maxLength: 120 } })
 const listedStepSchema = object({ id, title: { type: "string", minLength: 1, maxLength: 200 },
   status: { enum: ["pending", "in_progress", "done", "blocked"] } })
+const reviewSchema = { enum: ["on", "off", "auto"] }
 const countSchema = { type: "integer", minimum: 0, maximum: 10_000 }
 const taskSchema = object({ id, title: { type: "string", minLength: 1, maxLength: 160 },
   status: { enum: ["open", "in_progress", "done", "blocked"] }, doneCount: countSchema, total: countSchema,
   current: nullable(stepSchema), next: nullable(stepSchema),
   blockers: { type: "array", maxItems: 20, items: stepSchema },
-  steps: { type: "array", maxItems: 999, items: listedStepSchema } })
+  steps: { type: "array", maxItems: 999, items: listedStepSchema },
+  reviews: { ...object({ security: reviewSchema }), required: [] } })
+taskSchema.required = taskSchema.required.filter((key) => key !== "reviews")
 const storedTaskSchema = { ...taskSchema, required: taskSchema.required.filter((key) => key !== "steps") }
 export const updateSchema = object({ task: nullable(taskSchema) })
 export const SessionTask = { id: "skynex.session-task", events: {}, methods: {

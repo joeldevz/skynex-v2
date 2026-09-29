@@ -8,9 +8,20 @@ import {
   TaskError,
   asTaskError,
   createTaskService,
+  REVIEW_MODES,
+  isReviewKey,
+  isReviewMode,
   isTaskError,
 } from "@skynex-internal/tasks";
-import type { StepDraft, StepStatus, TaskErrorCode, TaskListEntry } from "@skynex-internal/tasks";
+import type {
+  ReviewMode,
+  StepDraft,
+  StepStatus,
+  TaskErrorCode,
+  TaskListEntry,
+  TaskReviews,
+  TaskReviewsPatch,
+} from "@skynex-internal/tasks";
 import { createFileTaskStore, resolveTasksRoot, systemClock, uuidIds } from "@skynex-internal/tasks-node";
 
 export interface TaskCliOptions {
@@ -25,7 +36,8 @@ type CommandLabel =
   | "task.status"
   | "task.next.show"
   | "task.next.add"
-  | "task.next.done";
+  | "task.next.done"
+  | "task.reviews.set";
 
 const HELP_FLAGS = ["--help", "-h"] as const;
 const VALUE_FLAGS = new Set<string>([
@@ -38,12 +50,13 @@ const VALUE_FLAGS = new Set<string>([
   "--instruction",
   "--depends-on",
   "--expected-revision",
+  "--security",
 ]);
 const KNOWN_FLAGS = new Set<string>([...HELP_FLAGS, "--json", ...VALUE_FLAGS]);
 const COMMON_FLAGS = ["--tasks-root", "--json", ...HELP_FLAGS];
 
 const ALLOWED_FLAGS: Readonly<Record<CommandLabel, ReadonlySet<string>>> = {
-  "task.init": new Set(COMMON_FLAGS),
+  "task.init": new Set([...COMMON_FLAGS, "--security"]),
   "task.list": new Set(COMMON_FLAGS),
   "task.status": new Set([...COMMON_FLAGS, "--task"]),
   "task.next.show": new Set([...COMMON_FLAGS, "--task"]),
@@ -59,6 +72,7 @@ const ALLOWED_FLAGS: Readonly<Record<CommandLabel, ReadonlySet<string>>> = {
     "--expected-revision",
   ]),
   "task.next.done": new Set([...COMMON_FLAGS, "--task", "--expected-revision"]),
+  "task.reviews.set": new Set([...COMMON_FLAGS, "--task", "--expected-revision"]),
 };
 
 const EXIT_CODES: Readonly<Record<TaskErrorCode, number>> = {
@@ -81,16 +95,18 @@ const EXIT_CODES: Readonly<Record<TaskErrorCode, number>> = {
 const HELP_TEXT = `Usage: skynex task <command> [options]
 
 Commands:
-  skynex task init <title> [--tasks-root <dir>] [--json]
+  skynex task init <title> [--security on|off|auto] [--tasks-root <dir>] [--json]
   skynex task list [--tasks-root <dir>] [--json]
   skynex task status [--task <id>] [--tasks-root <dir>] [--json]
   skynex task next show [<stepId>] [--task <id>] [--tasks-root <dir>] [--json]
   skynex task next add <title> --scope <t> --done-when <t> --evidence <t> [--instruction-file <p> | --instruction <t>] [--depends-on <stepId>]... [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
   skynex task next done <stepId> [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
+  skynex task reviews set security=on|off|auto [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
 
 Options:
   --tasks-root <dir>  Override the .skynex/tasks root (useful for isolated testing)
   --task <id>         Select an existing task; required for status/next without a bound context
+  --security <mode>   Security review toggle for init; covers all security reviewers (on|off|auto, default auto)
   --json              Emit a single JSON object on stdout
   -h, --help          Show this help
 `;
@@ -139,6 +155,7 @@ function labelFor(argv: readonly string[]): CommandLabel | "task" {
     if (sub === "add") return "task.next.add";
     if (sub === "done") return "task.next.done";
   }
+  if (first === "reviews" && argv[1] === "set") return "task.reviews.set";
   return "task";
 }
 
@@ -148,6 +165,10 @@ function resolveCommand(argv: readonly string[]): CommandLabel {
   if (first === "next") {
     const sub = argv[1];
     if (sub === "show" || sub === "add" || sub === "done") return `task.next.${sub}`;
+    throw new TaskError("INVALID_ARGUMENT", `Unknown task subcommand: ${argv.slice(0, 2).join(" ")}`);
+  }
+  if (first === "reviews") {
+    if (argv[1] === "set") return "task.reviews.set";
     throw new TaskError("INVALID_ARGUMENT", `Unknown task subcommand: ${argv.slice(0, 2).join(" ")}`);
   }
   throw new TaskError("INVALID_ARGUMENT", `Unknown task command: ${String(first)}`);
@@ -187,6 +208,46 @@ function parseExpectedRevision(values: ParsedFlags["values"]): number | undefine
     throw new TaskError("INVALID_ARGUMENT", "--expected-revision must be a positive integer");
   }
   return parsed;
+}
+
+function parseReviewMode(raw: string, label: string): ReviewMode {
+  if (!isReviewMode(raw)) {
+    throw new TaskError("INVALID_ARGUMENT", `${label} must be one of ${REVIEW_MODES.join("|")}: ${JSON.stringify(raw)}`);
+  }
+  return raw;
+}
+
+function parseInitReviews(values: ParsedFlags["values"]): TaskReviewsPatch | undefined {
+  const security = lastValue(values, "--security");
+  if (security === undefined) return undefined;
+  return { security: parseReviewMode(security, "--security") };
+}
+
+function parseReviewPairs(positionals: readonly string[]): TaskReviewsPatch {
+  if (positionals.length === 0) {
+    throw new TaskError("INVALID_ARGUMENT", "Missing review assignment (security=<mode>)");
+  }
+  const patch: { security?: ReviewMode } = {};
+  for (const pair of positionals) {
+    const separator = pair.indexOf("=");
+    if (separator <= 0) {
+      throw new TaskError("INVALID_ARGUMENT", `Invalid review assignment (expected key=value): ${JSON.stringify(pair)}`);
+    }
+    const key = pair.slice(0, separator);
+    const value = pair.slice(separator + 1);
+    if (!isReviewKey(key)) {
+      throw new TaskError("INVALID_ARGUMENT", `Unknown review key: ${JSON.stringify(key)}`);
+    }
+    if (patch[key] !== undefined) {
+      throw new TaskError("INVALID_ARGUMENT", `Duplicate review key: ${key}`);
+    }
+    patch[key] = parseReviewMode(value, key);
+  }
+  return patch;
+}
+
+function reviewsLine(reviews: TaskReviews): string {
+  return `Revisiones: security=${reviews.security}`;
 }
 
 function expectAtMost(positionals: readonly string[], maximum: number): void {
@@ -249,7 +310,7 @@ function isSensitiveInstructionPath(relativePath: string): boolean {
   // Case-insensitive match so `.ENV`, `.SSH` and `Credentials.json` are also
   // refused on case-insensitive filesystems.
   const name = basename(relativePath).toLowerCase();
-  if (name === ".env" || name.startsWith(".env.")) return true;
+  if (name === ".env" || name === ".envrc" || name.startsWith(".env.")) return true;
   if (name === ".npmrc" || name === ".netrc") return true;
   if (name.endsWith(".pem") || name.endsWith(".key")) return true;
   if (name === "credentials.json") return true;
@@ -452,7 +513,7 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
 
     const commandLabel = resolveCommand(argv);
     label = commandLabel;
-    const tokens = commandLabel === "task.next.show" || commandLabel === "task.next.add" || commandLabel === "task.next.done"
+    const tokens = commandLabel === "task.next.show" || commandLabel === "task.next.add" || commandLabel === "task.next.done" || commandLabel === "task.reviews.set"
       ? argv.slice(2)
       : argv.slice(1);
     const parsed = tokenize(tokens);
@@ -476,7 +537,8 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
       if (title === undefined) {
         throw new TaskError("INVALID_ARGUMENT", "Missing task title");
       }
-      const result = await service.createTask({ title });
+      const reviews = parseInitReviews(parsed.values);
+      const result = await service.createTask({ title, ...(reviews === undefined ? {} : { reviews }) });
       if (json) {
         out(`${JSON.stringify({
           ok: true,
@@ -515,6 +577,7 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
       expectAtMost(parsed.positionals, 0);
       const taskId = lastValue(parsed.values, "--task") ?? null;
       const view = await service.getStatus(taskId);
+      const { reviews } = await service.getReviews(view.taskId);
       if (json) {
         out(`${JSON.stringify({
           ok: true,
@@ -532,11 +595,13 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
             status: step.status,
             dependsOn: [...step.dependsOn],
           })),
+          reviews: { security: reviews.security },
         })}\n`);
       } else {
         const lines = [
           `Objetivo: ${view.title}`,
           `Estado: ${view.status} (revision ${view.revision})`,
+          reviewsLine(reviews),
         ];
         const next = view.steps.find((step) => step.id === view.nextStepId);
         lines.push(next === undefined ? "Siguiente: -" : `Siguiente: ${next.id} ${next.title}`);
@@ -623,6 +688,30 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
         })}\n`);
       } else {
         out(`${result.stepId} added (revision ${result.revision})\n`);
+      }
+      return 0;
+    }
+
+    if (commandLabel === "task.reviews.set") {
+      const patch = parseReviewPairs(parsed.positionals);
+      const taskId = lastValue(parsed.values, "--task") ?? null;
+      const expectedRevision = parseExpectedRevision(parsed.values);
+      const result = await service.setReviews(
+        taskId,
+        patch,
+        expectedRevision === undefined ? undefined : { expectedRevision },
+      );
+      if (json) {
+        out(`${JSON.stringify({
+          ok: true,
+          command: commandLabel,
+          tasksRoot,
+          taskId: result.taskId,
+          reviews: { security: result.reviews.security },
+          revision: result.revision,
+        })}\n`);
+      } else {
+        out(`${reviewsLine(result.reviews)} (revision ${result.revision})\n`);
       }
       return 0;
     }
