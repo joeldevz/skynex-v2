@@ -140,6 +140,7 @@ export async function verify(test) {
     const forgedBytes = Buffer.from(`${JSON.stringify(forged)}\n`);
     await writeFile(f.lockPath, forgedBytes);
     await fail(() => readInstallLockSnapshot(f.roots, new Map([["agents.thalam", "agents/thalam.md"]])), "does not match the installed catalog");
+    await fail(() => readInstallLockSnapshot(f.roots, new Map([["agents.thalam", "agents/thalam.md"]])), "agents.thalam is recorded at agents/thalam-elsewhere.md in the lock, but the catalog expects agents/thalam.md");
     assert.deepEqual(await readFile(f.lockPath), forgedBytes);
   });
   await test("update-target-reedit-and-missing-file-refused", async () => {

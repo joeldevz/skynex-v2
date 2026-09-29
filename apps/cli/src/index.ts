@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { relative, resolve } from "node:path";
 import * as p from "@clack/prompts";
-import type { InstallComponent, InstallRoots, InstallScope, OpenCodeConfigPreference } from "@skynex-internal/domain";
+import type { InstallComponent, InstallLock, InstallRoots, InstallScope, OpenCodeConfigPreference } from "@skynex-internal/domain";
 import { applyInstallPlan, applyUninstallPlan, createInstallPlan, createUninstallPlan, listBackups, prepareUpdatePlan, readInstallLock, readInstallLockSnapshot, resolveInstallCollisions, restoreBackup } from "@skynex-internal/installer";
 import { readFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
@@ -9,6 +9,17 @@ import { getManagedAgents, openCodeTarget, removeManagedPlugin } from "@skynex-i
 import { createProfileApplyService, createProfileStore, resolveGlobalSkynexRoots, type ProfileApplyRoots } from "@skynex-internal/sky-agents";
 import { runTaskCommand } from "./task-command.js";
 
+const SKYNEX_VERSION = "0.2.1";
+const parseVersion = (value: string): readonly number[] | undefined => {
+  const match = /^(\d+)\.(\d+)\.(\d+)/.exec(value);
+  return match ? match.slice(1, 4).map(Number) : undefined;
+};
+const isNewerVersion = (candidate: string, current: string): boolean => {
+  const a = parseVersion(candidate); const b = parseVersion(current);
+  if (!a || !b) return false;
+  for (let index = 0; index < 3; index += 1) if (a[index] !== b[index]) return a[index]! > b[index]!;
+  return false;
+};
 const args = process.argv.slice(2).filter((argument) => argument !== "--");
 const command = args[0]?.startsWith("-") ? undefined : args[0];
 const positionalOffset = command === "backup" && ["list", "restore"].includes(args[1] ?? "") ? (args[1] === "restore" ? 3 : 2) : 1;
@@ -74,7 +85,7 @@ if (command !== "task" && (has("--help") || has("-h") || (!command && !has("--ve
   process.exit(0);
 }
 if (command !== "task" && (has("--version") || has("-v"))) {
-  console.log("0.2.1");
+  console.log(SKYNEX_VERSION);
   process.exit(0);
 }
 if (command === "profile" && args[1] === "apply" && (!has("--global") || has("--project"))) throw new Error("Profile apply requires --global and does not accept --project")
@@ -93,9 +104,21 @@ const run = async (): Promise<void> => {
   };
   p.intro("SKYNEX  /  SETUP");
 
+  const readLockQuietly = async (candidate: InstallRoots): Promise<InstallLock | undefined> => {
+    try { return (await readInstallLock(candidate)) ?? undefined; } catch { return undefined; }
+  };
   let installRoots: InstallRoots;
+  let detectedRoots: InstallRoots | undefined;
   const explicitProject = valueOf("--project");
-  if (explicitProject || has("--global") || command === "doctor" || has("--yes") || has("--dry-run")) {
+  if (command === "update" && !explicitProject && !has("--global")) {
+    const globalCandidate = roots(); const projectCandidate = roots(process.cwd());
+    const [globalLock, projectLock] = await Promise.all([readLockQuietly(globalCandidate), readLockQuietly(projectCandidate)]);
+    if (Boolean(globalLock) !== Boolean(projectLock)) detectedRoots = globalLock ? globalCandidate : projectCandidate;
+  }
+  if (detectedRoots) {
+    installRoots = detectedRoots;
+    p.log.info(`Updating your existing ${installRoots.scope === "global" ? "global" : "project"} Skynex install`);
+  } else if (explicitProject || has("--global") || command === "doctor" || has("--yes") || has("--dry-run")) {
     installRoots = roots();
   } else {
     const scope = await p.select<InstallScope>({
@@ -113,6 +136,12 @@ const run = async (): Promise<void> => {
     installRoots = roots(scope === "project" ? process.cwd() : undefined);
   }
 
+  const usesLock = command === "install" || command === "update" || command === "uninstall" || command === "profile" || (command === "backup" && args[1] === "restore");
+  const existingLock = usesLock ? await readLockQuietly(installRoots) : undefined;
+  if ((command === "install" || command === "update") && existingLock?.skynexVersion && isNewerVersion(existingLock.skynexVersion, SKYNEX_VERSION)) {
+    throw new Error(`This skynex (${SKYNEX_VERSION}) is older than the installed Skynex (${existingLock.skynexVersion}). Update the CLI: npm i -g @skynex-ai/cli@latest`);
+  }
+
   startSpinner("Inspecting your OpenCode setup");
   const detection = await openCodeTarget.detect(installRoots);
   stopSpinner(detection.installed ? "OpenCode configuration found" : "Fresh OpenCode configuration");
@@ -120,6 +149,12 @@ const run = async (): Promise<void> => {
   const requestedConfig = valueOf("--config");
   if (requestedConfig !== undefined && requestedConfig !== "json" && requestedConfig !== "jsonc") throw new Error("--config must be json or jsonc");
   let configPreference: OpenCodeConfigPreference | undefined = requestedConfig as OpenCodeConfigPreference | undefined;
+  const lockConfigPath = command === "install" ? undefined : existingLock?.resources.find((resource) => resource.id === "opencode-config")?.relativePath;
+  const lockConfig: OpenCodeConfigPreference | undefined = lockConfigPath === "opencode.json" ? "json" : lockConfigPath === "opencode.jsonc" ? "jsonc" : undefined;
+  if (lockConfig) {
+    if (configPreference && configPreference !== lockConfig) throw new Error(`Skynex manages ${lockConfigPath}; re-run without --config or use --config ${lockConfig}`);
+    configPreference = lockConfig;
+  }
   const catalogResourcesFor = async (roots: InstallRoots, components: readonly InstallComponent[]): Promise<Map<string, string>> =>
     new Map((await openCodeTarget.desiredArtifacts(roots, components, configPreference ? { configPreference } : undefined)).map((artifact) => [artifact.resource.id, artifact.relativePath]));
 const needsConfig = command === "install" || command === "update" || command === "uninstall" || command === "profile" || (command === "backup" && args[1] === "restore");
@@ -224,6 +259,9 @@ const needsConfig = command === "install" || command === "update" || command ===
     }
     if (new Set(components).size !== components.length) throw new Error("--components must not contain duplicates");
     selectedComponents = components as InstallComponent[];
+  } else if (command === "update" && existingLock) {
+    selectedComponents = existingLock.installedComponents ?? scopeComponents(installRoots.scope);
+    p.note(selectedComponents.join(", "), "Updating installed components");
   } else if (!has("--yes") && !has("--dry-run")) {
     const componentOptions = [
       { value: "configuration" as const, label: "Foundation", hint: "managed state and installation notes" },
@@ -354,7 +392,7 @@ const needsConfig = command === "install" || command === "update" || command ===
     startSpinner("Installing Skynex");
     let result;
     try {
-      result = await applyInstallPlan(plan);
+      result = await applyInstallPlan(plan, { skynexVersion: SKYNEX_VERSION });
       stopSpinner("Installation verified");
     } catch (error) {
       if (spinnerActive) stopSpinner("Installation stopped safely");
