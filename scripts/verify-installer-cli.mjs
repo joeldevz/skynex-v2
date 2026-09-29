@@ -46,12 +46,12 @@ async function setup(name, formats = []) {
     ...(explicit ? ["--config", explicit] : [])];
   return { root, project, target, state, env, run, args, lockPath: join(state, "lock.json") };
 }
-async function runInteractiveSteps(f, steps) {
+async function runInteractiveSteps(f, steps, cliArgs = ["install", "--project", f.project, "--state-dir", f.state, "--components", nonPluginComponents.join(",")]) {
   const session = `skynex-cli-${process.pid}-${Date.now()}`;
-  const args = [process.execPath, cli, "install", "--project", f.project, "--state-dir", f.state, "--components", nonPluginComponents.join(",")];
+  const args = [process.execPath, cli, ...cliArgs];
   const command = ["env", "-u", "CI", ...Object.entries(f.env).filter(([key]) => key !== "CI").map(([key, value]) => `${key}=${value}`), ...args]
     .map((item) => `'${item.replaceAll("'", "'\\''")}'`).join(" ");
-  const started = spawnSync("tmux", ["new-session", "-d", "-s", session, "-x", "160", "-y", "40", command], { encoding: "utf8" });
+  const started = spawnSync("tmux", ["new-session", "-d", "-s", session, "-x", "160", "-y", "40", "-c", f.project, command], { encoding: "utf8" });
   assert.equal(started.status, 0, started.stderr);
   let output = "";
   try {
@@ -288,4 +288,83 @@ export async function verify(test) {
       });
     }
   }
+  const cliVersion = JSON.parse(await readFile(resolve("packages/npm-cli/package.json"), "utf8")).version;
+  const setupPrompts = ["Where should Skynex live?", "Two OpenCode configs found", "Choose what to bring into OpenCode"];
+  await test("cli-install-records-skynex-version-in-lock", async () => {
+    const f = await setup("records-version", ["jsonc"]);
+    f.run(f.args("install"));
+    assert.equal(JSON.parse(await readFile(f.lockPath)).skynexVersion, cliVersion);
+    assert.equal(f.run(["--version"]).stdout.trim(), cliVersion);
+  });
+  await test("cli-update-only-global-lock-no-setup-prompts", async () => {
+    const f = await setup("update-global-only");
+    const globalTarget = join(f.env.XDG_CONFIG_HOME, "opencode");
+    await mkdir(globalTarget, { recursive: true });
+    await writeFile(join(globalTarget, "opencode.json"), '{"unrelated":"before"}\n');
+    await writeFile(join(globalTarget, "opencode.jsonc"), '{\n  // keep\n  "unrelated": "before"\n}\n');
+    f.run(["install", "--global", "--config", "jsonc", "--yes", "--allow-executable-plugins"]);
+    const globalLock = join(f.env.XDG_CONFIG_HOME, "skynex", "lock.json");
+    const installed = JSON.parse(await readFile(globalLock));
+    delete installed.skynexVersion;
+    await writeFile(globalLock, `${JSON.stringify(installed)}\n`);
+    const result = await runInteractiveSteps(f, [{ prompt: "Ready to make OpenCode yours?", keys: ["Enter"] }], ["update"]);
+    assert.equal(result.status, 0, result.output);
+    for (const prompt of setupPrompts) assert(!result.output.includes(prompt), `unexpected prompt: ${prompt}\n${result.output}`);
+    const lock = JSON.parse(await readFile(globalLock));
+    assert.equal(lock.transactionId === installed.transactionId, false, "update must apply a new transaction");
+    assert.equal(lock.skynexVersion, cliVersion);
+    assert.deepEqual(lock.installedComponents, installed.installedComponents);
+  });
+  await test("cli-update-only-project-lock-no-setup-prompts", async () => {
+    const f = await setup("update-project-only", ["jsonc"]);
+    f.run(["install", "--project", f.project, "--yes"]);
+    const result = await runInteractiveSteps(f, [{ prompt: "Ready to make OpenCode yours?", keys: ["Enter"] }], ["update"]);
+    assert.equal(result.status, 0, result.output);
+    for (const prompt of setupPrompts) assert(!result.output.includes(prompt), `unexpected prompt: ${prompt}\n${result.output}`);
+  });
+  await test("cli-update-dry-run-both-configs-uses-lock-managed-jsonc", async () => {
+    const f = await setup("update-lock-jsonc", ["json", "jsonc"]);
+    f.run(f.args("install", "jsonc"));
+    const scoped = (command, mode) => [command, "--project", f.project, "--state-dir", f.state, mode];
+    const before = await snapshot(f.root);
+    f.run(scoped("update", "--dry-run"));
+    f.run(scoped("uninstall", "--dry-run"));
+    assert.deepEqual(await snapshot(f.root), before);
+    const jsonBytes = await readFile(join(f.target, "opencode.json"));
+    f.run(scoped("update", "--yes"));
+    assert.deepEqual(await readFile(join(f.target, "opencode.json")), jsonBytes);
+    assert.equal(JSON.parse(await readFile(f.lockPath)).resources.find((item) => item.id === "opencode-config").relativePath, "opencode.jsonc");
+  });
+  await test("cli-config-contradicting-lock-clear-error-no-mutation", async () => {
+    const f = await setup("config-contradicts-lock", ["json", "jsonc"]);
+    f.run(f.args("install", "jsonc"));
+    const before = await snapshot(f.root);
+    for (const command of ["update", "uninstall"]) {
+      f.run(f.args(command, "json"), "Skynex manages opencode.jsonc; re-run without --config or use --config jsonc");
+      assert.deepEqual(await snapshot(f.root), before);
+    }
+  });
+  await test("cli-lock-from-newer-skynex-clear-error-no-mutation", async () => {
+    const f = await setup("newer-lock", ["jsonc"]);
+    f.run(f.args("install"));
+    const lock = JSON.parse(await readFile(f.lockPath));
+    lock.skynexVersion = "99.0.0";
+    await writeFile(f.lockPath, `${JSON.stringify(lock)}\n`);
+    const before = await snapshot(f.root);
+    for (const command of ["update", "install"]) {
+      f.run(f.args(command), `This skynex (${cliVersion}) is older than the installed Skynex (99.0.0). Update the CLI: npm i -g @skynex-ai/cli@latest`);
+      assert.deepEqual(await snapshot(f.root), before);
+    }
+  });
+  await test("cli-lock-without-skynex-version-still-updates", async () => {
+    const f = await setup("legacy-lock", ["jsonc"]);
+    f.run(f.args("install"));
+    const lock = JSON.parse(await readFile(f.lockPath));
+    delete lock.skynexVersion;
+    await writeFile(f.lockPath, `${JSON.stringify(lock)}\n`);
+    f.run(["update", "--project", f.project, "--state-dir", f.state, "--yes"]);
+    const updated = JSON.parse(await readFile(f.lockPath));
+    assert.equal(updated.skynexVersion, cliVersion);
+    assert.deepEqual(updated.installedComponents, lock.installedComponents);
+  });
 }

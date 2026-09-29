@@ -82,7 +82,7 @@ export const createInstallPlan = async (target: TargetAdapter, roots: InstallRoo
   return plan;
 };
 
-export const applyInstallPlan = async (plan: InstallPlan): Promise<ApplyResult> => {
+export const applyInstallPlan = async (plan: InstallPlan, options?: { readonly skynexVersion?: string }): Promise<ApplyResult> => {
   if (plan.operations.some((item) => item.kind === "conflict")) throw new Error(plan.updateMode ? "Unresolved update conflict; edit the resource and replan" : "Unresolved collision; choose overwrite or preserve before applying");
   const hasUnmanagedDecision = plan.operations.some((item) => !item.previous && ((item.kind === "replace" && item.decision === "accept-upstream") || (item.kind === "preserve" && item.decision === "preserve")));
   if (hasUnmanagedDecision && authorizedCollisionPlans.get(plan) !== collisionAuthorization(plan)) throw new Error("Unmanaged collision decisions require an authorized collision plan");
@@ -99,7 +99,7 @@ export const applyInstallPlan = async (plan: InstallPlan): Promise<ApplyResult> 
   const planned = new Set(ownedOperations.map((item) => item.artifact.relativePath));
   const lockOperations = ownedOperations.filter((item) => item.kind !== "remove");
   const resources = [...(prior?.resources ?? []).filter((resource) => !planned.has(resource.relativePath)), ...lockOperations.map((item) => item.previous && item.kind === "unchanged" ? (item.currentDigest === item.desiredDigest ? convergedResource(item.previous, item) : item.previous) : ({ ...item.artifact.resource, origin: item.artifact.resource.kind === "native" ? "native" : "canonical", relativePath: item.relativePath, sourceDigest: item.desiredDigest, installedDigest: item.desiredDigest } as ManagedResourceState))];
-  const lock = { schemaVersion: 1 as const, target: "opencode-v2" as const, scope: roots.scope, targetRoot: resolve(roots.targetRoot), stateRoot: resolve(roots.stateRoot), installedAt: new Date().toISOString(), transactionId: plan.id, resources, installedComponents: plan.selectedComponents ?? [...new Set(plan.operations.map((operation) => operation.artifact.component))] } satisfies InstallLock;
+  const lock = { schemaVersion: 1 as const, target: "opencode-v2" as const, scope: roots.scope, targetRoot: resolve(roots.targetRoot), stateRoot: resolve(roots.stateRoot), installedAt: new Date().toISOString(), transactionId: plan.id, resources, installedComponents: plan.selectedComponents ?? [...new Set(plan.operations.map((operation) => operation.artifact.component))], ...(options?.skynexVersion ? { skynexVersion: options.skynexVersion } : prior?.skynexVersion ? { skynexVersion: prior.skynexVersion } : {}) } satisfies InstallLock;
   for (const item of plan.operations) {
     const owned = installed?.resources.find((resource) => resource.id === item.artifact.resource.id && resource.relativePath === item.relativePath);
     const reviewed = plan.updateMode && ["accept-upstream", "keep-local", "skip", "preserve"].includes(item.decision ?? "");

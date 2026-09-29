@@ -38,6 +38,7 @@ export async function readInstallLockSnapshot(roots: InstallRoots, allowedResour
     if (!value || typeof value !== "object") throw new Error("Malformed install lock");
     const lock = value as Record<string, unknown>;
     if (lock.schemaVersion !== 1 || lock.target !== "opencode-v2" || !["global", "project"].includes(String(lock.scope)) || lock.scope !== roots.scope || lock.stateRoot !== resolve(roots.stateRoot) || lock.targetRoot !== resolve(roots.targetRoot) || !Array.isArray(lock.resources)) throw new Error("Malformed or scope-bound install lock");
+    if (lock.skynexVersion !== undefined && (typeof lock.skynexVersion !== "string" || !/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(lock.skynexVersion))) throw new Error("Malformed install lock skynexVersion");
     const resources = lock.resources.map(validateResource);
     const ids = new Set<string>(); const paths = new Set<string>();
     for (const resource of resources) {
@@ -48,7 +49,8 @@ export async function readInstallLockSnapshot(roots: InstallRoots, allowedResour
     // contain resources that the catalog no longer ships (removed upstream); those
     // are kept as prior state instead of failing the whole upgrade. A catalog id
     // that points at a different path is still rejected as tampered.
-    if (allowedResources && resources.some((resource) => { const path = allowedResources.get(resource.id); return path !== undefined && path !== resource.relativePath; })) throw new Error("Lock resource identity/path does not match the installed catalog");
+    const mismatch = allowedResources ? resources.find((resource) => { const path = allowedResources.get(resource.id); return path !== undefined && path !== resource.relativePath; }) : undefined;
+    if (mismatch && allowedResources) throw new Error(`Lock resource identity/path does not match the installed catalog: ${mismatch.id} is recorded at ${mismatch.relativePath} in the lock, but the catalog expects ${allowedResources.get(mismatch.id)}`);
     return { lock: { ...lock, resources } as unknown as InstallLock, bytes };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
