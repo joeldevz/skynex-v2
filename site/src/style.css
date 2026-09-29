@@ -1,0 +1,296 @@
+@import 'tailwindcss';
+
+/* Tokens: ver DESIGN.md (referencia: Duna en Mobbin) */
+@theme {
+  --font-sans: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-bone: #fbfaf8;
+  --color-ink: #1c1917;
+  --color-stone: #625b55;
+  --color-line: #e0dad3;
+  --color-peach: #f5c48a;
+  --color-rose: #f2b7a8;
+  --color-meadow: #7f9f36;
+}
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+  body {
+    @apply bg-bone font-sans text-ink antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-normal tracking-[-0.035em] text-balance;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  ::selection {
+    background: var(--color-peach);
+  }
+}
+
+@utility btn {
+  @apply inline-flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-bone no-underline transition-colors hover:bg-stone;
+}
+@utility btn-ghost {
+  @apply inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium text-ink no-underline ring-1 ring-ink/15 transition hover:bg-ink/5;
+}
+/* Cristal oscuro sobre el paisaje (como los menús de Duna). */
+@utility glass-dark {
+  @apply border border-white/10 bg-[#2b221f]/70 text-bone shadow-[0_30px_80px_-20px_rgb(60_30_20/0.45)] backdrop-blur-xl;
+}
+
+/* --- Intro del hero: de la pradera al paisaje ------------------------------ */
+
+/* El punto de la pradera (15% 68%) empieza centrado y ampliado, y la cámara se aleja.
+   Para que la imagen cubra siempre la pantalla: origen-x ≥ 0.5 / escala. */
+.hero-scene {
+  transform-origin: 15% 68%;
+  animation: descend 4.2s cubic-bezier(0.55, 0, 0.2, 1) 0.2s both;
+}
+@keyframes descend {
+  from {
+    transform: translate(35%, -18%) scale(3.6);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.intro {
+  animation: rise 1s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.intro-nav {
+  animation-delay: 3.3s;
+}
+.intro-title {
+  animation: title-in 1.4s cubic-bezier(0.2, 0.7, 0.2, 1) 2.9s both;
+}
+.intro-2 {
+  animation-delay: 3.5s;
+}
+.intro-3 {
+  animation-delay: 3.8s;
+}
+.intro-4 {
+  animation-delay: 4.5s;
+}
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@keyframes title-in {
+  from {
+    opacity: 0;
+    letter-spacing: 0.04em;
+    filter: blur(10px);
+  }
+}
+.scroll-cue {
+  animation: bob 1.8s ease-in-out infinite;
+}
+@keyframes bob {
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+/* Si el usuario hace scroll, pulsa una tecla o toca la pantalla, la intro termina. */
+.intro-skip .hero-scene,
+.intro-skip .intro {
+  animation: none;
+}
+
+/* --- Tarjeta de tareas en bucle -------------------------------------------- */
+
+.task-card [data-body] {
+  transition: opacity 0.35s ease;
+}
+.task-card.is-leaving [data-body] {
+  opacity: 0;
+}
+.task-step {
+  transition: opacity 0.3s ease;
+}
+.task-step[data-state='pending'] {
+  opacity: 0.35;
+}
+.task-step .box {
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+.task-step .box svg {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  transition: stroke-dashoffset 0.35s ease 0.05s;
+}
+.task-step[data-state='running'] .box {
+  border-color: var(--color-peach);
+  animation: ring 1s ease-out infinite;
+}
+.task-step[data-state='done'] .box {
+  border-color: var(--color-peach);
+  background: var(--color-peach);
+}
+.task-step[data-state='done'] .box svg {
+  stroke-dashoffset: 0;
+}
+.task-step .working {
+  display: none;
+}
+/* La línea de evidencia reserva su hueco desde el principio: la tarjeta no salta. */
+.task-step[data-state='pending'] .evidence {
+  visibility: hidden;
+}
+.task-step[data-state='running'] .evidence {
+  display: none;
+}
+.task-step[data-state='running'] .working {
+  display: block;
+  animation: fade-pulse 1.2s ease-in-out infinite;
+}
+.task-step[data-state='done'] .evidence {
+  animation: rise 0.4s ease both;
+}
+@keyframes ring {
+  from {
+    box-shadow: 0 0 0 0 rgb(245 196 138 / 0.6);
+  }
+  to {
+    box-shadow: 0 0 0 8px rgb(245 196 138 / 0);
+  }
+}
+@keyframes fade-pulse {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.task-progress {
+  transition: width 0.5s ease;
+}
+
+.task-verdict .marker {
+  border-radius: 6px;
+  padding: 0.1em 0.4em;
+  margin-left: -0.4em;
+  color: rgb(251 250 248 / 0.35);
+  background: linear-gradient(var(--color-peach), var(--color-peach)) no-repeat left / 0% 100%;
+  transition:
+    background-size 0.6s ease,
+    color 0.3s ease 0.2s;
+}
+.task-verdict.is-done .marker {
+  background-size: 100% 100%;
+  color: var(--color-ink);
+}
+
+/* --- Por dentro: ilustraciones ------------------------------------------- */
+
+.relay-pulses path {
+  stroke-dasharray: 14 200;
+  stroke-dashoffset: 0;
+  animation: relay 2.4s linear infinite;
+}
+.relay-pulses path:nth-child(2) {
+  animation-delay: 0.8s;
+}
+.relay-pulses path:nth-child(3) {
+  animation-delay: 1.6s;
+}
+@keyframes relay {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+.memory-dot {
+  animation: settle 4s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+}
+@keyframes settle {
+  0%,
+  12% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  45%,
+  55% {
+    transform: translateY(34px);
+  }
+  80%,
+  90% {
+    transform: translateY(68px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(68px);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-scene,
+  .intro,
+  .scroll-cue,
+  .relay-pulses path,
+  .memory-dot,
+  .task-step[data-state='running'] .box,
+  .task-step[data-state='running'] .working {
+    animation: none;
+  }
+  .task-step,
+  .task-step .box,
+  .task-step .box svg,
+  .task-verdict .marker,
+  .task-progress,
+  .task-card [data-body] {
+    transition: none;
+  }
+}
+
+/* --- Docs: prosa ----------------------------------------------------------- */
+
+.prose-doc h2 {
+  @apply mt-16 scroll-mt-8 border-t border-line pt-10 text-3xl first:mt-0 first:border-0 first:pt-0 sm:text-4xl;
+}
+.prose-doc h3 {
+  @apply mt-8 text-xl font-medium tracking-tight;
+}
+.prose-doc p,
+.prose-doc li {
+  @apply leading-relaxed text-stone;
+}
+.prose-doc p {
+  @apply mt-4;
+}
+.prose-doc ol,
+.prose-doc ul {
+  @apply mt-4 space-y-2 pl-5;
+}
+.prose-doc ol {
+  @apply list-decimal;
+}
+.prose-doc ul {
+  @apply list-disc marker:text-rose;
+}
+.prose-doc a {
+  @apply text-ink underline decoration-rose decoration-2 underline-offset-4;
+}
+.prose-doc :not(pre) > code {
+  @apply rounded-md bg-ink/[0.06] px-1.5 py-0.5 font-mono text-[0.88em] text-ink;
+}

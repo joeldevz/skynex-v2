@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skynex — tus agentes terminan el trabajo de verdad</title>
+    <meta name="description" content="Skynex instala en OpenCode un equipo de agentes que trabaja por pasos y no da nada por hecho sin evidencia. Cada instalación se puede deshacer." />
+    <link rel="icon" href="%BASE_URL%favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script type="module" src="/src/home.ts"></script>
+  </head>
+  <body>
+    <header class="intro intro-nav absolute inset-x-0 top-0 z-20">
+      <nav class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5">
+        <a href="%BASE_URL%" class="flex items-center gap-2 text-lg font-semibold tracking-tight">
+          <svg viewBox="0 0 20 20" class="size-6" aria-hidden="true"><rect x="1" y="1" width="18" height="18" rx="5" fill="#1c1917" /><path d="m5.5 10.5 3 3 6-7" fill="none" stroke="#f5c48a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          Skynex
+        </a>
+        <div data-nav class="flex items-center gap-0.5 rounded-full bg-white/40 p-1 text-sm ring-1 ring-white/50 backdrop-blur-md">
+          <a data-page="/docs/" href="%BASE_URL%docs/" class="rounded-full px-3.5 py-1.5 transition hover:bg-white/60 aria-[current=page]:bg-white">Docs</a>
+          <a data-page="/cambios/" href="%BASE_URL%cambios/" class="rounded-full px-3.5 py-1.5 transition hover:bg-white/60 aria-[current=page]:bg-white">Cambios</a>
+          <a href="https://github.com/joeldevz/skynex-v2" class="hidden rounded-full px-3.5 py-1.5 transition hover:bg-white/60 sm:inline-block">GitHub</a>
+        </div>
+        <a href="%BASE_URL%docs/#instalacion" class="btn hidden sm:inline-flex">Instalar</a>
+      </nav>
+    </header>
+
+    <main>
+      <!-- Hero: empieza en la pradera y se aleja hasta ver el paisaje -->
+      <section class="hero relative h-svh min-h-[620px] overflow-hidden" data-hero>
+        <div class="hero-scene absolute inset-0">
+          <img src="%BASE_URL%paisaje.svg" alt="" class="h-full w-full object-cover object-[16%_100%] select-none sm:object-bottom" />
+        </div>
+        <div class="relative z-10 mx-auto flex h-full max-w-4xl flex-col items-center px-6 pt-[17vh] text-center">
+          <h1 class="intro intro-title text-[5.5rem] leading-none font-medium tracking-[-0.06em] sm:text-[9.5rem]">Skynex</h1>
+          <p class="intro intro-2 mt-5 max-w-xl text-xl leading-snug text-ink/80 sm:text-2xl">
+            Un equipo de agentes para OpenCode que no da nada por hecho sin pruebas.
+          </p>
+          <div class="intro intro-3 mt-8 flex flex-wrap justify-center gap-3">
+            <a href="%BASE_URL%docs/#instalacion" class="btn">Instalar Skynex</a>
+            <a href="#asi-trabaja" class="btn-ghost bg-white/40 backdrop-blur-sm">Ver cómo trabaja</a>
+          </div>
+        </div>
+        <a href="#asi-trabaja" class="intro intro-4 absolute inset-x-0 bottom-8 z-10 mx-auto flex w-fit flex-col items-center gap-1 text-sm text-stone" aria-label="Bajar a la siguiente sección">
+          <span>Desliza</span>
+          <svg viewBox="0 0 20 20" class="scroll-cue size-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m5 8 5 5 5-5" /></svg>
+        </a>
+      </section>
+
+      <!-- Así trabaja: tareas en bucle -->
+      <section id="asi-trabaja" class="scroll-mt-4">
+        <div class="mx-auto grid max-w-6xl grid-cols-1 items-center gap-12 px-6 py-24 sm:py-28 lg:grid-cols-[1fr_1.35fr]">
+          <div class="min-w-0">
+            <p class="font-mono text-xs text-stone">Así trabaja</p>
+            <h2 class="mt-3 text-4xl leading-[1.05] sm:text-5xl">Cada paso lo hace un agente. Ninguno se marca sin pruebas.</h2>
+            <p class="mt-5 text-lg leading-relaxed text-stone">
+              Thalam divide la petición en pasos y se los reparte al equipo. Un paso solo se marca como hecho cuando hay evidencia: un test, una ruta del código o una revisión.
+            </p>
+            <div class="mt-8 space-y-1.5" role="tablist" aria-label="Tareas de ejemplo" data-task-tabs></div>
+          </div>
+          <div class="relative min-w-0 overflow-hidden rounded-3xl p-4 sm:p-10">
+            <img src="%BASE_URL%paisaje.svg" alt="" class="pointer-events-none absolute inset-0 h-full w-full -scale-x-100 object-cover object-[center_62%] select-none" />
+            <figure class="task-card glass-dark relative rounded-2xl p-5 sm:p-6" aria-live="polite" data-task-card></figure>
+          </div>
+        </div>
+      </section>
+
+      <!-- Beneficios -->
+      <section class="mx-auto max-w-6xl border-t border-line px-6 py-24 sm:py-32">
+        <h2 class="max-w-3xl text-4xl leading-[1.05] sm:text-6xl">Lo que cambia cuando trabajas con Skynex</h2>
+        <div class="mt-16 hidden grid-cols-[1fr_1.3fr] gap-10 border-b border-line pb-3 font-mono text-xs text-stone md:grid">
+          <p>Lo que suele pasar</p>
+          <p>Con Skynex</p>
+        </div>
+        <dl>
+          <div class="grid gap-3 border-b border-line py-8 md:grid-cols-[1fr_1.3fr] md:gap-10">
+            <dt class="text-lg text-stone"><span class="sr-only">Lo que suele pasar: </span>El agente dice «listo» y nadie lo ha comprobado.</dt>
+            <dd><p class="text-2xl tracking-tight">Terminado significa verificado.</p><p class="mt-2 text-stone">Cada paso tiene un «hecho cuando» y no se cierra sin evidencia: tests, build o una captura.</p></dd>
+          </div>
+          <div class="grid gap-3 border-b border-line py-8 md:grid-cols-[1fr_1.3fr] md:gap-10">
+            <dt class="text-lg text-stone"><span class="sr-only">Lo que suele pasar: </span>Una instalación te pisa la configuración y no hay vuelta atrás.</dt>
+            <dd><p class="text-2xl tracking-tight">Todo se puede deshacer.</p><p class="mt-2 text-stone">Cada instalación guarda una copia de seguridad. <code class="font-mono text-sm text-ink">skynex backup restore</code> te deja como estabas.</p></dd>
+          </div>
+          <div class="grid gap-3 border-b border-line py-8 md:grid-cols-[1fr_1.3fr] md:gap-10">
+            <dt class="text-lg text-stone"><span class="sr-only">Lo que suele pasar: </span>Actualizas y pierdes los ajustes que hiciste a mano.</dt>
+            <dd><p class="text-2xl tracking-tight">Tus cambios se respetan.</p><p class="mt-2 text-stone">Si has tocado un agente o una skill, la actualización se detiene y te lo dice en lugar de sobrescribirlo.</p></dd>
+          </div>
+          <div class="grid gap-3 border-b border-line py-8 md:grid-cols-[1fr_1.3fr] md:gap-10">
+            <dt class="text-lg text-stone"><span class="sr-only">Lo que suele pasar: </span>Un cambio en permisos o secretos entra sin que nadie lo mire.</dt>
+            <dd><p class="text-2xl tracking-tight">Lo delicado pasa dos revisiones.</p><p class="mt-2 text-stone">Dos revisores de seguridad lo miran por separado. Puedes activarlos o apagarlos en cada tarea.</p></dd>
+          </div>
+          <div class="grid gap-3 border-b border-line py-8 md:grid-cols-[1fr_1.3fr] md:gap-10">
+            <dt class="text-lg text-stone"><span class="sr-only">Lo que suele pasar: </span>Se corta la sesión y el agente empieza de cero.</dt>
+            <dd><p class="text-2xl tracking-tight">Retomas donde lo dejaste.</p><p class="mt-2 text-stone">La tarea y sus pasos se guardan en tu proyecto y se ven en la barra lateral de OpenCode.</p></dd>
+          </div>
+        </dl>
+      </section>
+
+      <!-- Por dentro: los nombres tienen su porqué -->
+      <section class="border-t border-line">
+        <div class="mx-auto max-w-6xl px-6 py-24 sm:py-32">
+          <p class="font-mono text-xs text-stone">Por dentro</p>
+          <h2 class="mt-3 max-w-3xl text-4xl leading-[1.05] sm:text-6xl">Los nombres tienen su porqué</h2>
+          <div class="mt-16 grid gap-5 md:grid-cols-3">
+            <article class="flex flex-col rounded-3xl bg-white/80 p-7 ring-1 ring-line">
+              <svg viewBox="0 0 200 110" class="relay h-28 w-full" aria-hidden="true">
+                <g stroke="#e0dad3" stroke-width="1.5" fill="none">
+                  <path d="M100 55 L30 18" /><path d="M100 55 L22 70" /><path d="M100 55 L70 100" /><path d="M100 55 L135 100" /><path d="M100 55 L178 72" /><path d="M100 55 L165 16" />
+                </g>
+                <g stroke="#f5a978" stroke-width="2.5" fill="none" stroke-linecap="round" class="relay-pulses">
+                  <path d="M100 55 L30 18" /><path d="M100 55 L135 100" /><path d="M100 55 L165 16" />
+                </g>
+                <g fill="#1c1917"><circle cx="30" cy="18" r="5" /><circle cx="22" cy="70" r="5" /><circle cx="70" cy="100" r="5" /><circle cx="135" cy="100" r="5" /><circle cx="178" cy="72" r="5" /><circle cx="165" cy="16" r="5" /></g>
+                <circle cx="100" cy="55" r="12" fill="#f5c48a" /><circle cx="100" cy="55" r="12" fill="none" stroke="#1c1917" stroke-width="2" />
+              </svg>
+              <p class="mt-6 font-mono text-sm text-stone">tálamo → Thalam</p>
+              <h3 class="mt-2 text-2xl tracking-tight">Reparte el trabajo, como el tálamo</h3>
+              <p class="mt-3 leading-relaxed text-stone">
+                El tálamo es la parte del cerebro que recibe las señales de los sentidos y las envía a la zona que tiene que ocuparse de ellas. Thalam hace lo mismo con tus peticiones: las recibe, mide el riesgo y se las pasa al agente que corresponde.
+              </p>
+            </article>
+            <article class="flex flex-col rounded-3xl bg-white/80 p-7 ring-1 ring-line">
+              <svg viewBox="0 0 200 110" class="layers h-28 w-full" aria-hidden="true">
+                <g font-family="IBM Plex Mono, monospace" font-size="10" fill="#625b55">
+                  <rect x="20" y="8" width="160" height="26" rx="8" fill="#fbfaf8" stroke="#e0dad3" /><text x="32" y="25">buffer · lo nuevo</text>
+                  <rect x="20" y="42" width="160" height="26" rx="8" fill="#fbfaf8" stroke="#e0dad3" /><text x="32" y="59">working · lo útil</text>
+                  <rect x="20" y="76" width="160" height="26" rx="8" fill="#f5c48a" /><text x="32" y="93" fill="#1c1917">core · lo probado</text>
+                </g>
+                <circle class="memory-dot" cx="165" cy="21" r="5" fill="#1c1917" />
+              </svg>
+              <p class="mt-6 font-mono text-sm text-stone">neurox</p>
+              <h3 class="mt-2 text-2xl tracking-tight">Recuerda lo que ya decidiste</h3>
+              <p class="mt-3 leading-relaxed text-stone">
+                Neurox es la memoria de los agentes. Al empezar una tarea, Thalam consulta qué se decidió antes en el proyecto; al acabar, guarda las decisiones, los errores resueltos y tus preferencias. Todo queda en un archivo SQLite en tu equipo.
+              </p>
+            </article>
+            <article class="flex flex-col rounded-3xl bg-white/80 p-7 ring-1 ring-line">
+              <div class="flex h-28 flex-col items-start justify-center font-mono text-3xl tracking-tight sm:text-4xl" aria-hidden="true">
+                <span class="text-stone/70 line-through decoration-rose decoration-4">Skynet</span>
+                <span>Skyne<span class="rounded-md bg-peach px-1">x</span></span>
+              </div>
+              <p class="mt-6 font-mono text-sm text-stone">skynet → skynex</p>
+              <h3 class="mt-2 text-2xl tracking-tight">Sí, es un guiño a Skynet</h3>
+              <p class="mt-3 leading-relaxed text-stone">
+                La IA de Terminator decidía por su cuenta. Skynex va al revés: por defecto los agentes piden permiso para todo lo que no sea leer, y no dan nada por terminado sin enseñarte las pruebas.
+              </p>
+            </article>
+          </div>
+          <a href="%BASE_URL%docs/#conceptos" class="mt-10 inline-block text-stone underline decoration-rose decoration-2 underline-offset-4 hover:text-ink">Más sobre Thalam y Neurox en la documentación</a>
+        </div>
+      </section>
+
+      <!-- El equipo -->
+      <section class="border-y border-line bg-white/70">
+        <div class="mx-auto max-w-6xl px-6 py-24">
+          <div class="grid gap-6 md:grid-cols-2 md:items-end">
+            <h2 class="text-4xl leading-[1.05] sm:text-5xl">Un equipo, no un solo agente</h2>
+            <p class="text-lg leading-relaxed text-stone">Tú hablas con Thalam. Él reparte el trabajo: cada agente tiene una sola responsabilidad y nadie revisa lo que ha hecho él mismo.</p>
+          </div>
+          <dl class="mt-14 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+            <div class="bg-bone p-6"><dt class="font-mono text-sm">thalam</dt><dd class="mt-1.5 text-stone">Organiza el trabajo y decide cuándo está terminado.</dd></div>
+            <div class="bg-bone p-6"><dt class="font-mono text-sm">scout</dt><dd class="mt-1.5 text-stone">Busca en el código sin tocar nada.</dd></div>
+            <div class="bg-bone p-6"><dt class="font-mono text-sm">tech-planner</dt><dd class="mt-1.5 text-stone">Planifica los cambios grandes.</dd></div>
+            <div class="bg-bone p-6"><dt class="font-mono text-sm">test-engineer</dt><dd class="mt-1.5 text-stone">Escribe el test antes que el código.</dd></div>
+            <div class="bg-bone p-6"><dt class="font-mono text-sm">coder</dt><dd class="mt-1.5 text-stone">Hace el cambio justo para que el test pase.</dd></div>
+            <div class="bg-bone p-6"><dt class="font-mono text-sm">verifier</dt><dd class="mt-1.5 text-stone">Ejecuta las comprobaciones al final.</dd></div>
+            <div class="bg-bone p-6"><dt class="font-mono text-sm">security</dt><dd class="mt-1.5 text-stone">Revisa permisos, secretos y configuración.</dd></div>
+            <div class="bg-bone p-6"><dt class="font-mono text-sm">pr-reviewer</dt><dd class="mt-1.5 text-stone">Busca fallos antes de fusionar.</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <!-- Cierre: vuelve el paisaje -->
+      <section class="relative overflow-hidden">
+        <img src="%BASE_URL%paisaje.svg" alt="" class="pointer-events-none absolute inset-0 h-full w-full -scale-x-100 object-cover object-[center_45%] select-none" />
+        <div class="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-bone to-transparent"></div>
+        <div class="relative mx-auto max-w-6xl px-6 py-32 sm:py-44">
+          <div class="glass-dark mx-auto max-w-xl rounded-2xl p-6 sm:p-8">
+            <h2 class="text-3xl sm:text-4xl">Pruébalo en un proyecto.</h2>
+            <p class="mt-3 text-bone/70">Con <code class="font-mono text-sm text-bone">--dry-run</code> ves qué cambiaría antes de escribir nada.</p>
+            <div class="mt-6 space-y-2" data-code="npm install --global @skynex-ai/cli|skynex install --project . --dry-run"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-8 text-sm text-stone">
+        <p>Skynex · Apache-2.0</p>
+        <div class="flex gap-6">
+          <a class="hover:text-ink" href="%BASE_URL%docs/">Docs</a>
+          <a class="hover:text-ink" href="%BASE_URL%cambios/">Cambios</a>
+          <a class="hover:text-ink" href="https://github.com/joeldevz/skynex-v2">GitHub</a>
+          <a class="hover:text-ink" href="https://www.npmjs.com/package/@skynex-ai/cli">npm</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

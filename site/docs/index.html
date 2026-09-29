@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Documentación — Skynex</title>
+    <meta name="description" content="Cómo instalar Skynex en OpenCode 2, usar las tareas, actualizar, deshacer una instalación y la referencia de comandos." />
+    <link rel="icon" href="%BASE_URL%favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script type="module" src="/src/docs.ts"></script>
+  </head>
+  <body>
+    <div class="pointer-events-none absolute inset-x-0 top-0 h-80 overflow-hidden" aria-hidden="true">
+      <img src="%BASE_URL%paisaje.svg" alt="" class="h-full w-full object-cover object-[center_40%] select-none" />
+      <div class="absolute inset-x-0 bottom-0 h-52 bg-gradient-to-b from-transparent via-bone/70 to-bone"></div>
+    </div>
+    <div class="relative">
+    <header class="absolute inset-x-0 top-0 z-20">
+      <nav class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-5">
+        <a href="%BASE_URL%" class="flex items-center gap-2 text-lg font-semibold tracking-tight">
+          <svg viewBox="0 0 20 20" class="size-6" aria-hidden="true"><rect x="1" y="1" width="18" height="18" rx="5" fill="#1c1917" /><path d="m5.5 10.5 3 3 6-7" fill="none" stroke="#f5c48a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          Skynex
+        </a>
+        <div data-nav class="flex items-center gap-0.5 rounded-full bg-white/40 p-1 text-sm ring-1 ring-white/50 backdrop-blur-md">
+          <a data-page="/docs/" href="%BASE_URL%docs/" class="rounded-full px-3.5 py-1.5 transition hover:bg-white/60 aria-[current=page]:bg-white">Docs</a>
+          <a data-page="/cambios/" href="%BASE_URL%cambios/" class="rounded-full px-3.5 py-1.5 transition hover:bg-white/60 aria-[current=page]:bg-white">Cambios</a>
+          <a href="https://github.com/joeldevz/skynex-v2" class="hidden rounded-full px-3.5 py-1.5 transition hover:bg-white/60 sm:inline-block">GitHub</a>
+        </div>
+        <a href="%BASE_URL%docs/#instalacion" class="btn hidden sm:inline-flex">Instalar</a>
+      </nav>
+    </header>
+
+    <div class="mx-auto grid max-w-6xl grid-cols-1 gap-12 px-6 pt-44 pb-20 lg:grid-cols-[13rem_1fr]">
+      <aside class="lg:sticky lg:top-8 lg:self-start">
+        <p class="font-mono text-xs text-stone">En esta página</p>
+        <nav class="mt-3" aria-label="Secciones">
+          <ul class="flex flex-wrap gap-x-4 gap-y-2 text-sm lg:flex-col" data-toc>
+            <li><a href="#requisitos" class="hover:text-ink">Requisitos</a></li>
+            <li><a href="#instalacion" class="hover:text-ink">Instalación</a></li>
+            <li><a href="#primer-uso" class="hover:text-ink">Primer uso</a></li>
+            <li><a href="#conceptos" class="hover:text-ink">Conceptos</a></li>
+            <li><a href="#tareas" class="hover:text-ink">Tareas</a></li>
+            <li><a href="#actualizar" class="hover:text-ink">Actualizar y desinstalar</a></li>
+            <li><a href="#copias" class="hover:text-ink">Copias de seguridad</a></li>
+            <li><a href="#comandos" class="hover:text-ink">Referencia de comandos</a></li>
+            <li><a href="#problemas" class="hover:text-ink">Si algo falla</a></li>
+          </ul>
+        </nav>
+      </aside>
+
+      <article class="prose-doc min-w-0 max-w-3xl">
+        <header class="mb-14">
+          <h1 class="text-5xl sm:text-7xl">Documentación</h1>
+          <p class="mt-4 text-lg text-stone">Instala Skynex, ponlo a trabajar y deshaz cualquier cambio si lo necesitas.</p>
+        </header>
+
+        <h2 id="requisitos">Requisitos</h2>
+        <ul>
+          <li>Node.js 24 o superior.</li>
+          <li>OpenCode 2.</li>
+          <li>Linux, macOS o Windows.</li>
+        </ul>
+
+        <h2 id="instalacion">Instalación</h2>
+        <h3>1. Instala la CLI</h3>
+        <div class="mt-4 flex flex-wrap gap-1.5 text-sm" role="tablist" aria-label="Gestor de paquetes" data-tabs></div>
+        <div class="mt-3" data-tab-panel></div>
+
+        <h3>2. Instala Skynex en OpenCode</h3>
+        <p>Elige dónde. En un proyecto se escribe en su carpeta <code>.opencode</code>; de forma global, en <code>~/.config/opencode</code>.</p>
+        <div class="mt-4 space-y-2" data-code="skynex install --project .|skynex install --global"></div>
+        <p>
+          Antes de escribir nada, Skynex te enseña lo que va a cambiar y te pide confirmación. Añade <code>--dry-run</code> para ver solo la vista previa.
+          Los plugins ejecutables solo se instalan de forma global, y en modo no interactivo necesitan <code>--yes --allow-executable-plugins</code>.
+        </p>
+
+        <h3>3. Comprueba la instalación</h3>
+        <div class="mt-4" data-code="skynex doctor"></div>
+
+        <h2 id="primer-uso">Primer uso</h2>
+        <p>Abre OpenCode en tu proyecto y elige el agente <code>thalam</code>. Pídele lo que necesites como se lo pedirías a una persona:</p>
+        <div class="mt-4 rounded-2xl border border-line bg-white/70 p-5 font-mono text-sm leading-relaxed">«El botón de guardar del perfil no hace nada en Safari. Arréglalo.»</div>
+        <p>Thalam clasifica la petición, crea una tarea si tiene varios pasos y reparte el trabajo. Verás la tarea y su progreso en la barra lateral.</p>
+
+        <h2 id="conceptos">Conceptos</h2>
+        <h3>Thalam, el que reparte</h3>
+        <p>
+          El nombre viene del <strong>tálamo</strong>, la parte del cerebro que recibe casi todas las señales de los sentidos y las envía a la zona que debe
+          procesarlas. Thalam cumple ese papel en Skynex: es el único agente con el que hablas y el que decide quién hace cada cosa.
+        </p>
+        <p>Con cada petición, Thalam:</p>
+        <ol>
+          <li>Mide el riesgo y decide la ruta: hacerlo directamente, escribir primero un test, preguntarte algo o pedirte permiso.</li>
+          <li>Si hay más de un paso, crea una tarea con un «hecho cuando» y la evidencia que espera para cada uno.</li>
+          <li>Reparte cada paso al agente que corresponde: <code>scout</code> para buscar, <code>coder</code> para cambiar código, <code>verifier</code> para comprobar…</li>
+          <li>Revisa la evidencia y decide si la tarea está terminada. Nadie da por bueno su propio trabajo.</li>
+        </ol>
+
+        <h3>Neurox, la memoria</h3>
+        <p>
+          Los agentes olvidan todo al cerrar la sesión. <a href="https://github.com/joeldevz/neurox">Neurox</a> les da memoria: guarda observaciones
+          (decisiones, errores resueltos, patrones del código y tus preferencias) y las recupera cuando vuelven a ser útiles. Es un único binario y
+          un único archivo SQLite en tu equipo; no necesita Docker, Node ni Python.
+        </p>
+        <p>Cómo lo usa Skynex:</p>
+        <ul>
+          <li>Al empezar una tarea, Thalam consulta lo que ya se sabe del proyecto y se lo pasa resumido a los agentes que trabajan.</li>
+          <li>Cuando se toma una decisión o se resuelve un error, guarda un resumen breve: qué, por qué, dónde y qué aprender.</li>
+          <li>Lo que recuerda es una pista, no una orden: siempre se contrasta con el código actual, y el código gana.</li>
+          <li>Nunca guarda secretos, tokens ni registros largos.</li>
+        </ul>
+        <p>
+          Los recuerdos pasan por tres capas: <code>buffer</code> (lo nuevo), <code>working</code> (lo que ha resultado útil) y <code>core</code> (lo
+          que se consulta a menudo y lleva tiempo siendo cierto). Si cambias un archivo vinculado a un recuerdo, Neurox lo marca como desactualizado.
+        </p>
+        <p>Neurox es opcional. Sin él, Skynex funciona igual, pero cada sesión empieza de cero. Para instalarlo:</p>
+        <div class="mt-4 space-y-2" data-code="brew install joeldevz/tap/neurox|neurox setup opencode"></div>
+
+        <h3>¿Por qué «Skynex»?</h3>
+        <p>
+          Es un guiño a Skynet, la IA de Terminator que tomaba decisiones por su cuenta. Skynex va al revés: por defecto, los agentes piden permiso para
+          todo lo que no sea leer, las acciones delicadas pasan por revisión y nada se da por terminado sin pruebas.
+        </p>
+
+        <h2 id="tareas">Tareas</h2>
+        <p>
+          Una tarea es una lista de pasos guardada en <code>.skynex/tasks</code> dentro de tu proyecto. Cada paso tiene un alcance, un «hecho cuando» y la
+          evidencia que lo demuestra. Thalam las gestiona por ti, pero también puedes usarlas a mano:
+        </p>
+        <div class="mt-4 space-y-2" data-code='skynex task init "Migrar el login a OAuth"|skynex task next add "Test del callback" --scope "auth/" --done-when "el test pasa" --evidence "salida de vitest"|skynex task next done step-001|skynex task status'></div>
+        <h3>Revisión de seguridad por tarea</h3>
+        <p>
+          Por defecto (<code>auto</code>) los dos revisores de seguridad solo entran cuando el cambio lo requiere. Puedes forzarlos o apagarlos para una tarea:
+        </p>
+        <div class="mt-4" data-code="skynex task reviews set security=on"></div>
+
+        <h2 id="actualizar">Actualizar y desinstalar</h2>
+        <div class="mt-4 space-y-2" data-code="skynex update|skynex uninstall"></div>
+        <p>
+          Si has modificado a mano un agente, una skill o un comando que instaló Skynex, <code>update</code> se detiene y te lo indica. Nunca resuelve el
+          conflicto por su cuenta.
+        </p>
+
+        <h2 id="copias">Copias de seguridad</h2>
+        <p>Cada instalación, actualización o desinstalación es una transacción con su copia de seguridad.</p>
+        <div class="mt-4 space-y-2" data-code="skynex backup list|skynex backup restore <id-de-transacción>"></div>
+
+        <h2 id="comandos">Referencia de comandos</h2>
+        <div class="mt-6 overflow-hidden rounded border border-line" data-commands></div>
+        <h3>Opciones comunes</h3>
+        <div class="mt-4 overflow-hidden rounded border border-line" data-flags></div>
+
+        <h2 id="problemas">Si algo falla</h2>
+        <p>Empieza por <code>skynex doctor --json</code>: indica qué recursos faltan, cuáles se han modificado y dónde está el estado.</p>
+        <p>
+          Si una instalación te ha dejado algo roto, busca la transacción con <code>skynex backup list</code> y restáurala. ¿Sigue sin funcionar?
+          <a href="https://github.com/joeldevz/skynex-v2/issues">Abre una incidencia en GitHub</a> con la salida de <code>doctor</code>.
+        </p>
+      </article>
+    </div>
+
+    </div>
+    <footer>
+      <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-8 text-sm text-stone">
+        <p>Skynex · Apache-2.0</p>
+        <div class="flex gap-6">
+          <a class="hover:text-ink" href="%BASE_URL%docs/">Docs</a>
+          <a class="hover:text-ink" href="%BASE_URL%cambios/">Cambios</a>
+          <a class="hover:text-ink" href="https://github.com/joeldevz/skynex-v2">GitHub</a>
+          <a class="hover:text-ink" href="https://www.npmjs.com/package/@skynex-ai/cli">npm</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
