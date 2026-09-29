@@ -37,6 +37,7 @@ Each task stores one review switch, `security` (covers all security reviewers, i
 the dual security judges): `on`, `off` or `auto`. Missing means `auto`. `skill-validator`
 has no switch and keeps its normal scheduling rules. The skynex-tasks plugin enforces `off`
 by blocking `security` subagent calls for the task published with `skynex_task_update`.
+Publishing only `{task:{id}}` is enough: the plugin refreshes the sidebar from the CLI after `skynex task` commands.
 
 - Read it from `skynex task status --task <id> --json` (`reviews`) before the final
   validation phase.

@@ -117,7 +117,7 @@ await test("skynex-tasks-session-sidebar-contract-and-portable-imports", async (
   // E3: review-gate.ts is the only module allowed to touch the system, via node:child_process only.
   assert.deepEqual([...gate.matchAll(/\bfrom\s+["']([^"']+)["']/g)].map(m => m[1]), ["node:child_process"]);
   assert.doesNotMatch(gate,/node:(?!child_process)|readFile|readdir|writeFile|\bspawn\b|\bexec\(|execSync|shell:\s*true|Bun\.|\beval\(/);
-  assert.match(gate,/shell: false, timeout: 2000, maxBuffer: 65536/);
+  assert.match(gate,/shell: false, timeout: 2000, maxBuffer: 1048576/);
   assert.match(server,/from "\.\/review-gate\.ts"/); assert.match(server,/ctx\.tool\.hook\("execute\.before"/);
   const active = new Map([["index.ts", server], ["tui.tsx", tui], ["snapshot.ts", snapshot], ["controller.ts", controller]]);
   for (const [name, source] of [...active, ["review-gate.ts", gate]]) {

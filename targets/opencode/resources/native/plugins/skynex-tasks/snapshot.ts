@@ -96,6 +96,16 @@ export function projection(value: unknown, requireSteps = false): TaskProjection
     current: step(item.current), next: step(item.next), blockers, ...(list ? { steps: list } : {}),
     ...(hasReviews ? { reviews: reviews(item.reviews) } : {}) }
 }
+// L3: `{id}` binds the session to a CLI task; the server fills the rest from `skynex task status`.
+export function publication(value: unknown): TaskProjection | { id: string } | null {
+  if (value === null) return null
+  if (value !== null && typeof value === "object" && Reflect.ownKeys(value).length === 1)
+    return { id: identifier(record(value, ["id"]).id) }
+  return projection(value, true)
+}
+// Placeholder while only the binding is known: the sidebar shows the id as title.
+export const bound = (id: string): TaskProjection =>
+  ({ id, title: id, status: "open", doneCount: 0, total: 0, current: null, next: null, blockers: [] })
 export function snapshot(value: unknown): Snapshot {
   const item = record(value, ["task", "updatedAt"])
   if (typeof item.updatedAt !== "number" || !Number.isSafeInteger(item.updatedAt) ||
@@ -121,7 +131,7 @@ const taskSchema = object({ id, title: { type: "string", minLength: 1, maxLength
   reviews: { ...object({ security: reviewSchema }), required: [] } })
 taskSchema.required = taskSchema.required.filter((key) => key !== "reviews")
 const storedTaskSchema = { ...taskSchema, required: taskSchema.required.filter((key) => key !== "steps") }
-export const updateSchema = object({ task: nullable(taskSchema) })
+export const updateSchema = object({ task: { anyOf: [taskSchema, object({ id }), { type: "null" }] } })
 export const SessionTask = { id: "skynex.session-task", events: {}, methods: {
   getSessionTask: {
     input: object({ sessionID: { type: "string", minLength: 1, maxLength: 128 } }),

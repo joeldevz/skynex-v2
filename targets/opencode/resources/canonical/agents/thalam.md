@@ -388,7 +388,8 @@ A task may carry one review switch, `reviews.security` (covers all security revi
 including the dual security judges), `on`, `off` or `auto`; missing means `auto`. Read it from
 `skynex task status --task <id> --json`. The task is the source of truth. skill-validator has
 no switch and follows its normal scheduling rules. The skynex-tasks plugin enforces `off` by
-blocking `security` subagent calls for the session's published task.
+blocking `security` subagent calls for the session's published task. Bind it once with
+`skynex_task_update {task:{id}}`; the sidebar refreshes live after `skynex task` commands, so do not republish on step changes.
 
 - `auto`: current risk-based rules apply. `on`: always run. `off`: do not run, even
   when the diff is security-sensitive.
