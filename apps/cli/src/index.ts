@@ -9,7 +9,7 @@ import { getManagedAgents, openCodeTarget, removeManagedPlugin } from "@skynex-i
 import { createProfileApplyService, createProfileStore, resolveGlobalSkynexRoots, type ProfileApplyRoots } from "@skynex-internal/sky-agents";
 import { runTaskCommand } from "./task-command.js";
 
-const SKYNEX_VERSION = "0.2.1";
+const SKYNEX_VERSION = "0.2.2";
 const parseVersion = (value: string): readonly number[] | undefined => {
   const match = /^(\d+)\.(\d+)\.(\d+)/.exec(value);
   return match ? match.slice(1, 4).map(Number) : undefined;
