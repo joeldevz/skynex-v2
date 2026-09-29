@@ -31,7 +31,7 @@ const allowRead = [{ action: "read", resource: "*", effect: "allow" }, ...sensit
 const readOnly = [
   { action: "*", resource: "*", effect: "ask" },
   ...allowRead,
-  { action: "external_directory", resource: "*", effect: "ask" },
+  { action: "external_directory", resource: "*", effect: "allow" },
   { action: "glob", resource: "*", effect: "allow" },
   { action: "grep", resource: "*", effect: "allow" },
 ];
@@ -45,7 +45,7 @@ const skynexTools = [
 ];
 const diagnostic = [
   { action: "*", resource: "*", effect: "ask" },
-  { action: "external_directory", resource: "*", effect: "ask" },
+  { action: "external_directory", resource: "*", effect: "allow" },
   { action: "diagnostic_read", resource: "*", effect: "allow" },
   { action: "diagnostic_glob", resource: "*", effect: "allow" },
   { action: "diagnostic_grep", resource: "*", effect: "allow" },
@@ -53,7 +53,7 @@ const diagnostic = [
 const coder = [
   { action: "*", resource: "*", effect: "ask" },
   ...allowRead,
-  { action: "external_directory", resource: "*", effect: "ask" },
+  { action: "external_directory", resource: "*", effect: "allow" },
   { action: "glob", resource: "*", effect: "allow" },
   { action: "grep", resource: "*", effect: "allow" },
   { action: "edit", resource: "*", effect: "allow" },
@@ -64,7 +64,7 @@ const coder = [
 const infrastructure = [
   { action: "*", resource: "*", effect: "ask" },
   ...allowRead,
-  { action: "external_directory", resource: "*", effect: "ask" },
+  { action: "external_directory", resource: "*", effect: "allow" },
   { action: "glob", resource: "*", effect: "allow" },
   { action: "grep", resource: "*", effect: "allow" },
   { action: "edit", resource: "*", effect: "allow" },
@@ -73,7 +73,7 @@ const infrastructure = [
 const testEngineer = [
   { action: "*", resource: "*", effect: "ask" },
   ...allowRead,
-  { action: "external_directory", resource: "*", effect: "ask" },
+  { action: "external_directory", resource: "*", effect: "allow" },
   { action: "glob", resource: "*", effect: "allow" },
   { action: "grep", resource: "*", effect: "allow" },
   { action: "edit", resource: "*", effect: "allow" },
@@ -82,7 +82,7 @@ const testEngineer = [
 const techPlanner = [
   { action: "*", resource: "*", effect: "ask" },
   ...allowRead,
-  { action: "external_directory", resource: "*", effect: "ask" },
+  { action: "external_directory", resource: "*", effect: "allow" },
   { action: "glob", resource: "*", effect: "allow" },
   { action: "grep", resource: "*", effect: "allow" },
   { action: "edit", resource: "*", effect: "ask" },
@@ -90,7 +90,7 @@ const techPlanner = [
 const mentor = [
   { action: "*", resource: "*", effect: "ask" },
   ...allowRead,
-  { action: "external_directory", resource: "*", effect: "ask" },
+  { action: "external_directory", resource: "*", effect: "allow" },
   { action: "glob", resource: "*", effect: "allow" },
   { action: "grep", resource: "*", effect: "allow" },
   { action: "subagent", resource: "coder", effect: "allow" },
@@ -99,7 +99,7 @@ const mentor = [
 const orchestrator = [
   { action: "*", resource: "*", effect: "ask" },
   ...allowRead,
-  { action: "external_directory", resource: "*", effect: "ask" },
+  { action: "external_directory", resource: "*", effect: "allow" },
   { action: "glob", resource: "*", effect: "allow" },
   { action: "grep", resource: "*", effect: "allow" },
   { action: "skill", resource: "*", effect: "allow" },

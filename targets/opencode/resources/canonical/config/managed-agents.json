@@ -108,7 +108,7 @@
         {
           "action": "external_directory",
           "resource": "*",
-          "effect": "ask"
+          "effect": "allow"
         },
         {
           "action": "glob",
@@ -154,7 +154,7 @@
         {
           "action": "external_directory",
           "resource": "*",
-          "effect": "ask"
+          "effect": "allow"
         },
         {
           "action": "diagnostic_read",
@@ -280,7 +280,7 @@
         {
           "action": "external_directory",
           "resource": "*",
-          "effect": "ask"
+          "effect": "allow"
         },
         {
           "action": "glob",
@@ -411,7 +411,7 @@
         {
           "action": "external_directory",
           "resource": "*",
-          "effect": "ask"
+          "effect": "allow"
         },
         {
           "action": "glob",
@@ -542,7 +542,7 @@
         {
           "action": "external_directory",
           "resource": "*",
-          "effect": "ask"
+          "effect": "allow"
         },
         {
           "action": "glob",
@@ -663,7 +663,7 @@
         {
           "action": "external_directory",
           "resource": "*",
-          "effect": "ask"
+          "effect": "allow"
         },
         {
           "action": "glob",
@@ -794,7 +794,7 @@
         {
           "action": "external_directory",
           "resource": "*",
-          "effect": "ask"
+          "effect": "allow"
         },
         {
           "action": "glob",
@@ -915,7 +915,7 @@
         {
           "action": "external_directory",
           "resource": "*",
-          "effect": "ask"
+          "effect": "allow"
         },
         {
           "action": "glob",
@@ -1036,7 +1036,7 @@
         {
           "action": "external_directory",
           "resource": "*",
-          "effect": "ask"
+          "effect": "allow"
         },
         {
           "action": "glob",
@@ -1162,7 +1162,7 @@
         {
           "action": "external_directory",
           "resource": "*",
-          "effect": "ask"
+          "effect": "allow"
         },
         {
           "action": "glob",
@@ -1293,7 +1293,7 @@
         {
           "action": "external_directory",
           "resource": "*",
-          "effect": "ask"
+          "effect": "allow"
         },
         {
           "action": "glob",
@@ -1414,7 +1414,7 @@
         {
           "action": "external_directory",
           "resource": "*",
-          "effect": "ask"
+          "effect": "allow"
         },
         {
           "action": "glob",
@@ -1580,7 +1580,7 @@
         {
           "action": "external_directory",
           "resource": "*",
-          "effect": "ask"
+          "effect": "allow"
         },
         {
           "action": "glob",
