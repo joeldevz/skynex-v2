@@ -8,16 +8,22 @@ Skynex instala en OpenCode 2 un equipo de agentes (thalam, scout, coder, verifie
 skills, comandos y, opcionalmente, un plugin. Se distribuye como la CLI `skynex`,
 paquete de npm `@skynex-ai/cli`. Licencia Apache-2.0.
 
-## Reglas antes de empezar
+## Qué tienes que hacer
 
-- Trabaja en el proyecto actual salvo que el usuario pida otra cosa.
-- No instales nada de forma global (`npm --global`, `skynex install --global`) sin que
-  el usuario lo confirme.
-- Enseña siempre la vista previa (`--dry-run`) y espera confirmación antes de escribir.
-- No uses `sudo`. No uses `--allow-executable-plugins` sin permiso explícito.
+Haz la instalación completa tú solo, sin pedir confirmación en cada paso:
+instala (o actualiza) la CLI, instala Skynex en el proyecto o, si ya estaba, actualízalo,
+y comprueba que todo funciona. Al terminar, resume al usuario lo que has hecho.
+
+Reglas:
+
+- Trabaja en el proyecto actual (`--project .`) salvo que el usuario pida otra cosa.
+- No uses `sudo`. Si npm no tiene permisos para instalar globalmente, para y explícaselo
+  al usuario.
+- No instales en `--global` ni uses `--allow-executable-plugins` salvo que el usuario lo
+  pida: los plugins ejecutables solo se instalan de forma global.
+- Usa siempre `--yes`: tu shell no es interactiva y, sin él, el instalador se quedaría
+  esperando una confirmación.
 - Si un comando falla, no improvises un arreglo: enseña el error al usuario y para.
-- Usa `--yes` solo después de que el usuario haya aprobado la vista previa: tu shell
-  no es interactiva y el instalador se quedaría esperando la confirmación.
 
 ## 1. Comprueba los requisitos
 
@@ -28,48 +34,30 @@ opencode --version  # debe ser OpenCode 2
 
 Si falta alguno, dile al usuario qué falta y no sigas.
 
-## 2. Consigue la CLI
+## 2. Instala o actualiza la CLI
 
-Pregunta al usuario si prefiere instalarla o usarla sin instalar.
+El mismo comando sirve para instalarla por primera vez o para pasar a la última versión:
 
 ```sh
-npm install --global @skynex-ai/cli   # o: pnpm add --global / bun add --global
+npm install --global @skynex-ai/cli@latest   # o: pnpm add --global / bun add --global
 skynex --version
 ```
 
-Sin instalar, antepón `npx @skynex-ai/cli` a cada comando en lugar de `skynex`.
+## 3. Instala Skynex o actualízalo
 
-## 3. Elige dónde instalar
-
-| Alcance | Comando | Escribe en |
-| --- | --- | --- |
-| Proyecto (recomendado) | `skynex install --project .` | `./.opencode` |
-| Global | `skynex install --global` | `~/.config/opencode` |
-
-Los plugins ejecutables solo se instalan de forma global. Si el usuario no lo pide,
-quédate en el proyecto.
-
-## 4. Enseña la vista previa
+Prueba primero a actualizar. Si Skynex no estaba instalado en el proyecto, `update`
+termina con error y te pide ejecutar `skynex install`: en ese caso, instálalo.
 
 ```sh
-skynex install --project . --dry-run
+skynex update --project . --yes || skynex install --project . --yes
 ```
 
-Resume al usuario qué archivos se van a crear o cambiar y pregúntale si sigue.
-No se escribe nada en este paso.
+- `--yes` aplica solo cambios seguros. Cada instalación o actualización crea una copia
+  de seguridad y la salida indica dónde está.
+- Si el usuario modificó a mano un agente, una skill o un comando, `update` no lo
+  sobrescribe. Díselo al usuario y no lo fuerces.
 
-## 5. Instala
-
-Con la aprobación del usuario:
-
-```sh
-skynex install --project . --yes
-```
-
-`--yes` aplica solo cambios seguros. Cada instalación crea una copia de seguridad
-y la salida indica dónde está.
-
-## 6. Comprueba la instalación
+## 4. Comprueba la instalación
 
 ```sh
 skynex doctor --project . --json
@@ -77,7 +65,12 @@ skynex doctor --project . --json
 
 Debe devolver `"ok": true`. Si no, enseña la salida al usuario.
 
-## 7. Dile al usuario cómo empezar
+## 5. Resume lo que has hecho
+
+Dile al usuario, en pocas líneas: la versión de `skynex`, si has instalado o
+actualizado, dónde está la copia de seguridad y el resultado de `doctor`.
+
+## 6. Dile al usuario cómo empezar
 
 1. Abrir una sesión nueva de OpenCode en el proyecto.
 2. Elegir el agente `thalam`.
@@ -127,7 +120,6 @@ skynex task reviews set security=on   # o off, o auto
 ### Actualizar, desinstalar y deshacer
 
 ```sh
-skynex update --project . --dry-run
 skynex update --project . --yes
 skynex uninstall --project . --dry-run
 skynex backup list

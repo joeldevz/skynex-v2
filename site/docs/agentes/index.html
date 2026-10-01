@@ -47,13 +47,13 @@
       <article class="prose-doc min-w-0 max-w-3xl">
         <header class="mb-14">
           <h1 class="text-5xl sm:text-7xl">Para agentes</h1>
-          <p class="mt-4 text-lg text-stone">Un archivo Markdown con todo lo que tu agente necesita para instalar Skynex y empezar a usarlo. Tú solo tienes que aprobar la vista previa.</p>
+          <p class="mt-4 text-lg text-stone">Un archivo Markdown con todo lo que tu agente necesita para instalar Skynex y empezar a usarlo. Lo instala de principio a fin, o lo actualiza si ya lo tenías.</p>
         </header>
 
         <h2 id="como">Pásaselo a tu agente</h2>
         <p>Copia este mensaje en OpenCode, Claude Code, Codex o el agente que uses, dentro de tu proyecto:</p>
         <div class="mt-4" data-agent-prompt></div>
-        <p>El agente comprobará los requisitos, te enseñará qué va a cambiar con <code>--dry-run</code> y no escribirá nada hasta que le digas que sí.</p>
+        <p>El agente comprueba los requisitos, instala o actualiza la CLI, ejecuta <code>skynex install</code> (o <code>skynex update</code> si ya estaba), comprueba la instalación con <code>doctor</code> y te resume lo que ha hecho. Cada paso deja una copia de seguridad.</p>
 
         <h2 id="archivo">El archivo</h2>
         <p>Esto es exactamente lo que leerá. Puedes abrirlo tal cual o copiarlo para pegarlo en tu agente.</p>
