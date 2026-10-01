@@ -22,7 +22,7 @@ export function codeBlock(cmd: string): HTMLElement {
 
 /** URL absoluta de la guía para agentes y el mensaje para pegarle a tu IA. */
 export const agentMdUrl = new URL(`${import.meta.env.BASE_URL}docs/agentes.md`, location.origin).href;
-export const agentPrompt = `Lee ${agentMdUrl} y sigue sus instrucciones para instalar Skynex en este proyecto.`;
+export const agentPrompt = `Lee ${agentMdUrl} y sigue sus instrucciones para instalar Skynex.`;
 
 /** Bloque con el mensaje para la IA y botón de copiar (texto, no comando). */
 export function promptBlock(message = agentPrompt): HTMLElement {

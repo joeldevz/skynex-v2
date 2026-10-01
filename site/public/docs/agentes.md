@@ -11,16 +11,19 @@ paquete de npm `@skynex-ai/cli`. Licencia Apache-2.0.
 ## Qué tienes que hacer
 
 Haz la instalación completa tú solo, sin pedir confirmación en cada paso:
-instala (o actualiza) la CLI, instala Skynex en el proyecto o, si ya estaba, actualízalo,
-y comprueba que todo funciona. Al terminar, resume al usuario lo que has hecho.
+instala (o actualiza) la CLI, instala Skynex de forma global en OpenCode o, si ya estaba,
+actualízalo, y comprueba que todo funciona. Al terminar, resume al usuario lo que has hecho.
 
 Reglas:
 
-- Trabaja en el proyecto actual (`--project .`) salvo que el usuario pida otra cosa.
+- Instala de forma global (`--global`, en `~/.config/opencode`): así Skynex queda
+  disponible en todos los proyectos e incluye su plugin. Usa `--project .` solo si el
+  usuario lo pide.
 - No uses `sudo`. Si npm no tiene permisos para instalar globalmente, para y explícaselo
   al usuario.
-- No instales en `--global` ni uses `--allow-executable-plugins` salvo que el usuario lo
-  pida: los plugins ejecutables solo se instalan de forma global.
+- La instalación global incluye el plugin de Skynex (código ejecutable del catálogo
+  verificado de Skynex). En modo no interactivo exige `--allow-executable-plugins`;
+  úsalo solo con los comandos de esta guía.
 - Usa siempre `--yes`: tu shell no es interactiva y, sin él, el instalador se quedaría
   esperando una confirmación.
 - Si un comando falla, no improvises un arreglo: enseña el error al usuario y para.
@@ -45,11 +48,12 @@ skynex --version
 
 ## 3. Instala Skynex o actualízalo
 
-Prueba primero a actualizar. Si Skynex no estaba instalado en el proyecto, `update`
-termina con error y te pide ejecutar `skynex install`: en ese caso, instálalo.
+Prueba primero a actualizar. Si Skynex no estaba instalado, `update` termina con error
+y te pide ejecutar `skynex install`: en ese caso, instálalo.
 
 ```sh
-skynex update --project . --yes || skynex install --project . --yes
+skynex update --global --yes --allow-executable-plugins \
+  || skynex install --global --yes --allow-executable-plugins
 ```
 
 - `--yes` aplica solo cambios seguros. Cada instalación o actualización crea una copia
@@ -60,7 +64,7 @@ skynex update --project . --yes || skynex install --project . --yes
 ## 4. Comprueba la instalación
 
 ```sh
-skynex doctor --project . --json
+skynex doctor --global --json
 ```
 
 Debe devolver `"ok": true`. Si no, enseña la salida al usuario.
@@ -72,7 +76,7 @@ actualizado, dónde está la copia de seguridad y el resultado de `doctor`.
 
 ## 6. Dile al usuario cómo empezar
 
-1. Abrir una sesión nueva de OpenCode en el proyecto.
+1. Abrir una sesión nueva de OpenCode en cualquier proyecto.
 2. Elegir el agente `thalam`.
 3. Pedirle lo que necesite con sus palabras, por ejemplo:
    «El botón de guardar del perfil no hace nada en Safari. Arréglalo.»
@@ -120,8 +124,8 @@ skynex task reviews set security=on   # o off, o auto
 ### Actualizar, desinstalar y deshacer
 
 ```sh
-skynex update --project . --yes
-skynex uninstall --project . --dry-run
+skynex update --global --yes --allow-executable-plugins
+skynex uninstall --global --dry-run
 skynex backup list
 skynex backup restore <id-de-transacción>
 ```
