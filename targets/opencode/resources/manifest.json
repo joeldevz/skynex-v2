@@ -1053,7 +1053,7 @@
       ],
       "transformation": "v2-adaptation",
       "sourceReferences": [],
-      "generatedSha256": "0e9f7b9a62408c2cff43ecd3888ca62dc76df224130e017c621c6495bae23dc2"
+      "generatedSha256": "58a1fdddf7c1951c1cdd906571015f4c88216ad85f66aac9bee30dc24d55a76f"
     },
     {
       "id": "skynex-tasks-package",
@@ -1089,7 +1089,7 @@
       ],
       "transformation": "v2-adaptation",
       "sourceReferences": [],
-      "generatedSha256": "96490da2bbfb32fd78004c437d4382ab4f74615f89c8275f2565a0d26a2ea8e5"
+      "generatedSha256": "da515fe12867bc33b627b89f812cda8b824425320fddc626cf76b71fdd38e81f"
     },
     {
       "id": "skynex-tasks-snapshot",
@@ -1107,7 +1107,7 @@
       ],
       "transformation": "v2-adaptation",
       "sourceReferences": [],
-      "generatedSha256": "6eb6db3518abe69a7355d8983657d05c8de5498e4fa200807a4d0b7fb18153f7"
+      "generatedSha256": "f6b52ac6485969bfcc74e33d4c6f4b1350c6c39b32cf986d306e0bb0c4110b08"
     },
     {
       "id": "skynex-tasks-controller",
@@ -1143,7 +1143,7 @@
       ],
       "transformation": "v2-adaptation",
       "sourceReferences": [],
-      "generatedSha256": "32cca28c99d0428cc12cd47ddc822b4b36b621a1efbf72d4e265f5a53a2da8b3"
+      "generatedSha256": "8195de6f4495458f4065393f840f7e8ee8a977f4ee4ed6caea1ec26d5037b817"
     },
     {
       "id": "skynex-sky-agents-tui",

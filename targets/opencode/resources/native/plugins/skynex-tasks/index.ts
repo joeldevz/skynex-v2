@@ -24,7 +24,7 @@ type Host = {
     getSessionTask(input: unknown): Promise<Snapshot | null>
   }): Promise<Registration> }
 }
-const instruction = "Skynex Tasks: al iniciar/reanudar, obtén la tarea con la CLI skynex task: skynex task status --task <id> --json; luego vincula la sesión con skynex_task_update {task:{id}} (basta el id; el plugin lee el estado vivo de la CLI y lo refresca tras cada comando skynex task, no hace falta republicar al cambiar pasos). También se acepta el resumen completo id,title,status,doneCount,total,current,next,blockers,steps y reviews {security} tal como lo da la CLI. No inventes estados ni envíes cuerpos, instrucciones o evidencias, sesión ni ruta. Sin tarea asignada: task:null."
+const instruction = "Skynex Tasks: al iniciar/reanudar, obtén la tarea con la CLI skynex task: skynex task status --task <id> --json; luego vincula la sesión con skynex_task_update {task:{id}} (basta el id; el plugin lee el estado vivo de la CLI y lo refresca tras cada comando skynex task, no hace falta republicar al cambiar pasos). También se acepta el resumen completo id,title,status,doneCount,total,current,next,blockers,steps (parent opcional, 1 nivel) y reviews {security} tal como lo da la CLI. No inventes estados ni envíes cuerpos, instrucciones o evidencias, sesión ni ruta. Sin tarea asignada: task:null."
 // L2: shell tool names whose `input.command` may run the CLI; refresh is event-driven, never timed.
 const shellTools = new Set(["bash", "shell"])
 const runsTaskCli = (tool: string, input: unknown) => shellTools.has(tool) && typeof input === "object" && input !== null &&
@@ -70,7 +70,7 @@ export const createServer = (deps: { readTask: ReadTask; readSecurity: ReadSecur
     try {
       registrations.push(await ctx.tool.transform((editor) => editor.add({
         name: "skynex_task_update",
-        description: "Publica el resumen CLI y todos los pasos (id/title/status, orden CLI, máximo 999) de la tarea de esta sesión; task:null borra la asignación. No modifica la tarea CLI.",
+        description: "Publica el resumen CLI y todos los pasos (id/title/status y parent opcional, orden CLI, máximo 999) de la tarea de esta sesión; task:null borra la asignación. No modifica la tarea CLI.",
         input: updateSchema,
         async execute(input, context) {
           try {

@@ -6,6 +6,7 @@ import {
   MAX_TITLE_LENGTH,
   DEFAULT_REVIEWS,
   SCHEMA_VERSION,
+  assertParentRelation,
   assertReviewsPatch,
   assertStepDraft,
   computeNextStepId,
@@ -87,6 +88,10 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
       drafts.forEach((draft, index) => {
         assertStepDraft(draft);
         const id = stepIdAt(index);
+        if (draft.parent !== undefined) {
+          // Only earlier steps are candidates, so a draft parent must precede its child.
+          assertParentRelation(id, draft.parent, steps);
+        }
         const step = buildPendingStep(id, draft);
         steps.push(step);
         instructionFiles.push(renderInstructionFile(step, draft));
@@ -176,6 +181,13 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
       }
       const dependsOn = draft.dependsOn ?? [];
       assertDependenciesExist(dependsOn, existingIds);
+      if (draft.parent !== undefined) {
+        assertParentRelation(id, draft.parent, task.steps);
+        const host = task.steps.find((step) => step.id === draft.parent);
+        if (host?.status === "done") {
+          throw new TaskError("INVALID_ARGUMENT", `Parent step ${draft.parent} is already done`);
+        }
+      }
       if (options?.expectedRevision !== undefined && options.expectedRevision !== task.revision) {
         throw new TaskError(
           "REVISION_CONFLICT",
@@ -215,6 +227,7 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
           approved: false,
           changed: false,
           revision: task.revision,
+          autoCompletedStepIds: [],
         };
       }
       if (options?.expectedRevision !== undefined && options.expectedRevision !== task.revision) {
@@ -223,23 +236,29 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
           `Expected revision ${options.expectedRevision} but current revision is ${task.revision}`,
         );
       }
-      const doneStep: Step = {
-        id: current.id,
-        title: current.title,
-        scope: current.scope,
-        doneWhen: current.doneWhen,
-        expectedEvidence: current.expectedEvidence,
-        dependsOn: [...current.dependsOn],
-        status: "done",
-        instructionPath: current.instructionPath,
-        declaredDoneAt: clock.nowIso(),
-      };
-      const steps = task.steps.map((step, position) => (position === index ? doneStep : step));
+      const now = clock.nowIso();
+      const toComplete = new Set<string>([current.id]);
+      if (current.parent === undefined) {
+        for (const step of task.steps) {
+          if (step.parent === current.id && step.status !== "done") toComplete.add(step.id);
+        }
+      } else {
+        const parentId = current.parent;
+        const host = task.steps.find((step) => step.id === parentId);
+        const siblingsDone = task.steps.every(
+          (step) => step.parent !== parentId || step.status === "done" || step.id === current.id,
+        );
+        if (host !== undefined && host.status !== "done" && siblingsDone) toComplete.add(host.id);
+      }
+      const steps = task.steps.map((step) => (toComplete.has(step.id) ? markDone(step, now) : step));
+      const autoCompletedStepIds = steps
+        .filter((step) => step.id !== current.id && toComplete.has(step.id))
+        .map((step) => step.id);
       const newTask: Task = {
         ...task,
         status: deriveTaskStatus(steps),
         revision: task.revision + 1,
-        updatedAt: clock.nowIso(),
+        updatedAt: now,
         steps,
       };
       await store.save(newTask, task.revision);
@@ -252,6 +271,7 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
         approved: false,
         changed: true,
         revision: newTask.revision,
+        autoCompletedStepIds,
       };
     },
 
@@ -327,6 +347,7 @@ function toStatusStep(step: Step): TaskStatusView["steps"][number] {
     status: step.status,
     dependsOn: [...step.dependsOn],
     ...(step.blockReason === undefined ? {} : { blockReason: step.blockReason }),
+    ...(step.parent === undefined ? {} : { parent: step.parent }),
   };
 }
 
@@ -344,7 +365,14 @@ function buildPendingStep(id: string, draft: StepDraft): Step {
     dependsOn: [...(draft.dependsOn ?? [])],
     status: "pending",
     instructionPath: instructionPathFor(id),
+    ...(draft.parent === undefined ? {} : { parent: draft.parent }),
   };
+}
+
+/** Rebuild a step as declared done, preserving every field (including `parent`) except blockReason. */
+function markDone(step: Step, now: string): Step {
+  const { blockReason: _blockReason, ...rest } = step;
+  return { ...rest, dependsOn: [...step.dependsOn], status: "done", declaredDoneAt: now };
 }
 
 function renderInstructionFile(step: Step, draft: StepDraft): InstructionFile {

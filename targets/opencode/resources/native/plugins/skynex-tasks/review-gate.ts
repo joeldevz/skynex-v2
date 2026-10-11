@@ -19,7 +19,7 @@ const switches = new Set<unknown>(["on", "off", "auto"])
 export type TaskShape = {
   id: string; title: string; status: unknown; doneCount: number; total: number
   current: { id: string; title: string } | null; next: { id: string; title: string } | null
-  blockers: { id: string; title: string }[]; steps: { id: string; title: string; status: unknown }[]
+  blockers: { id: string; title: string }[]; steps: { id: string; title: string; status: unknown; parent?: string }[]
   reviews?: { security: SecuritySwitch }
 }
 export type ReadTask = (taskId: string, cwd: string) => Promise<TaskShape>
@@ -52,17 +52,19 @@ export function createReadTask(run: Exec): ReadTask {
     const raw = field(data, "steps"), title = field(data, "title")
     if (field(data, "taskId") !== taskId || typeof title !== "string" || !Array.isArray(raw)) throw new Error("invalid status")
     const steps = raw.map((item: unknown) => {
-      const id = field(item, "id"), text = field(item, "title")
+      const id = field(item, "id"), text = field(item, "title"), parent = field(item, "parent")
       if (typeof id !== "string" || typeof text !== "string") throw new Error("invalid step")
-      return { id, title: text.slice(0, 200), status: field(item, "status") }
+      return { id, title: text.slice(0, 200), status: field(item, "status"), ...(typeof parent === "string" ? { parent } : {}) }
     })
+    // Counters cover top-level steps only; child steps are grouped under their parent.
+    const top = steps.filter((step) => step.parent === undefined)
     const short = (step: { id: string; title: string } | undefined) => step ? { id: step.id, title: step.title.slice(0, 120) } : null
     const blocked = field(data, "blockedStepIds")
     const blockers = (Array.isArray(blocked) ? blocked : []).map((id: unknown) => short(steps.find((step) => step.id === id)))
       .filter((step): step is { id: string; title: string } => step !== null).slice(0, 20)
     const security = securityOf(data)
     return { id: taskId, title: title.slice(0, 160), status: field(data, "status"),
-      doneCount: steps.filter((step) => step.status === "done").length, total: steps.length,
+      doneCount: top.filter((step) => step.status === "done").length, total: top.length,
       current: short(steps.find((step) => step.status === "in_progress")),
       next: short(steps.find((step) => step.id === field(data, "nextStepId"))),
       blockers, steps, ...(security ? { reviews: { security } } : {}) }

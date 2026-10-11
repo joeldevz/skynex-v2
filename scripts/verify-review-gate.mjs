@@ -86,4 +86,22 @@ await test("read-task-rejects-bad-input-and-output", async () => {
   await assert.rejects(createReadTask(() => assert.fail("must not exec"))("Bad id", "/proj"));
   await assert.rejects(createReadTask(() => assert.fail("must not exec"))("task-1", "rel"));
 });
+await test("read-task-passes-parent-and-counts-top-level-only", async () => {
+  const steps = [
+    { id: "p1", title: "Parent", status: "done", dependsOn: [] },
+    { id: "c1", title: "Child", status: "done", dependsOn: [], parent: "p1" },
+    { id: "p2", title: "Other", status: "in_progress", dependsOn: [] },
+    { id: "c2", title: "Late child", status: "pending", dependsOn: [], parent: "p1" },
+    { id: "c3", title: "Bad parent", status: "done", dependsOn: [], parent: 7 },
+  ];
+  const read = createReadTask((f, a, o, cb) => cb(null, JSON.stringify({ ...cliStatus, nextStepId: "c2", blockedStepIds: ["c2"], steps }), ""));
+  const task = await read("task-1", "/proj");
+  assert.deepEqual(task.steps, [
+    { id: "p1", title: "Parent", status: "done" }, { id: "c1", title: "Child", status: "done", parent: "p1" },
+    { id: "p2", title: "Other", status: "in_progress" }, { id: "c2", title: "Late child", status: "pending", parent: "p1" },
+    { id: "c3", title: "Bad parent", status: "done" }]);
+  assert.deepEqual([task.doneCount, task.total], [2, 3]);
+  assert.deepEqual(task.next, { id: "c2", title: "Late child" });
+  assert.deepEqual(task.blockers, [{ id: "c2", title: "Late child" }]);
+});
 console.log(`review-gate: ${cases.length} cases passed`);

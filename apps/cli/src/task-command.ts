@@ -49,6 +49,7 @@ const VALUE_FLAGS = new Set<string>([
   "--instruction-file",
   "--instruction",
   "--depends-on",
+  "--parent",
   "--expected-revision",
   "--security",
 ]);
@@ -69,6 +70,7 @@ const ALLOWED_FLAGS: Readonly<Record<CommandLabel, ReadonlySet<string>>> = {
     "--instruction-file",
     "--instruction",
     "--depends-on",
+    "--parent",
     "--expected-revision",
   ]),
   "task.next.done": new Set([...COMMON_FLAGS, "--task", "--expected-revision"]),
@@ -99,13 +101,14 @@ Commands:
   skynex task list [--tasks-root <dir>] [--json]
   skynex task status [--task <id>] [--tasks-root <dir>] [--json]
   skynex task next show [<stepId>] [--task <id>] [--tasks-root <dir>] [--json]
-  skynex task next add <title> --scope <t> --done-when <t> --evidence <t> [--instruction-file <p> | --instruction <t>] [--depends-on <stepId>]... [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
+  skynex task next add <title> --scope <t> --done-when <t> --evidence <t> [--instruction-file <p> | --instruction <t>] [--depends-on <stepId>]... [--parent <stepId>] [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
   skynex task next done <stepId> [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
   skynex task reviews set security=on|off|auto [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
 
 Options:
   --tasks-root <dir>  Override the .skynex/tasks root (useful for isolated testing)
   --task <id>         Select an existing task; required for status/next without a bound context
+  --parent <stepId>   Group a new step under a top-level step (one level only)
   --security <mode>   Security review toggle for init; covers all security reviewers (on|off|auto, default auto)
   --json              Emit a single JSON object on stdout
   -h, --help          Show this help
@@ -594,6 +597,7 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
             title: step.title,
             status: step.status,
             dependsOn: [...step.dependsOn],
+            ...(step.parent === undefined ? {} : { parent: step.parent }),
           })),
           reviews: { security: reviews.security },
         })}\n`);
@@ -605,8 +609,15 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
         ];
         const next = view.steps.find((step) => step.id === view.nextStepId);
         lines.push(next === undefined ? "Siguiente: -" : `Siguiente: ${next.id} ${next.title}`);
+        const stepIds = new Set(view.steps.map((step) => step.id));
         for (const step of view.steps) {
+          if (step.parent !== undefined && stepIds.has(step.parent)) continue;
           lines.push(`${statusIcon(step.status)} ${step.id}  ${step.title}`);
+          for (const child of view.steps) {
+            if (child.parent === step.id) {
+              lines.push(`  ${statusIcon(child.status)} ${child.id}  ${child.title}`);
+            }
+          }
         }
         if (view.blockedStepIds.length > 0) {
           lines.push(`Bloqueos: ${view.blockedStepIds.join(", ")}`);
@@ -651,6 +662,11 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
       const doneWhen = requiredValue(parsed.values, "--done-when");
       const expectedEvidence = requiredValue(parsed.values, "--evidence");
       const dependsOn = parsed.values.get("--depends-on") ?? [];
+      const parentValues = parsed.values.get("--parent") ?? [];
+      if (parentValues.length > 1) {
+        throw new TaskError("INVALID_ARGUMENT", "--parent may be given only once");
+      }
+      const parent = parentValues[0];
       const instructionFile = lastValue(parsed.values, "--instruction-file");
       const instructionText = lastValue(parsed.values, "--instruction");
       if (instructionFile !== undefined && instructionText !== undefined) {
@@ -669,6 +685,7 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
         doneWhen,
         expectedEvidence,
         ...(dependsOn.length === 0 ? {} : { dependsOn: [...dependsOn] }),
+        ...(parent === undefined ? {} : { parent }),
         ...(instruction === undefined ? {} : { instruction }),
       };
       const result = await service.addStep(
@@ -742,9 +759,13 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
         approved: result.approved,
         changed: result.changed,
         revision: result.revision,
+        autoCompletedStepIds: [...result.autoCompletedStepIds],
       })}\n`);
     } else {
-      out(`${result.stepId} declarado done (no aprobado, revision ${result.revision})\n`);
+      const auto = result.autoCompletedStepIds.length === 0
+        ? ""
+        : `; también done: ${result.autoCompletedStepIds.join(", ")}`;
+      out(`${result.stepId} declarado done (no aprobado, revision ${result.revision}${auto})\n`);
     }
     return 0;
   } catch (error) {
