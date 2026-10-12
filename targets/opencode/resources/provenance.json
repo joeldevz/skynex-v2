@@ -36,7 +36,7 @@
       "target": "canonical/agents/scout.md",
       "source": "generated",
       "sourceSha256": null,
-      "generatedSha256": "9b8894b1455b7eae99ac43d0e79beef07a03523e8942799ce543d4a70d216ddc"
+      "generatedSha256": "a8d4fe807ffe9abc49c2fd5d80ba8e17306f951cf082b6b3f142e8cc46f3b718"
     },
     {
       "target": "canonical/agents/security.md",
@@ -88,7 +88,7 @@
       "target": "canonical/config/managed-agents.json",
       "source": "generated",
       "sourceSha256": null,
-      "generatedSha256": "0ddec8beb0ed36b0d912bfce7f4523543d49c173dcf1d27dccafc0727f18d977"
+      "generatedSha256": "eb282046d7a455eb315f08c720216482e20a12ae3022e3aab191448713cbd451"
     },
     {
       "target": "canonical/skills/_shared/advisor-protocol.md",

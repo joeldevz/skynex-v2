@@ -1,21 +1,25 @@
 # Entregas, aceptación y decisiones abiertas
 
-> Parte de [Skynex Tasks](README.md). Propuesta, no implementación.
-> Este documento **no** autoriza ejecutar ninguno de los comandos que enumera.
+> Parte de [Skynex Tasks](README.md). Registra el plan y los criterios originales;
+> la implementación actual es parcial y se resume aquí. Los criterios de diseño no
+> prueban por sí solos que una capacidad se haya entregado.
 
 ## Secuencia de entregas
 
-| Entrega | Alcance | Resultado |
+| Entrega original | Alcance propuesto | Estado actual |
 | --- | --- | --- |
-| **A — Cierre de diseño** | Resolver las decisiones abiertas y congelar esquema y alcance | Contrato estable, sin código |
-| **B — Núcleo local** | Servicio de tareas, persistencia, CLI, evidencia importada y checkpoints | Gestión local funcional sin OpenCode |
-| **C — Adopción por Thalam** | Uso del servicio y separación de memoria | Coordinación real con pasos legibles |
-| **D — Adaptador OpenCode** | Vínculos de sesión y proyección/UI | Contexto visible en el editor |
+| **A — Cierre de diseño** | Resolver las decisiones abiertas y congelar esquema y alcance | Sigue como referencia de diseño; consulta las decisiones abiertas abajo |
+| **B — Núcleo local** | Servicio, persistencia, CLI, evidencia importada y checkpoints | Implementado parcialmente: libreta/CLI local, checkpoints `set/show` y `verify:tasks`; importar evidencia e historial siguen propuestos |
+| **C — Adopción por Thalam** | Uso del servicio y separación de memoria | La skill de Tasks y su coordinación local están presentes; las capacidades ausentes de la CLI siguen siendo brechas |
+| **D — Adaptador OpenCode** | Vínculos de sesión y proyección/UI | La integración publica estado de Tasks en la barra lateral; vinculación de sesión e historial siguen propuestos |
 
 La frontera B/C/D se confirma en la entrega A. No se añade scheduler, ejecutor genérico
 ni sincronización remota a ninguna entrega.
 
-## Primera entrega útil (criterio de valor)
+## Primera entrega útil (criterio original propuesto)
+
+Estos pasos son criterios de aceptación del diseño, no una afirmación de que la
+primera entrega completa esté disponible:
 
 Una persona debe poder, sin leer JSON:
 
@@ -28,7 +32,7 @@ Una persona debe poder, sin leer JSON:
 
 Si esto no funciona, la entrega B no está lista, por mucho que el esquema sea bonito.
 
-## Matriz de aceptación
+## Matriz de aceptación original (no toda implementada)
 
 Se conserva la matriz del borrador privado
 (`.skynex/tasks/skynex-tasks-spec/instructions/step-007.md`, AC-01…AC-14) y se añaden
@@ -51,7 +55,7 @@ anteriores.
 
 ## Política de comprobaciones
 
-- Preferencia vigente del proyecto: **sin TDD/red-first**; verificación posterior a la
+- Preferencia del plan original: **sin TDD/red-first**; verificación posterior a la
   implementación. Diseñar pruebas de comportamiento y fallos parciales dentro del
   alcance autorizado; no aceptar solo búsqueda de cadenas.
 - Capturar evidencia **una vez por candidato** y cobertura pertinente; no repetir la
@@ -63,7 +67,8 @@ anteriores.
 - Cambios de prompts, plugins, permisos, herramientas o configuración exigen las
   revisiones de seguridad del **mismo candidato**; una aprobación documental no las
   sustituye.
-- No existe hoy `verify:tasks`; el contrato de comprobación de Tasks está por definir.
+- `verify:tasks` existe y verifica comportamiento de la implementación actual; no
+  equivale a implementar o aceptar todas las cláusulas propuestas de este documento.
 
 ## Decisiones abiertas
 
@@ -76,7 +81,7 @@ anteriores.
 | D-05 | Legado | Detección de artefactos antiguos, coexistencia e importación explícita |
 | D-06 | Esquema | Campos definitivos, límites de bytes y mecanismo local de exclusión/recuperación |
 | D-07 | Nombres | ¿Se mantiene `step-*` en las rutas o se adopta otro prefijo? Afecta a IDs ya citados |
-| D-08 | Ubicación del paquete | `packages/tasks/` dentro del monorepo, con dominio sin dependencias de terminal/FS/OpenCode |
+| D-08 | Ubicación del paquete | Resuelto en la implementación: existe `packages/tasks/` dentro del monorepo |
 
 Una recomendación no es una decisión aceptada por el hecho de estar escrita. Se
 pregunta solo por lo que cambie materialmente comportamiento, alcance o seguridad.

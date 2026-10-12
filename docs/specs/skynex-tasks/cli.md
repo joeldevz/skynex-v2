@@ -1,58 +1,70 @@
-# Contrato CLI propuesto
+# Skynex Tasks CLI — implementación y propuesta
 
-> Parte de [Skynex Tasks](README.md). **Ninguno de estos subcomandos existe todavía.**
-> La sintaxis se congela con el esquema, no antes.
+> Parte de [Skynex Tasks](README.md). La tabla separa los subcomandos presentes en
+> `apps/cli/src/task-command.ts` de los que siguen siendo propuesta. La sintaxis
+> propuesta no debe confundirse con una interfaz disponible.
 
-El punto de entrada es `apps/cli/src/index.ts`; delega en casos de uso, sin reglas de
-filesystem ni de negocio dentro de prompts o presentación.
+El punto de entrada `apps/cli/src/index.ts` enruta `skynex task` al comando actual.
 
-## Operaciones
+## Operaciones implementadas
 
-| Operación | Ejemplo propuesto | Efecto |
+| Operación | Sintaxis disponible | Efecto |
 | --- | --- | --- |
-| Inicializar | `skynex task init "Instalar Skynex globalmente"` | Genera ID, estructura e índice y los devuelve |
-| Listar | `skynex task list` | Resumen de tareas del ámbito seleccionado |
-| Estado | `skynex task status [--task <id>]` | Objetivo, **tabla compacta de pasos**, siguiente paso y bloqueos |
-| Añadir paso | `skynex task next add "Preparar instalación" --instruction-file ./PLAN.md [--task <id>]` | Copia la instrucción validada a un destino generado |
-| Leer paso | `skynex task next show step-001 [--task <id>]` | Devuelve **solo** esa instrucción |
-| Declarar terminado | `skynex task next done step-001 [--task <id>]` | Registra finalización declarada; no fabrica aprobación |
-| Marcar bloqueo | `skynex task next block step-002 --reason "..." [--task <id>]` | Registra causa concreta de bloqueo |
-| Añadir evidencia | `skynex task evidence add --step step-001 --type test --file ./resultado.json [--task <id>]` | Importa con origen explícito |
+| Inicializar | `skynex task init <title> [--security on|off|auto] [--tasks-root <dir>] [--json]` | Crea la tarea local |
+| Listar | `skynex task list [--tasks-root <dir>] [--json]` | Lista tareas del cuaderno local |
+| Estado | `skynex task status [--task <id>] [--tasks-root <dir>] [--json]` | Muestra objetivo, pasos, siguiente paso y bloqueos |
+| Añadir paso | `skynex task next add <title> --scope <t> --done-when <t> --evidence <t> [--instruction-file <p> o --instruction <t>] [--depends-on <stepId>]... [--parent <stepId>] [--task <id>]` | Añade un paso; `--parent` admite un nivel de hijos |
+| Leer paso | `skynex task next show [<stepId>] [--task <id>]` | Lee la instrucción del paso |
+| Iniciar | `skynex task next start <stepId> [--task <id>]` | Marca el paso `in_progress` |
+| Bloquear | `skynex task next block <stepId> --reason <text> [--task <id>]` | Registra la razón del bloqueo |
+| Declarar terminado | `skynex task next done <stepId> [--task <id>]` | Declara el paso `done`; no significa aprobación |
+| Fijar checkpoint | `skynex task checkpoint set --checkpoint <JSON> [--task <id>]` | Guarda o actualiza el checkpoint de recuperación |
+| Consultar checkpoint | `skynex task checkpoint show [--task <id>]` | Muestra el checkpoint actual |
+| Configurar revisión | `skynex task reviews set security=<mode> [--task <id>]` | Actualiza el selector; `<mode>` es `on`, `off` o `auto` |
+
+Los comandos aceptan `--tasks-root`, `--json` y ayuda donde corresponda; las
+mutaciones también admiten `--expected-revision`. Véase la ayuda de la CLI para las
+opciones completas.
+
+## Operaciones aún propuestas (no implementadas)
+
+| Operación | Sintaxis propuesta | Efecto previsto |
+| --- | --- | --- |
+| Añadir evidencia | `skynex task evidence add --step step-001 --type test --file ./resultado.json [--task <id>]` | Importa evidencia con origen explícito |
 | Añadir nota | `skynex task note add "Decisión breve" [--task <id>]` | Guarda contexto; no es verificación |
-| Guardar checkpoint | `skynex task checkpoint save --status blocked_human --reason "..." [--task <id>]` | Guarda el estado del intento identificado |
-| Consultar checkpoint | `skynex task checkpoint show [--task <id>]` | Resumen del último checkpoint válido |
-| Historial | `skynex task checkpoint history [--task <id>]` | Listado acotado |
-| Vincular sesión | `skynex task link-session --session <session-id> [--task <id>]` | Registra vínculo; no importa la conversación |
+| Guardar checkpoint | `skynex task checkpoint save --status blocked_human --reason "..." [--task <id>]` | Sintaxis antigua propuesta; la operación actual es `checkpoint set --checkpoint <JSON>` |
+| Historial | `skynex task checkpoint history [--task <id>]` | Muestra historial acotado |
+| Vincular sesión | `skynex task link-session --session <session-id> [--task <id>]` | Registra un vínculo; no importa la conversación |
 | Retomar | `skynex task resume [--task <id>]` | Recupera contexto y muestra el siguiente paso |
-| Comprobar recuperación | `skynex task recover [--task <id>]` | Detecta inconsistencias; no borra ni ejecuta |
+| Comprobar recuperación | `skynex task recover [--task <id>]` | Detecta inconsistencias sin borrar ni ejecutar |
 | Cerrar | `skynex task close [--task <id>]` | Cierre lógico sin borrar evidencias |
 
-## Semántica obligatoria
+## Semántica implementada
 
-- Sin `--task`, se usa solo un **vínculo de contexto inequívoco**. La CLI sin contexto
-  devuelve `NO_ACTIVE_TASK` o `AMBIGUOUS_TASK`; no elige al azar.
-- Las mutaciones de trabajadores delegados usan **IDs explícitos y revisión esperada**.
-- `init` no modifica OpenCode, no consulta modelos y no requiere Neurox.
-- Un archivo importado **no** aporta permisos ni destinos de escritura.
-- `resume` no ejecuta comandos del Markdown; `recover` no reintenta por su cuenta.
-- `close` no cancela procesos silenciosamente; exige reconciliar trabajo vivo.
-- Cancelación o validación fallida antes de publicar no deja cambios parciales.
-- Errores de tarea **no** alteran recursos ni locks del instalador.
+- `next add` requiere `--scope`, `--done-when` y `--evidence`; puede recibir una
+  instrucción en texto o desde archivo.
+- La relación `--parent` tiene un nivel: solo un paso superior puede ser padre. Al
+  declarar terminado el padre se completan sus hijos; al completar el último hijo se
+  completa también el padre.
+- `next done` registra una declaración, no una aprobación.
+- Los checkpoints también pueden adjuntarse a `next start`, `next block` o `next done`
+  para actualizar estado y recuperación en la misma mutación.
+
+## Semántica propuesta pendiente
+
+Las reglas originales sobre vínculo de contexto inequívoco, importación de archivos,
+retomar, recuperación, cierre y publicación atómica describen el contrato deseado
+para funciones futuras; no convierten los comandos propuestos de arriba en capacidades
+disponibles.
 
 ## Salida para agentes
 
-`--json` devuelve una estructura pequeña: ID de tarea, ID de paso, revisión, estado,
-ruta relativa generada y error tipado.
+`--json` está disponible y devuelve resultados estructurados para los comandos
+implementados; los campos dependen de la operación.
 
-`status` **no** vuelca todas las instrucciones, notas, evidencias ni memorias: el
-modelo lee el índice y después solo el documento requerido. El diagnóstico va a
-`stderr`, separado de la salida estructurada. Nunca se imprimen secretos ni un entorno
-completo.
-
-Códigos semánticos, aún por congelar: `NO_ACTIVE_TASK`, `AMBIGUOUS_TASK`,
-`REVISION_CONFLICT`, `INVALID_PATH`, `UNSUPPORTED_SCHEMA`, `LEGACY_FORMAT`.
-
-Un error no se convierte en una tarea distinta ni se reintenta una mutación ambigua.
+`status` muestra estado de pasos, no sus instrucciones. La CLI usa errores tipados,
+incluidos `NO_ACTIVE_TASK`, `AMBIGUOUS_TASK`, `REVISION_CONFLICT`, `INVALID_PATH`,
+`UNSUPPORTED_SCHEMA` y `LEGACY_FORMAT`.
 
 ## Fuera del alcance inicial
 
