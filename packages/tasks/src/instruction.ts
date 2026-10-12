@@ -7,7 +7,7 @@ export function instructionPathFor(stepId: string): string {
 }
 
 export function renderInstruction(
-  step: Pick<Step, "id" | "title" | "scope" | "doneWhen" | "expectedEvidence" | "dependsOn">,
+  step: Pick<Step, "id" | "title" | "scope" | "doneWhen" | "expectedEvidence" | "dependsOn" | "parent">,
   body?: string,
 ): string {
   const lines = [
@@ -19,6 +19,9 @@ export function renderInstruction(
     "",
     `Evidencia esperada: ${step.expectedEvidence}`,
   ];
+  if (step.parent !== undefined) {
+    lines.push("", `Padre: ${step.parent}`);
+  }
   if (step.dependsOn.length > 0) {
     lines.push("", `Depende de: ${step.dependsOn.join(", ")}`);
   }

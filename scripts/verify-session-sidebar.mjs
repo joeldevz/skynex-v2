@@ -4,9 +4,12 @@ import { readFile } from "node:fs/promises";
 import { createRequire, stripTypeScriptTypes } from "node:module";
 import { test } from "node:test";
 import { runInNewContext } from "node:vm";
-import plugin from "../targets/opencode/resources/native/plugins/skynex-tasks/index.ts";
+import { createServer } from "../targets/opencode/resources/native/plugins/skynex-tasks/index.ts";
 import { createSessionTaskController } from "../targets/opencode/resources/native/plugins/skynex-tasks/controller.ts";
 import { projection, snapshot, SessionTask, updateSchema } from "../targets/opencode/resources/native/plugins/skynex-tasks/snapshot.ts";
+
+// Hermetic server: the CLI reader is offline, so publications keep their snapshot and no process is spawned.
+const plugin = createServer({ readTask: async () => { throw new Error("offline"); }, readSecurity: async () => undefined });
 
 const task = { id: "sidebar", title: "Tarea de prueba", status: "in_progress", doneCount: 1, total: 3,
   current: { id: "s2", title: "Implementar" }, next: { id: "s3", title: "Verificar" },
@@ -36,7 +39,8 @@ async function host(values = new Map(), location = { directory: "/project", proj
       async set(key, value) { values.set(key, structuredClone(value)); }, async remove(key) { values.delete(key); } },
     session: { async get({ sessionID }) { if (!sessions.has(sessionID)) throw new Error("SECRET"); return sessions.get(sessionID); },
       async hook(name, callback) { assert.equal(name, "context"); hook = callback; return registration(); } },
-    tool: { async transform(callback) { callback({ add(definition) { assert.equal(tool, undefined); tool = definition; } }); return registration(); } },
+    tool: { async transform(callback) { callback({ add(definition) { assert.equal(tool, undefined); tool = definition; } }); return registration(); },
+      async hook(name) { assert(["execute.before", "execute.after"].includes(name)); return registration(); } },
     rpc: { async register(definition, handlers) { assert.deepEqual(definition, SessionTask); rpc = handlers; return registration(); } },
   });
   return { values, tool, hook, rpc, cleanup, disposed: () => disposed, gets: () => gets,
@@ -171,7 +175,7 @@ test("S2-S4: exact session, location, workspace, project isolation; durable upda
   await other.update("ses_c");
   assert.equal(await other.rpc.getSessionTask({ sessionID: "ses_a" }), null);
   await first.cleanup();
-  assert.equal(first.disposed(), 3);
+  assert.equal(first.disposed(), 5);
   const resumed = await host(first.values);
   assert.deepEqual(await resumed.rpc.getSessionTask({ sessionID: "ses_a" }), result);
   await resumed.update("ses_a", { task: countedTask(2, 3) });
@@ -624,5 +628,100 @@ test("H2: an absent or unmatched current/next ID never highlights a different ro
       assert.deepEqual(rows.map((row) => row.props.fg), ["base", "muted", "muted", "muted", "muted"]);
       assert.deepEqual(rows.map((row) => elements(row.children).some((node) => node.tag === "strong")), [true, false, false, false, false]);
     }
+  } finally { view.dispose(); }
+});
+
+// Subtasks: one level of `parent`; counters cover top-level steps only.
+const nested = { id: "nested", title: "Tarea con subpasos", status: "in_progress", doneCount: 0, total: 2,
+  current: { id: "c2", title: "Revisar" }, next: null, blockers: [], steps: [
+    { id: "p1", title: "Diseñar", status: "in_progress" },
+    { id: "c1", title: "Boceto", status: "done", parent: "p1" },
+    { id: "p2", title: "Construir", status: "pending" },
+    { id: "c2", title: "Revisar", status: "pending", parent: "p1" },
+    { id: "c3", title: "Ajustar", status: "pending", parent: "p2" },
+  ] };
+
+test("P1: DTO and runtime tool accept one-level parents and count only top-level steps", async () => {
+  const before = structuredClone(nested);
+  assert.deepEqual(projection(nested), nested);
+  const withChildBlockers = { ...nested, blockers: [{ id: "c2", title: "Revisar" }, { id: "c3", title: "Ajustar" }, { id: "p2", title: "Construir" }] };
+  assert.deepEqual(projection(withChildBlockers), withChildBlockers, "Blockers may name child steps beyond the top-level total");
+  const doneTop = { ...nested, doneCount: 1, steps: nested.steps.map((step) => step.id === "p2" ? { ...step, status: "done" } : step) };
+  assert.deepEqual(projection(doneTop), doneTop, "A done top-level step counts; done children never do");
+  const h = await host();
+  try {
+    assert.deepEqual(await h.update("ses_a", { task: nested }), { content: "Resumen de tarea publicado." });
+    assert.deepEqual((await h.rpc.getSessionTask({ sessionID: "ses_a" })).task, nested);
+  } finally { await h.cleanup(); }
+  assert.deepEqual(nested, before);
+});
+
+test("P1: invalid parents and child-inclusive counters are rejected without writing storage", async (t) => {
+  const withStep = (index, patch) => ({ ...nested, steps: nested.steps.map((step, i) => i === index ? { ...step, ...patch } : step) });
+  const cases = [
+    ["unknown parent", withStep(1, { parent: "missing" })],
+    ["nested parent", withStep(4, { parent: "c1" })],
+    ["self parent", withStep(1, { parent: "c1" })],
+    ["path-like parent", withStep(1, { parent: "../p1" })],
+    ["prototype parent", withStep(1, { parent: "__proto__" })],
+    ["null parent", withStep(1, { parent: null })],
+    ["numeric parent", withStep(1, { parent: 1 })],
+    ["total counts children", { ...nested, total: 5 }],
+    ["doneCount counts children", { ...nested, doneCount: 1 }],
+    ["blockers exceed listed steps", { ...countedTask(0, 1), blockers: [task.blockers[0], { id: "x", title: "x" }] }],
+  ];
+  const h = await host();
+  try {
+    for (const [name, input] of cases) await t.test(name, async () => {
+      assert.throws(() => projection(input), /Resumen de tarea inválido/);
+      await assert.rejects(h.update("ses_a", { task: input }), /^Error: No se pudo publicar el resumen de tarea\.$/);
+      assert.equal(h.values.size, 0);
+    });
+  } finally { await h.cleanup(); }
+  assert.throws(() => projection({ ...legacyTask, blockers: Array(4).fill(0).map((_, i) => ({ id: `b${i}`, title: "b" })) }),
+    /Resumen de tarea inválido/, "Without steps, blockers stay bounded by total");
+});
+
+test("P1: tool and RPC schemas describe an optional parent identifier", () => {
+  const input = updateSchema.properties.task.anyOf.find((schema) => schema.type === "object").properties.steps.items;
+  const output = SessionTask.methods.getSessionTask.output.anyOf.find((schema) => schema.type === "object").properties.task.properties.steps.items;
+  for (const schema of [input, output]) {
+    assert.deepEqual(schema.properties.parent, { type: "string", minLength: 1, maxLength: 128 });
+    assert(!schema.required.includes("parent"));
+    assert.equal(JSON.stringify(schema).includes("pattern"), false, "Host RPC decoding rejects pattern");
+  }
+});
+
+test("P2: real JSX groups children under their parent, indented, with collapsible progress", async () => {
+  const view = await compactView();
+  const before = structuredClone(nested);
+  try {
+    view.publish({ loading: false, task: { task: nested, updatedAt: 123456 }, error: "" });
+    const expected = ["▼ Tarea · 2 pendientes · 0/2", "→ Diseñar", "  ✓ Boceto", "  ○ Revisar", "○ Construir", "  ○ Ajustar"];
+    assert.deepEqual(view.texts(), expected, "Children follow their parent even when appended after a later parent");
+    const rows = view.nodes().filter((node) => node.tag === "text");
+    assert.deepEqual(rows.map((row) => row.props.fg), ["base", "muted", "muted", "base", "muted", "muted"], "Active child is highlighted");
+    assert.deepEqual(rows.map((row) => typeof row.props.onMouseDown), ["function", "function", "undefined", "undefined", "function", "undefined"]);
+    const parent = () => view.nodes().find((node) => node.tag === "text" && textContent(node.children).startsWith("→ Diseñar"));
+    for (const button of [1, 2]) parent().props.onMouseDown({ button });
+    assert.deepEqual(view.texts(), expected, "Only the left button toggles children");
+    parent().props.onMouseDown({ button: 0 });
+    assert.deepEqual(view.texts(), ["▼ Tarea · 2 pendientes · 0/2", "→ Diseñar (1/2)", "○ Construir", "  ○ Ajustar"]);
+    view.publish({ loading: false, task: { task: nested, updatedAt: 123457 }, error: "" });
+    assert.deepEqual(view.texts(), ["▼ Tarea · 2 pendientes · 0/2", "→ Diseñar (1/2)", "○ Construir", "  ○ Ajustar"], "Refresh keeps collapse");
+    parent().props.onMouseDown({ button: 0 });
+    assert.deepEqual(view.texts(), expected);
+    assert.deepEqual(nested, before);
+  } finally { view.dispose(); }
+});
+
+test("P2: child titles truncate earlier to fit the indent", async () => {
+  const view = await compactView();
+  const long = "a".repeat(40);
+  try {
+    view.publish({ loading: false, task: { task: { ...nested, current: null, steps: [
+      { id: "p1", title: long, status: "pending" }, { id: "c1", title: long, status: "pending", parent: "p1" },
+      { id: "p2", title: "b", status: "pending" }] }, updatedAt: 1 }, error: "" });
+    assert.deepEqual(view.texts().slice(1), [`○ ${"a".repeat(27)}…`, `  ○ ${"a".repeat(25)}…`, "○ b"]);
   } finally { view.dispose(); }
 });
