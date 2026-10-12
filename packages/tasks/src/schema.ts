@@ -1,4 +1,5 @@
 import { TaskError } from "./errors.js";
+import { parseCheckpoint } from "./checkpoint.js";
 import { instructionPathFor } from "./instruction.js";
 import { SLUG_PATTERN } from "./slug.js";
 import {
@@ -31,9 +32,15 @@ export function parseTask(text: string, expectedId: string): Task {
   if (!Object.prototype.hasOwnProperty.call(raw, "schemaVersion")) {
     throw new TaskError("LEGACY_FORMAT", "Task file has no schemaVersion; the legacy format is not supported");
   }
-  if (raw["schemaVersion"] !== SCHEMA_VERSION) {
+  const schemaVersion = raw["schemaVersion"];
+  if (schemaVersion !== SCHEMA_VERSION && schemaVersion !== 2) {
     throw new TaskError("UNSUPPORTED_SCHEMA", `Unsupported schemaVersion: ${JSON.stringify(raw["schemaVersion"])}`);
   }
+  const hasCheckpoint = Object.prototype.hasOwnProperty.call(raw, "checkpoint");
+  if (hasCheckpoint && schemaVersion === 1) {
+    throw new TaskError("UNSUPPORTED_SCHEMA", "Checkpoint requires schemaVersion 2");
+  }
+  const checkpoint = hasCheckpoint ? parseCheckpoint(raw["checkpoint"]) : undefined;
 
   const id = requireString(raw, "id");
   if (!SLUG_PATTERN.test(id)) {
@@ -87,12 +94,16 @@ export function parseTask(text: string, expectedId: string): Task {
   const reviews = parseReviews(raw["reviews"]);
 
   return {
-    schemaVersion: SCHEMA_VERSION, id, title, status, revision, createdAt, updatedAt, steps,
+    schemaVersion, id, title, status, revision, createdAt, updatedAt, steps,
     ...(reviews === undefined ? {} : { reviews }),
+    ...(checkpoint === undefined ? {} : { checkpoint }),
   };
 }
 
 export function serializeTask(task: Task): string {
+  if ((task.schemaVersion !== 1 && task.schemaVersion !== 2) || (task.schemaVersion === 1 && task.checkpoint !== undefined)) {
+    throw new TaskError("UNSUPPORTED_SCHEMA", "Unsupported task schema/checkpoint combination");
+  }
   const serialized = {
     schemaVersion: task.schemaVersion,
     id: task.id,
@@ -103,8 +114,13 @@ export function serializeTask(task: Task): string {
     updatedAt: task.updatedAt,
     steps: task.steps.map(serializeStep),
     ...(task.reviews === undefined ? {} : { reviews: { security: task.reviews.security } }),
+    ...(task.checkpoint === undefined ? {} : { checkpoint: parseCheckpoint(task.checkpoint) }),
   };
-  return `${JSON.stringify(serialized, null, 2)}\n`;
+  const text = `${JSON.stringify(serialized, null, 2)}\n`;
+  if (utf8ByteLength(text) > MAX_TASK_JSON_BYTES) {
+    throw new TaskError("FILE_TOO_LARGE", `Task JSON exceeds ${MAX_TASK_JSON_BYTES} bytes`);
+  }
+  return text;
 }
 
 function parseReviews(value: unknown): TaskReviews | undefined {

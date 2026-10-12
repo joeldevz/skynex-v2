@@ -72,7 +72,11 @@
       "target": "canonical/agents/thalam.md",
       "source": "agents/skynex-orchestrator.md",
       "sourceSha256": "eb46ce33b0cdc5713b1d42a5f89eec4bd4182e0dbd31acb42d8eba25f5be6170",
-      "generatedSha256": "f404e0a4225da14815917c288cf2cf221a4b6ffb03678b2c42c927883a4dcca7"
+      "generatedSha256": "26aeee9d3ee5a9514f145658c60fd579af72b1a037ce27814a157dc38c1be34b",
+      "localOverlay": {
+        "transformation": "tasks-sole-progress-recovery",
+        "baseGeneratedSha256": "f404e0a4225da14815917c288cf2cf221a4b6ffb03678b2c42c927883a4dcca7"
+      }
     },
     {
       "target": "canonical/agents/verifier.md",
@@ -179,7 +183,7 @@
     {
       "target": "canonical/skills/skynex-tasks/SKILL.md",
       "source": "repository-authored",
-      "generatedSha256": "f1290fffbd574449a4d97f30affeb97572d412d4113a90cadb20550f43d0ad1a",
+      "generatedSha256": "5f4dea95d60449a41e29cd860e74e5e722bb85d50e4c65bf73376e3ae7b4ed90",
       "transformation": "authored-managed-skill",
       "sourceReferences": []
     },
@@ -523,8 +527,8 @@
     {
       "target": "native/plugins/skynex-tasks/index.ts",
       "source": "native/plugins/skynex-tasks/index.ts",
-      "sourceSha256": "58a1fdddf7c1951c1cdd906571015f4c88216ad85f66aac9bee30dc24d55a76f",
-      "generatedSha256": "58a1fdddf7c1951c1cdd906571015f4c88216ad85f66aac9bee30dc24d55a76f",
+      "sourceSha256": "b046205d848f4cbeaf040390529cbc7ec9bfe3085986393efc0fdc94ab04915d",
+      "generatedSha256": "b046205d848f4cbeaf040390529cbc7ec9bfe3085986393efc0fdc94ab04915d",
       "transformation": "v2-adaptation",
       "sourceReferences": []
     },

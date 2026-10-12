@@ -12,9 +12,11 @@ import {
   isReviewKey,
   isReviewMode,
   isTaskError,
+  parseCheckpoint,
 } from "@skynex-internal/tasks";
 import type {
   ReviewMode,
+  RecoveryCheckpoint,
   StepDraft,
   StepStatus,
   TaskErrorCode,
@@ -37,6 +39,10 @@ type CommandLabel =
   | "task.next.show"
   | "task.next.add"
   | "task.next.done"
+  | "task.next.start"
+  | "task.next.block"
+  | "task.checkpoint.set"
+  | "task.checkpoint.show"
   | "task.reviews.set";
 
 const HELP_FLAGS = ["--help", "-h"] as const;
@@ -52,6 +58,8 @@ const VALUE_FLAGS = new Set<string>([
   "--parent",
   "--expected-revision",
   "--security",
+  "--reason",
+  "--checkpoint",
 ]);
 const KNOWN_FLAGS = new Set<string>([...HELP_FLAGS, "--json", ...VALUE_FLAGS]);
 const COMMON_FLAGS = ["--tasks-root", "--json", ...HELP_FLAGS];
@@ -73,7 +81,11 @@ const ALLOWED_FLAGS: Readonly<Record<CommandLabel, ReadonlySet<string>>> = {
     "--parent",
     "--expected-revision",
   ]),
-  "task.next.done": new Set([...COMMON_FLAGS, "--task", "--expected-revision"]),
+  "task.next.done": new Set([...COMMON_FLAGS, "--task", "--expected-revision", "--checkpoint"]),
+  "task.next.start": new Set([...COMMON_FLAGS, "--task", "--expected-revision", "--checkpoint"]),
+  "task.next.block": new Set([...COMMON_FLAGS, "--task", "--expected-revision", "--checkpoint", "--reason"]),
+  "task.checkpoint.set": new Set([...COMMON_FLAGS, "--task", "--expected-revision", "--checkpoint"]),
+  "task.checkpoint.show": new Set([...COMMON_FLAGS, "--task"]),
   "task.reviews.set": new Set([...COMMON_FLAGS, "--task", "--expected-revision"]),
 };
 
@@ -102,7 +114,11 @@ Commands:
   skynex task status [--task <id>] [--tasks-root <dir>] [--json]
   skynex task next show [<stepId>] [--task <id>] [--tasks-root <dir>] [--json]
   skynex task next add <title> --scope <t> --done-when <t> --evidence <t> [--instruction-file <p> | --instruction <t>] [--depends-on <stepId>]... [--parent <stepId>] [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
-  skynex task next done <stepId> [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
+  skynex task next start <stepId> [--checkpoint <JSON>] [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
+  skynex task next block <stepId> --reason <text> [--checkpoint <JSON>] [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
+  skynex task next done <stepId> [--checkpoint <JSON>] [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
+  skynex task checkpoint set --checkpoint <JSON> [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
+  skynex task checkpoint show [--task <id>] [--tasks-root <dir>] [--json]
   skynex task reviews set security=on|off|auto [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
 
 Options:
@@ -157,7 +173,10 @@ function labelFor(argv: readonly string[]): CommandLabel | "task" {
     if (sub === "show") return "task.next.show";
     if (sub === "add") return "task.next.add";
     if (sub === "done") return "task.next.done";
+    if (sub === "start") return "task.next.start";
+    if (sub === "block") return "task.next.block";
   }
+  if (first === "checkpoint" && (argv[1] === "set" || argv[1] === "show")) return `task.checkpoint.${argv[1]}`;
   if (first === "reviews" && argv[1] === "set") return "task.reviews.set";
   return "task";
 }
@@ -167,7 +186,11 @@ function resolveCommand(argv: readonly string[]): CommandLabel {
   if (first === "init" || first === "list" || first === "status") return `task.${first}`;
   if (first === "next") {
     const sub = argv[1];
-    if (sub === "show" || sub === "add" || sub === "done") return `task.next.${sub}`;
+    if (sub === "show" || sub === "add" || sub === "done" || sub === "start" || sub === "block") return `task.next.${sub}`;
+    throw new TaskError("INVALID_ARGUMENT", `Unknown task subcommand: ${argv.slice(0, 2).join(" ")}`);
+  }
+  if (first === "checkpoint") {
+    if (argv[1] === "set" || argv[1] === "show") return `task.checkpoint.${argv[1]}`;
     throw new TaskError("INVALID_ARGUMENT", `Unknown task subcommand: ${argv.slice(0, 2).join(" ")}`);
   }
   if (first === "reviews") {
@@ -211,6 +234,15 @@ function parseExpectedRevision(values: ParsedFlags["values"]): number | undefine
     throw new TaskError("INVALID_ARGUMENT", "--expected-revision must be a positive integer");
   }
   return parsed;
+}
+
+function checkpointValue(values: ParsedFlags["values"]): RecoveryCheckpoint | undefined {
+  const raw = lastValue(values, "--checkpoint");
+  if (raw === undefined) return undefined;
+  let value: unknown;
+  try { value = JSON.parse(raw); }
+  catch { throw new TaskError("INVALID_ARGUMENT", "--checkpoint must be valid JSON"); }
+  return parseCheckpoint(value);
 }
 
 function parseReviewMode(raw: string, label: string): ReviewMode {
@@ -516,7 +548,7 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
 
     const commandLabel = resolveCommand(argv);
     label = commandLabel;
-    const tokens = commandLabel === "task.next.show" || commandLabel === "task.next.add" || commandLabel === "task.next.done" || commandLabel === "task.reviews.set"
+    const tokens = commandLabel.startsWith("task.next.") || commandLabel.startsWith("task.checkpoint.") || commandLabel === "task.reviews.set"
       ? argv.slice(2)
       : argv.slice(1);
     const parsed = tokenize(tokens);
@@ -579,8 +611,7 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
     if (commandLabel === "task.status") {
       expectAtMost(parsed.positionals, 0);
       const taskId = lastValue(parsed.values, "--task") ?? null;
-      const view = await service.getStatus(taskId);
-      const { reviews } = await service.getReviews(view.taskId);
+      const { view, reviews } = await service.getStatusWithReviews(taskId);
       if (json) {
         out(`${JSON.stringify({
           ok: true,
@@ -733,7 +764,23 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
       return 0;
     }
 
-    // commandLabel === "task.next.done"
+    if (commandLabel === "task.checkpoint.show" || commandLabel === "task.checkpoint.set") {
+      expectAtMost(parsed.positionals, 0);
+      const taskId = lastValue(parsed.values, "--task") ?? null;
+      if (commandLabel === "task.checkpoint.show") {
+        const result = await service.getCheckpoint(taskId);
+        out(json ? `${JSON.stringify({ ok: true, command: commandLabel, tasksRoot, ...result })}\n` : `${JSON.stringify(result.checkpoint, null, 2)}\n`);
+      } else {
+        const checkpoint = checkpointValue(parsed.values);
+        if (checkpoint === undefined) throw new TaskError("INVALID_ARGUMENT", "Missing required --checkpoint");
+        const expectedRevision = parseExpectedRevision(parsed.values);
+        const result = await service.setCheckpoint(taskId, checkpoint, expectedRevision === undefined ? undefined : { expectedRevision });
+        out(json ? `${JSON.stringify({ ok: true, command: commandLabel, tasksRoot, ...result })}\n` : `Checkpoint ${result.changed ? "updated" : "unchanged"} (revision ${result.revision})\n`);
+      }
+      return 0;
+    }
+
+    // State and optional recovery metadata are committed together.
     expectAtMost(parsed.positionals, 1);
     const stepId = parsed.positionals[0];
     if (stepId === undefined) {
@@ -741,10 +788,22 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
     }
     const taskId = lastValue(parsed.values, "--task") ?? null;
     const expectedRevision = parseExpectedRevision(parsed.values);
+    const checkpoint = checkpointValue(parsed.values);
+    const mutationOptions = {
+      ...(expectedRevision === undefined ? {} : { expectedRevision }),
+      ...(checkpoint === undefined ? {} : { checkpoint }),
+    };
+    if (commandLabel === "task.next.start" || commandLabel === "task.next.block") {
+      const result = commandLabel === "task.next.start"
+        ? await service.startStep(taskId, stepId, mutationOptions)
+        : await service.blockStep(taskId, stepId, requiredValue(parsed.values, "--reason"), mutationOptions);
+      out(json ? `${JSON.stringify({ ok: true, command: commandLabel, tasksRoot, ...result })}\n` : `${result.stepId} ${result.status} (revision ${result.revision})\n`);
+      return 0;
+    }
     const result = await service.markStepDone(
       taskId,
       stepId,
-      expectedRevision === undefined ? undefined : { expectedRevision },
+      mutationOptions,
     );
     if (json) {
       out(`${JSON.stringify({

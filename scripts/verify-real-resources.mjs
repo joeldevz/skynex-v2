@@ -197,18 +197,27 @@ await test("tdd-and-diagnosis-routing-semantics",async()=>{
 await test("thalam-automatically-routes-multistep-work-to-tasks-skill",async()=>{
   const thalam=await readFile(join(root,"canonical/agents/thalam.md"),"utf8");
   const tasks=await readFile(join(root,"canonical/skills/skynex-tasks/SKILL.md"),"utf8");
+  const coordination=thalam.split("SKYNEX TASKS — AUTOMATIC COORDINATION FOR MULTI-STEP WORK")[1]?.split("PRIMARY OBJECTIVE")[0];
+  const unavailable=tasks.split("## CLI unavailable or incompatible")[1];
+  assert.equal(typeof coordination,"string"); assert.equal(typeof unavailable,"string");
   const resource=manifest.resources.find(x=>x.id==="skills.skynex-tasks");
   assert(resource); assert.equal(resource.kind,"skill");
   assert.match(resource.targets[0].relativePath,/^skills\/skynex-tasks\/SKILL\.md$/);
   assert.match(thalam,/MUST invoke the\s+`skynex-tasks` skill/i);
-  assert.match(thalam,/Automatic Tasks quick procedure/);
-  assert.match(thalam,/use `tools\.shell` with commands `skynex task list`/);
-  assert.match(thalam,/verify\s+`skynex task list` reports the intended project's/);
-  assert.match(thalam,/Do not merely mention or describe an available skill/i);
+  assert.match(coordination,/The skill owns CLI details/);
+  assert.match(tasks,/Run `skynex task list --json` from the project directory/);
+  assert.match(tasks,/confirm the reported\s+`tasksRoot` is that project's intended `\.skynex\/tasks` root before writing/);
+  assert.match(tasks,/If it\s+is elsewhere, stop tracking there; do not change global configuration/);
+  assert.match(thalam,/Do not merely\s+mention or describe an available skill/i);
   assert.match(tasks,/more than one genuine[\s\S]*deliverable step/i);
   assert.match(tasks,/skynex task list/);
-  assert.match(tasks,/fallback was used/);
-  assert.match(tasks,/not a scheduler, workflow engine/);
+  assert.match(coordination,/Tasks is the sole progress and recovery record/);
+  assert.match(coordination,/If the CLI is absent or incompatible,\s+block tracking safely; never create a separate operational register/);
+  assert.match(unavailable,/Block eligible tracking and return the\s+concrete missing capability to the coordinator/);
+  assert.match(unavailable,/do not continue registered work\s+without its required notebook updates or create a separate operational register/);
+  assert.doesNotMatch(unavailable,/fallback was used|bounded manual|continue safely using[\s\S]{0,180}manual/i);
+  assert.match(coordination,/local task notebook, not a workflow engine: it does not schedule,\s+resume, prioritize, or authorize work/);
+  assert.match(coordination,/CLI is a passive notebook, never scheduler, workflow authority,\s+raw evidence store or permission/);
 });
 await test("jev-classifier-wiring",async()=>{
   const runtime=await readFile(join(root,"native/plugins/skynex-runtime.ts"),"utf8");

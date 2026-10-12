@@ -1,9 +1,13 @@
 import { TaskError } from "./errors.js";
+import { parseCheckpoint, sameCheckpoint } from "./checkpoint.js";
+import type { RecoveryCheckpoint } from "./checkpoint.js";
+import { serializeTask } from "./schema.js";
 import { instructionPathFor, renderInstruction } from "./instruction.js";
 import { slugify, withCollisionSuffix } from "./slug.js";
 import {
   MAX_STEPS,
   MAX_TITLE_LENGTH,
+  MAX_TEXT_FIELD_LENGTH,
   DEFAULT_REVIEWS,
   SCHEMA_VERSION,
   assertParentRelation,
@@ -21,10 +25,13 @@ import type {
   Step,
   StepDraft,
   StepInstructionView,
+  StepMutationOptions,
+  StepTransitionResult,
   Task,
   TaskBoardView,
   TaskListEntry,
   TaskReviewsPatch,
+  TaskReviews,
   TaskReviewsView,
   TaskSummary,
   TaskStatusView,
@@ -40,6 +47,13 @@ export interface TaskService {
   listTasks(): Promise<readonly TaskListEntry[]>;
   getBoard(): Promise<TaskBoardView>;
   getStatus(taskId: string | null): Promise<TaskStatusView>;
+  getStatusWithReviews(taskId: string | null): Promise<{ readonly view: TaskStatusView; readonly reviews: TaskReviews }>;
+  getCheckpoint(taskId: string | null): Promise<{ readonly taskId: string; readonly checkpoint: RecoveryCheckpoint | null }>;
+  setCheckpoint(taskId: string | null, checkpoint: RecoveryCheckpoint, options?: { readonly expectedRevision?: number }): Promise<{
+    readonly taskId: string; readonly changed: boolean; readonly revision: number;
+  }>;
+  startStep(taskId: string | null, stepId: string, options?: StepMutationOptions): Promise<StepTransitionResult<"in_progress">>;
+  blockStep(taskId: string | null, stepId: string, reason: string, options?: StepMutationOptions): Promise<StepTransitionResult<"blocked">>;
   readStepInstruction(taskId: string | null, stepId: string | null): Promise<StepInstructionView>;
   addStep(
     taskId: string | null,
@@ -54,7 +68,7 @@ export interface TaskService {
   markStepDone(
     taskId: string | null,
     stepId: string,
-    options?: { readonly expectedRevision?: number },
+    options?: StepMutationOptions,
   ): Promise<MarkStepDoneResult>;
   getReviews(taskId: string | null): Promise<TaskReviewsView>;
   setReviews(
@@ -68,6 +82,36 @@ const MAX_COLLISION_ATTEMPTS = 100;
 
 export function createTaskService(deps: TaskServiceDependencies): TaskService {
   const { store, clock } = deps;
+
+  async function load(taskId: string | null): Promise<Task> {
+    if (taskId === null) throw new TaskError("NO_ACTIVE_TASK", "No active task is selected");
+    return store.read(taskId);
+  }
+
+  async function transition<S extends "in_progress" | "blocked">(
+    taskId: string | null, stepId: string, status: S, reason: string | undefined, options?: StepMutationOptions,
+  ): Promise<StepTransitionResult<S>> {
+    if (status === "blocked" && (typeof reason !== "string" || reason.trim().length === 0 || reason.length > MAX_TEXT_FIELD_LENGTH)) {
+      throw new TaskError("INVALID_ARGUMENT", `Block reason must be non-empty and at most ${MAX_TEXT_FIELD_LENGTH} characters`);
+    }
+    const checkpoint = attachedCheckpoint(options);
+    const task = await load(taskId);
+    assertRevision(task, options);
+    const current = task.steps.find((step) => step.id === stepId);
+    if (current === undefined) throw new TaskError("STEP_NOT_FOUND", `Step not found: ${stepId}`);
+    if (current.status === "done") throw new TaskError("INVALID_ARGUMENT", "A done step cannot be started or blocked");
+    const changed = current.status !== status || current.blockReason !== reason || checkpointChanged(task, checkpoint);
+    if (!changed) return { taskId: task.id, stepId, status, changed: false, revision: task.revision };
+    const { blockReason: _reason, ...rest } = current;
+    const updated: Step = { ...rest, status, ...(reason === undefined ? {} : { blockReason: reason }) };
+    const steps = task.steps.map((step) => step.id === stepId ? updated : step);
+    const next: Task = {
+      ...withCheckpoint(task, checkpoint), steps, status: deriveTaskStatus(steps), revision: task.revision + 1, updatedAt: clock.nowIso(),
+    };
+    serializeTask(next);
+    await store.save(next, task.revision);
+    return { taskId: task.id, stepId, status, changed: true, revision: next.revision };
+  }
 
   return {
     async createTask(input) {
@@ -133,6 +177,35 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
         throw new TaskError("NO_ACTIVE_TASK", "No active task is selected");
       }
       return createTaskStatusView(await store.read(taskId));
+    },
+
+    async getStatusWithReviews(taskId) {
+      const task = await load(taskId);
+      return { view: createTaskStatusView(task), reviews: { ...resolveReviews(task) } };
+    },
+
+    async getCheckpoint(taskId) {
+      const task = await load(taskId);
+      return { taskId: task.id, checkpoint: task.checkpoint === undefined ? null : parseCheckpoint(task.checkpoint) };
+    },
+
+    async setCheckpoint(taskId, value, options) {
+      const checkpoint = parseCheckpoint(value);
+      const task = await load(taskId);
+      assertRevision(task, options);
+      if (!checkpointChanged(task, checkpoint)) return { taskId: task.id, changed: false, revision: task.revision };
+      const next: Task = { ...withCheckpoint(task, checkpoint), revision: task.revision + 1, updatedAt: clock.nowIso() };
+      serializeTask(next);
+      await store.save(next, task.revision);
+      return { taskId: task.id, changed: true, revision: next.revision };
+    },
+
+    startStep(taskId, stepId, options) {
+      return transition(taskId, stepId, "in_progress", undefined, options);
+    },
+
+    blockStep(taskId, stepId, reason, options) {
+      return transition(taskId, stepId, "blocked", reason, options);
     },
 
     async readStepInstruction(taskId, stepId) {
@@ -211,13 +284,16 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
       if (taskId === null) {
         throw new TaskError("NO_ACTIVE_TASK", "No active task is selected");
       }
+      const checkpoint = attachedCheckpoint(options);
       const task = await store.read(taskId);
+      // Preserve the legacy done-only no-op; attached recovery uses revision fencing.
+      if (checkpoint !== undefined) assertRevision(task, options);
       const index = task.steps.findIndex((step) => step.id === stepId);
       const current = task.steps[index];
       if (current === undefined) {
         throw new TaskError("STEP_NOT_FOUND", `Step not found: ${stepId}`);
       }
-      if (current.status === "done") {
+      if (current.status === "done" && !checkpointChanged(task, checkpoint)) {
         return {
           taskId: task.id,
           stepId,
@@ -237,30 +313,35 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
         );
       }
       const now = clock.nowIso();
-      const toComplete = new Set<string>([current.id]);
-      if (current.parent === undefined) {
-        for (const step of task.steps) {
-          if (step.parent === current.id && step.status !== "done") toComplete.add(step.id);
+      const toComplete = new Set<string>();
+      // A checkpoint-only update must preserve an already-done step and its timestamp.
+      if (current.status !== "done") {
+        toComplete.add(current.id);
+        if (current.parent === undefined) {
+          for (const step of task.steps) {
+            if (step.parent === current.id && step.status !== "done") toComplete.add(step.id);
+          }
+        } else {
+          const parentId = current.parent;
+          const host = task.steps.find((step) => step.id === parentId);
+          const siblingsDone = task.steps.every(
+            (step) => step.parent !== parentId || step.status === "done" || step.id === current.id,
+          );
+          if (host !== undefined && host.status !== "done" && siblingsDone) toComplete.add(host.id);
         }
-      } else {
-        const parentId = current.parent;
-        const host = task.steps.find((step) => step.id === parentId);
-        const siblingsDone = task.steps.every(
-          (step) => step.parent !== parentId || step.status === "done" || step.id === current.id,
-        );
-        if (host !== undefined && host.status !== "done" && siblingsDone) toComplete.add(host.id);
       }
       const steps = task.steps.map((step) => (toComplete.has(step.id) ? markDone(step, now) : step));
       const autoCompletedStepIds = steps
         .filter((step) => step.id !== current.id && toComplete.has(step.id))
         .map((step) => step.id);
       const newTask: Task = {
-        ...task,
+        ...withCheckpoint(task, checkpoint),
         status: deriveTaskStatus(steps),
         revision: task.revision + 1,
         updatedAt: now,
         steps,
       };
+      serializeTask(newTask);
       await store.save(newTask, task.revision);
       return {
         taskId: task.id,
@@ -304,6 +385,24 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
       return { taskId: task.id, reviews, revision: newTask.revision };
     },
   };
+}
+
+function assertRevision(task: Task, options?: { readonly expectedRevision?: number }): void {
+  if (options?.expectedRevision !== undefined && options.expectedRevision !== task.revision) {
+    throw new TaskError("REVISION_CONFLICT", `Expected revision ${options.expectedRevision} but current revision is ${task.revision}`);
+  }
+}
+
+function attachedCheckpoint(options: StepMutationOptions | undefined): RecoveryCheckpoint | undefined {
+  return options?.checkpoint === undefined ? undefined : parseCheckpoint(options.checkpoint);
+}
+
+function checkpointChanged(task: Task, checkpoint: RecoveryCheckpoint | undefined): boolean {
+  return checkpoint !== undefined && !sameCheckpoint(task.checkpoint, checkpoint);
+}
+
+function withCheckpoint(task: Task, checkpoint: RecoveryCheckpoint | undefined): Task {
+  return checkpoint === undefined ? task : { ...task, schemaVersion: 2, checkpoint };
 }
 
 /** Read-only facade for UIs which must not receive task mutation capabilities. */

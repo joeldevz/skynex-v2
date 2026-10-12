@@ -39,8 +39,14 @@ async function host(values = new Map(), location = { directory: "/project", proj
       async set(key, value) { values.set(key, structuredClone(value)); }, async remove(key) { values.delete(key); } },
     session: { async get({ sessionID }) { if (!sessions.has(sessionID)) throw new Error("SECRET"); return sessions.get(sessionID); },
       async hook(name, callback) { assert.equal(name, "context"); hook = callback; return registration(); } },
-    tool: { async transform(callback) { callback({ add(definition) { assert.equal(tool, undefined); tool = definition; } }); return registration(); },
-      async hook(name) { assert(["execute.before", "execute.after"].includes(name)); return registration(); } },
+    tool: {
+      async transform(callback) { callback({ add(definition) { assert.equal(tool, undefined); tool = definition; } }); return registration(); },
+      async hook(name, callback) {
+        assert(["execute.before", "execute.after"].includes(name));
+        assert.equal(typeof callback, "function");
+        return registration();
+      },
+    },
     rpc: { async register(definition, handlers) { assert.deepEqual(definition, SessionTask); rpc = handlers; return registration(); } },
   });
   return { values, tool, hook, rpc, cleanup, disposed: () => disposed, gets: () => gets,
