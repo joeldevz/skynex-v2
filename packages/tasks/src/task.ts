@@ -1,4 +1,5 @@
 import { TaskError } from "./errors.js";
+import type { RecoveryCheckpoint } from "./checkpoint.js";
 
 export const SCHEMA_VERSION = 1 as const;
 
@@ -32,7 +33,7 @@ export interface Step {
 }
 
 export interface Task {
-  readonly schemaVersion: typeof SCHEMA_VERSION;
+  readonly schemaVersion: 1 | 2;
   readonly id: string;
   readonly title: string;
   readonly status: TaskStatus;
@@ -42,6 +43,7 @@ export interface Task {
   readonly steps: readonly Step[];
   /** Optional review toggles; absent means every review is "auto". */
   readonly reviews?: TaskReviews;
+  readonly checkpoint?: RecoveryCheckpoint;
 }
 
 export interface StepDraft {
@@ -131,6 +133,19 @@ export interface MarkStepDoneResult {
   readonly status: "done";
   readonly declared: true;
   readonly approved: false;
+  readonly changed: boolean;
+  readonly revision: number;
+}
+
+export interface StepMutationOptions {
+  readonly expectedRevision?: number;
+  readonly checkpoint?: RecoveryCheckpoint;
+}
+
+export interface StepTransitionResult<S extends "in_progress" | "blocked"> {
+  readonly taskId: string;
+  readonly stepId: string;
+  readonly status: S;
   readonly changed: boolean;
   readonly revision: number;
 }

@@ -24,11 +24,65 @@ type Host = {
     getSessionTask(input: unknown): Promise<Snapshot | null>
   }): Promise<Registration> }
 }
-const instruction = "Skynex Tasks: al iniciar/reanudar, obtén la tarea con la CLI skynex task: skynex task status --task <id> --json; luego vincula la sesión con skynex_task_update {task:{id}} (basta el id; el plugin lee el estado vivo de la CLI y lo refresca tras cada comando skynex task, no hace falta republicar al cambiar pasos). También se acepta el resumen completo id,title,status,doneCount,total,current,next,blockers,steps y reviews {security} tal como lo da la CLI. No inventes estados ni envíes cuerpos, instrucciones o evidencias, sesión ni ruta. Sin tarea asignada: task:null."
+const instruction = "Skynex Tasks: vincula una vez la sesión con skynex_task_update {task:{id}}; no requiere status previo ni republicar pasos. El plugin consulta la CLI skynex task y refresca tras mutaciones. Consulta opcional/revisión: skynex task status --task <id> --json. Tasks es el único registro de progreso y recuperación: checkpoint show/set, sin registro paralelo. También se acepta el resumen completo CLI con reviews {security}. No inventes estados ni envíes cuerpos, instrucciones, evidencias, sesión ni ruta. Sin tarea asignada: task:null."
 // L2: shell tool names whose `input.command` may run the CLI; refresh is event-driven, never timed.
 const shellTools = new Set(["bash", "shell"])
-const runsTaskCli = (tool: string, input: unknown) => shellTools.has(tool) && typeof input === "object" && input !== null &&
-  typeof (input as { command?: unknown }).command === "string" && (input as { command: string }).command.includes("skynex task")
+// CLI VALUE_FLAGS consume the following value (including -h); only skip those
+// values when detecting help. This does not execute or validate a CLI command.
+const taskValueFlags = new Set(["--tasks-root", "--task", "--scope", "--done-when", "--evidence", "--instruction-file",
+  "--instruction", "--depends-on", "--expected-revision", "--security", "--reason", "--checkpoint"])
+// A bounded lexer for simple shell command lists, not a shell interpreter. Quoted
+// arguments remain single words; unsupported expansion/redirection is not guessed.
+const mutatesTask = (command: string): boolean => {
+  if (command.length > 32768) return false
+  const commands: string[][] = []
+  let words: string[] = [], word = "", active = false, quote = ""
+  const flushWord = () => { if (active) words.push(word); word = ""; active = false }
+  const flushCommand = () => { flushWord(); if (words.length) commands.push(words); words = [] }
+  for (let i = 0; i < command.length; i++) {
+    const char = command[i]!
+    if (quote) {
+      if (char === quote) { quote = ""; continue }
+      if (quote === '"' && (char === "$" || char === "`")) return false
+      if (quote === '"' && char === "\\") {
+        const next = command[++i]
+        if (next === undefined) return false
+        word += next; continue
+      }
+      word += char; continue
+    }
+    if (char === "'" || char === '"') { quote = char; active = true; continue }
+    if (char === "$" || char === "`" || /[<>(){}]/.test(char)) return false
+    if (char === "\\") {
+      const next = command[++i]
+      if (next === undefined) return false
+      if (next !== "\n") { word += next; active = true }
+      continue
+    }
+    if (char === "#" && !active) {
+      while (i < command.length && command[i] !== "\n") i++
+      flushCommand(); continue
+    }
+    if (char === ";" || char === "&" || char === "|" || char === "\n") { flushCommand(); continue }
+    if (/\s/.test(char)) { flushWord(); continue }
+    word += char; active = true
+  }
+  if (quote) return false
+  flushCommand()
+  return commands.some((args) => {
+    if (args[0] !== "skynex" || args[1] !== "task") return false
+    for (let i = 3; i < args.length; i++) {
+      const token = args[i]!
+      const value = args[i + 1]
+      if (taskValueFlags.has(token) && value !== undefined && !value.startsWith("--")) { i++; continue }
+      if (token === "--help" || token === "-h") return false
+    }
+    return args[2] === "init" || (args[2] === "next" && ["add", "start", "block", "done"].includes(args[3] ?? "")) ||
+      (["reviews", "checkpoint"].includes(args[2] ?? "") && args[3] === "set")
+  })
+}
+const runsTaskMutation = (tool: string, input: unknown) => shellTools.has(tool) && typeof input === "object" && input !== null &&
+  typeof (input as { command?: unknown }).command === "string" && mutatesTask((input as { command: string }).command)
 
 export const createServer = (deps: { readTask: ReadTask; readSecurity: ReadSecurity }) => ({
   id: "skynex-tasks.server",
@@ -36,6 +90,7 @@ export const createServer = (deps: { readTask: ReadTask; readSecurity: ReadSecur
     const registrations: Registration[] = []
     const refreshed = new Set<string>()
     const inFlight = new Map<string, { taskId: string; done: Promise<void> }>()
+    const mutations = new Map<string, Promise<void>>()
     const storedTask = async (key: string) => {
       const stored = await ctx.storage.get(key)
       return stored === undefined || stored === null ? undefined : snapshot(stored).task
@@ -56,6 +111,19 @@ export const createServer = (deps: { readTask: ReadTask; readSecurity: ReadSecur
       })()
       inFlight.set(key, entry)
       return entry.done
+    }
+    // Never let a mutation adopt a pre-mutation read already in flight. Queuing
+    // per session key also keeps overlapping mutation events fresh without timers.
+    const refreshMutation = (key: string, taskId: string): Promise<void> => {
+      const previous = mutations.get(key)
+      const reading = inFlight.get(key)?.done
+      const done = (async () => {
+        await previous
+        await reading
+        await refresh(key, taskId)
+      })()
+      mutations.set(key, done)
+      return done.finally(() => { if (mutations.get(key) === done) mutations.delete(key) })
     }
     const keyFor = async (sessionID: string) => {
       const session = await ctx.session.get({ sessionID })
@@ -105,11 +173,11 @@ export const createServer = (deps: { readTask: ReadTask; readSecurity: ReadSecur
           throw new Error("Revisión de seguridad desactivada por la tarea (reviews.security=off).")
       }))
       registrations.push(await ctx.tool.hook("execute.after", async (event) => {
-        if (!runsTaskCli(event.tool, event.input)) return
+        if (!runsTaskMutation(event.tool, event.input)) return
         try {
           const key = await keyFor(identifier(event.sessionID, true))
           const task = key ? await storedTask(key) : undefined
-          if (key && task) await refresh(key, task.id)
+          if (key && task) await refreshMutation(key, task.id)
         } catch { /* never affect the tool result */ }
       }))
       registrations.push(await ctx.rpc.register(SessionTask, {

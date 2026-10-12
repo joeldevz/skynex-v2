@@ -80,8 +80,11 @@ await test("execute-after-refreshes-only-for-skynex-task-shell-commands", async 
   await h.after("bash", { command: "skynex task next done s2 --json" });
   assert.equal(read.calls.length, 2);
   assert.equal((await h.get()).task.doneCount, 2);
+  const cached = await h.get();
   await h.after("shell", { command: "cd /proj && skynex task status" });
-  assert.equal(read.calls.length, 3);
+  assert.equal(read.calls.length, 2, "Status is nonmutating and must not refresh the plugin");
+  assert.deepEqual(await h.get(), cached, "Status must not invalidate the snapshot for a later poll");
+  assert.equal(read.calls.length, 2);
 });
 await test("execute-after-without-binding-does-not-exec", async () => {
   const read = counter(() => live());

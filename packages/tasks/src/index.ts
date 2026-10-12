@@ -5,3 +5,4 @@ export * from "./schema.js";
 export * from "./instruction.js";
 export * from "./ports.js";
 export * from "./service.js";
+export * from "./checkpoint.js";

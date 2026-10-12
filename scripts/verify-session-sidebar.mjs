@@ -36,7 +36,14 @@ async function host(values = new Map(), location = { directory: "/project", proj
       async set(key, value) { values.set(key, structuredClone(value)); }, async remove(key) { values.delete(key); } },
     session: { async get({ sessionID }) { if (!sessions.has(sessionID)) throw new Error("SECRET"); return sessions.get(sessionID); },
       async hook(name, callback) { assert.equal(name, "context"); hook = callback; return registration(); } },
-    tool: { async transform(callback) { callback({ add(definition) { assert.equal(tool, undefined); tool = definition; } }); return registration(); } },
+    tool: {
+      async transform(callback) { callback({ add(definition) { assert.equal(tool, undefined); tool = definition; } }); return registration(); },
+      async hook(name, callback) {
+        assert(["execute.before", "execute.after"].includes(name));
+        assert.equal(typeof callback, "function");
+        return registration();
+      },
+    },
     rpc: { async register(definition, handlers) { assert.deepEqual(definition, SessionTask); rpc = handlers; return registration(); } },
   });
   return { values, tool, hook, rpc, cleanup, disposed: () => disposed, gets: () => gets,
@@ -171,7 +178,7 @@ test("S2-S4: exact session, location, workspace, project isolation; durable upda
   await other.update("ses_c");
   assert.equal(await other.rpc.getSessionTask({ sessionID: "ses_a" }), null);
   await first.cleanup();
-  assert.equal(first.disposed(), 3);
+  assert.equal(first.disposed(), 5);
   const resumed = await host(first.values);
   assert.deepEqual(await resumed.rpc.getSessionTask({ sessionID: "ses_a" }), result);
   await resumed.update("ses_a", { task: countedTask(2, 3) });

@@ -538,7 +538,7 @@ await test("unsupported-schema-rejected", async () => {
     const directory = join(root, "bad-schema");
     await mkdir(directory, { recursive: true });
     const taskPath = join(directory, "task.json");
-    await writeFile(taskPath, '{"schemaVersion":2}\n');
+    await writeFile(taskPath, '{"schemaVersion":3}\n');
     const before = await readFile(taskPath);
     const result = runCli(["status", "--task", "bad-schema", "--tasks-root", root, "--json"]);
     assert.equal(result.status, 5, result.stderr);
