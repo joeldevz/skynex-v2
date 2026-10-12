@@ -273,7 +273,8 @@ test("C10 A2/A3/A4: CLI checkpoint and transitions preserve old JSON envelopes a
     assert.deepEqual((await f.task()).checkpoint, attached);
     if (command === "done") {
       assert.equal(result.json.approved, false);
-      assert.deepEqual(keys(result.json), ["ok", "command", "tasksRoot", "taskId", "stepId", "previousStatus", "status", "declared", "approved", "changed", "revision"].sort());
+      assert.deepEqual(keys(result.json), ["ok", "command", "tasksRoot", "taskId", "stepId", "previousStatus", "status", "declared", "approved", "changed", "revision", "autoCompletedStepIds"].sort());
+      assert.deepEqual(result.json.autoCompletedStepIds, []);
     }
   }
   const status = runCli(f, ["status", "--task", f.id]);

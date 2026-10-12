@@ -61,7 +61,7 @@ function ref(value: unknown): CheckpointRef {
 
 function path(value: unknown): string {
   const result = text(value, 240, "scope path", true);
-  if (/^[A-Za-z]:/.test(result) || /[\\\u0000-\u001f\u007f-\u009f]/.test(result) ||
+  if (/^[A-Za-z]:/.test(result) || result.includes("\\") || /[\u0000-\u001f\u007f-\u009f]/.test(result) ||
       result.split("/").some((segment) => segment === "" || segment === "." || segment === "..")) invalid("relative scope path");
   return result;
 }

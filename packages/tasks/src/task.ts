@@ -30,6 +30,8 @@ export interface Step {
   readonly instructionPath: string;
   readonly blockReason?: string;
   readonly declaredDoneAt?: string;
+  /** Optional parent step id; exactly one level of nesting is allowed. */
+  readonly parent?: string;
 }
 
 export interface Task {
@@ -52,6 +54,7 @@ export interface StepDraft {
   readonly doneWhen: string;
   readonly expectedEvidence: string;
   readonly dependsOn?: readonly string[];
+  readonly parent?: string;
   readonly instruction?: string;
 }
 
@@ -108,6 +111,7 @@ export interface TaskStatusView {
     readonly status: StepStatus;
     readonly dependsOn: readonly string[];
     readonly blockReason?: string;
+    readonly parent?: string;
   }[];
 }
 
@@ -135,6 +139,8 @@ export interface MarkStepDoneResult {
   readonly approved: false;
   readonly changed: boolean;
   readonly revision: number;
+  /** Other steps marked done by parent/child propagation; empty otherwise. */
+  readonly autoCompletedStepIds: readonly string[];
 }
 
 export interface StepMutationOptions {
@@ -174,9 +180,34 @@ export function deriveTaskStatus(steps: readonly Step[]): TaskStatus {
   return "open";
 }
 
+/**
+ * Walk top-level steps in order; for the first non-done one, return its first
+ * non-done child if any, otherwise the step itself. Flat tasks behave as before.
+ */
 export function computeNextStepId(steps: readonly Step[]): string | null {
-  const next = steps.find((step) => step.status !== "done");
-  return next === undefined ? null : next.id;
+  const next = steps.find((step) => step.parent === undefined && step.status !== "done");
+  if (next === undefined) {
+    return null;
+  }
+  const child = steps.find((step) => step.parent === next.id && step.status !== "done");
+  return child === undefined ? next.id : child.id;
+}
+
+/**
+ * Validate a one-level parent relation against the steps that may host it.
+ * The parent must exist, must not be the step itself and must be top-level.
+ */
+export function assertParentRelation(stepId: string, parent: string, available: readonly Step[]): void {
+  if (parent === stepId) {
+    throw new TaskError("INVALID_ARGUMENT", `Step ${stepId} cannot be its own parent`);
+  }
+  const host = available.find((step) => step.id === parent);
+  if (host === undefined) {
+    throw new TaskError("INVALID_ARGUMENT", `Unknown parent step: ${parent}`);
+  }
+  if (host.parent !== undefined) {
+    throw new TaskError("INVALID_ARGUMENT", `Parent step ${parent} is itself a child of ${host.parent}; only one level is allowed`);
+  }
 }
 
 export function assertStepDraft(draft: StepDraft): void {
@@ -195,6 +226,9 @@ export function assertStepDraft(draft: StepDraft): void {
     if (!STEP_ID_PATTERN.test(dependency)) {
       throw new TaskError("INVALID_ARGUMENT", `Invalid dependsOn entry: ${JSON.stringify(dependency)}`);
     }
+  }
+  if (draft.parent !== undefined && !STEP_ID_PATTERN.test(draft.parent)) {
+    throw new TaskError("INVALID_ARGUMENT", `Invalid parent: ${JSON.stringify(draft.parent)}`);
   }
 }
 

@@ -10,7 +10,7 @@ import {
   SCHEMA_VERSION,
   STEP_ID_PATTERN,
 } from "./task.js";
-import { DEFAULT_REVIEWS, assertReviewsPatch } from "./task.js";
+import { DEFAULT_REVIEWS, assertParentRelation, assertReviewsPatch } from "./task.js";
 import type { Step, StepStatus, Task, TaskReviews, TaskStatus } from "./task.js";
 
 const STEP_STATUSES: readonly StepStatus[] = ["pending", "in_progress", "done", "blocked"];
@@ -81,6 +81,15 @@ export function parseTask(text: string, expectedId: string): Task {
     }
     seen.add(step.id);
   }
+  steps.forEach((step, index) => {
+    if (step.parent === undefined) return;
+    try {
+      assertParentRelation(step.id, step.parent, steps);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new TaskError("INVALID_ARGUMENT", `steps[${index}].parent is invalid: ${message}`);
+    }
+  });
 
   const reviews = parseReviews(raw["reviews"]);
 
@@ -147,6 +156,9 @@ function serializeStep(step: Step): Record<string, unknown> {
   if (step.declaredDoneAt !== undefined) {
     serialized["declaredDoneAt"] = step.declaredDoneAt;
   }
+  if (step.parent !== undefined) {
+    serialized["parent"] = step.parent;
+  }
   return serialized;
 }
 
@@ -187,6 +199,10 @@ function parseStep(value: unknown, index: number): Step {
     throw new TaskError("INVALID_ARGUMENT", `steps[${index}].blockReason exceeds ${MAX_TEXT_FIELD_LENGTH} characters`);
   }
   const declaredDoneAt = optionalString(value, "declaredDoneAt", index);
+  const parent = optionalString(value, "parent", index);
+  if (parent !== undefined && !STEP_ID_PATTERN.test(parent)) {
+    throw new TaskError("INVALID_ARGUMENT", `steps[${index}].parent is invalid: ${JSON.stringify(parent)}`);
+  }
 
   return {
     id,
@@ -199,6 +215,7 @@ function parseStep(value: unknown, index: number): Step {
     instructionPath,
     ...(blockReason === undefined ? {} : { blockReason }),
     ...(declaredDoneAt === undefined ? {} : { declaredDoneAt }),
+    ...(parent === undefined ? {} : { parent }),
   };
 }
 

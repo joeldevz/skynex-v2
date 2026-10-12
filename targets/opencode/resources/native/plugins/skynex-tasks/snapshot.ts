@@ -1,6 +1,7 @@
 // JSON-only contract: safe to import from both server and terminal.
 export type Step = { id: string; title: string }
-export type ListedStep = Step & { status: "pending" | "in_progress" | "done" | "blocked" }
+// `parent` (one level only) groups a child step under a top-level step of the same list.
+export type ListedStep = Step & { status: "pending" | "in_progress" | "done" | "blocked"; parent?: string }
 export type TaskProjection = {
   id: string
   title: string
@@ -56,12 +57,19 @@ function steps(value: unknown): ListedStep[] {
   for (let index = 0; index < value.length; index++) {
     const entry = Object.getOwnPropertyDescriptor(value, String(index))
     if (!entry || !Object.prototype.hasOwnProperty.call(entry, "value")) throw invalid()
-    const item = record(entry.value, ["id", "title", "status"])
+    const hasParent = entry.value !== null && typeof entry.value === "object" && Object.prototype.hasOwnProperty.call(entry.value, "parent")
+    const item = record(entry.value, ["id", "title", "status", ...(hasParent ? ["parent"] : [])])
     const status = item.status
     if (status !== "pending" && status !== "in_progress" && status !== "done" && status !== "blocked") throw invalid()
-    result.push({ id: identifier(item.id), title: text(item.title, 200), status })
+    result.push({ id: identifier(item.id), title: text(item.title, 200), status, ...(hasParent ? { parent: identifier(item.parent) } : {}) })
   }
-  if (new Set(result.map((item) => item.id)).size !== result.length) throw invalid()
+  const byId = new Map(result.map((item) => [item.id, item]))
+  if (byId.size !== result.length) throw invalid()
+  for (const item of result) {
+    if (item.parent === undefined) continue
+    const parent = byId.get(item.parent)
+    if (!parent || parent.id === item.id || parent.parent !== undefined) throw invalid()
+  }
   return result
 }
 function reviewMode(value: unknown): ReviewMode {
@@ -89,9 +97,11 @@ export function projection(value: unknown, requireSteps = false): TaskProjection
     if (!result) throw invalid()
     return result
   })
-  if (new Set(blockers.map((item) => item.id)).size !== blockers.length || blockers.length > total) throw invalid()
   const list = hasSteps ? steps(item.steps) : undefined
-  if (list && (list.length !== total || list.filter((item) => item.status === "done").length !== doneCount)) throw invalid()
+  // Counters cover top-level steps only; blockers may name child steps.
+  if (new Set(blockers.map((item) => item.id)).size !== blockers.length || blockers.length > (list ? list.length : total)) throw invalid()
+  const top = list?.filter((item) => item.parent === undefined)
+  if (top && (top.length !== total || top.filter((item) => item.status === "done").length !== doneCount)) throw invalid()
   return { id: identifier(item.id), title: text(item.title, 160), status, doneCount, total,
     current: step(item.current), next: step(item.next), blockers, ...(list ? { steps: list } : {}),
     ...(hasReviews ? { reviews: reviews(item.reviews) } : {}) }
@@ -119,8 +129,8 @@ const nullable = (schema: unknown) => ({ anyOf: [schema, { type: "null" }] })
 // Host RPC JSON-schema decoding rejects `pattern`; identifier() enforces it at both boundaries.
 const id = { type: "string", minLength: 1, maxLength: 128 }
 const stepSchema = object({ id, title: { type: "string", minLength: 1, maxLength: 120 } })
-const listedStepSchema = object({ id, title: { type: "string", minLength: 1, maxLength: 200 },
-  status: { enum: ["pending", "in_progress", "done", "blocked"] } })
+const listedStepSchema = { ...object({ id, title: { type: "string", minLength: 1, maxLength: 200 },
+  status: { enum: ["pending", "in_progress", "done", "blocked"] }, parent: id }), required: ["id", "title", "status"] }
 const reviewSchema = { enum: ["on", "off", "auto"] }
 const countSchema = { type: "integer", minimum: 0, maximum: 10_000 }
 const taskSchema = object({ id, title: { type: "string", minLength: 1, maxLength: 160 },

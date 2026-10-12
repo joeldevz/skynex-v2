@@ -634,6 +634,7 @@ await test("cli-json-shapes-and-exit-codes", async () => {
     assert.equal(done.status, 0, done.stderr);
     assert.deepEqual(keysOf(parseJson(done)), [
       "ok", "command", "tasksRoot", "taskId", "stepId", "previousStatus", "status", "declared", "approved", "changed", "revision",
+      "autoCompletedStepIds",
     ].sort());
 
     const noActive = runCli(["status", "--json", "--tasks-root", root]);
@@ -1255,6 +1256,223 @@ await test("init-accepts-review-flags", async () => {
     assert.equal(bad.status, 2);
     assert.equal(parseJson(bad).code, "INVALID_ARGUMENT");
     assert.equal(await exists(join(root, "bad-flag")), false);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+function addStepCli(root, taskId, title, extra = []) {
+  return runCli([
+    "next", "add", title, "--scope", "S", "--done-when", "D", "--evidence", "E",
+    ...extra, "--task", taskId, "--tasks-root", root, "--json",
+  ]);
+}
+
+function handStep(id, status, extra = {}) {
+  return {
+    id, title: `Title ${id}`, scope: "S", doneWhen: "D", expectedEvidence: "E", dependsOn: [],
+    status, instructionPath: `instructions/${id}.md`, ...extra,
+  };
+}
+
+async function writeHandTask(root, id, steps) {
+  await mkdir(join(root, id), { recursive: true });
+  await writeFile(join(root, id, "task.json"), JSON.stringify({
+    schemaVersion: 1, id, title: "Hand", status: "open", revision: 1,
+    createdAt: "2026-01-01T00:00:00.000Z", updatedAt: "2026-01-01T00:00:00.000Z", steps,
+  }));
+}
+
+await test("parent-add-and-status-json", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Parent Task", "--tasks-root", root, "--json"]).status, 0);
+    assert.equal(addStepCli(root, "parent-task", "Top one").status, 0);
+    const child = addStepCli(root, "parent-task", "Child one", ["--parent", "step-001"]);
+    assert.equal(child.status, 0, child.stdout);
+    assert.equal(parseJson(child).stepId, "step-002");
+    assert.equal(addStepCli(root, "parent-task", "Top two").status, 0);
+    const stored = await readTaskJson(root, "parent-task");
+    assert.equal(stored.steps[1].parent, "step-001");
+    assert.equal("parent" in stored.steps[0], false);
+    assert.equal("parent" in stored.steps[2], false);
+    const instruction = await readFile(join(root, "parent-task", "instructions", "step-002.md"), "utf8");
+    assert.equal(/^Padre: step-001$/m.test(instruction), true, instruction);
+    const status = parseJson(runCli(["status", "--task", "parent-task", "--tasks-root", root, "--json"]));
+    assert.deepEqual(status.steps.map((step) => step.parent ?? null), [null, "step-001", null]);
+    assert.deepEqual(keysOf(status.steps[0]), ["dependsOn", "id", "status", "title"]);
+    assert.deepEqual(keysOf(status.steps[1]), ["dependsOn", "id", "parent", "status", "title"]);
+    assert.equal(status.nextStepId, "step-002");
+    const text = runCli(["status", "--task", "parent-task", "--tasks-root", root]);
+    assert.equal(text.status, 0, text.stderr);
+    const stepLines = text.stdout.split("\n").filter((line) => /step-\d{3}  /.test(line));
+    assert.deepEqual(stepLines, ["○ step-001  Top one", "  ○ step-002  Child one", "○ step-003  Top two"]);
+    const list = parseJson(runCli(["list", "--tasks-root", root, "--json"]));
+    assert.equal(list.tasks[0].stepCount, 3);
+    assert.equal(list.tasks[0].doneCount, 0);
+    assert.equal(list.tasks[0].nextStepId, "step-002");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("parent-rejections", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Reject Parent", "--tasks-root", root, "--json"]).status, 0);
+    assert.equal(addStepCli(root, "reject-parent", "Top").status, 0);
+    assert.equal(addStepCli(root, "reject-parent", "Child", ["--parent", "step-001"]).status, 0);
+    assert.equal(addStepCli(root, "reject-parent", "Done top").status, 0);
+    assert.equal(runCli(["next", "done", "step-003", "--task", "reject-parent", "--tasks-root", root, "--json"]).status, 0);
+    const taskPath = join(root, "reject-parent", "task.json");
+    const before = await readFile(taskPath);
+    for (const extra of [
+      ["--parent", "step-099"],
+      ["--parent", "step-002"],
+      ["--parent", "step-003"],
+      ["--parent", "step-001", "--parent", "step-003"],
+      ["--parent", "not-a-step"],
+    ]) {
+      const result = addStepCli(root, "reject-parent", "Bad", extra);
+      assert.equal(result.status, 2, `accepted ${extra.join(" ")}: ${result.stdout}`);
+      assert.equal(parseJson(result).code, "INVALID_ARGUMENT");
+      assert.deepEqual(await readFile(taskPath), before);
+    }
+    assert.equal(await exists(join(root, "reject-parent", "instructions", "step-004.md")), false);
+
+    await writeHandTask(root, "self-parent", [handStep("step-001", "pending", { parent: "step-001" })]);
+    await writeHandTask(root, "nested-parent", [
+      handStep("step-001", "pending"),
+      handStep("step-002", "pending", { parent: "step-001" }),
+      handStep("step-003", "pending", { parent: "step-002" }),
+    ]);
+    await writeHandTask(root, "missing-parent", [handStep("step-001", "pending", { parent: "step-009" })]);
+    for (const id of ["self-parent", "nested-parent", "missing-parent"]) {
+      const result = runCli(["status", "--task", id, "--tasks-root", root, "--json"]);
+      assert.equal(result.status, 2, `${id}: ${result.stdout}`);
+      assert.equal(parseJson(result).code, "INVALID_ARGUMENT");
+    }
+
+    const service = createTaskService({ store: createFileTaskStore({ tasksRoot: root }), clock: systemClock, ids: uuidIds });
+    const draft = (title, parent) => ({ title, scope: "S", doneWhen: "D", expectedEvidence: "E", ...(parent ? { parent } : {}) });
+    await assert.rejects(
+      service.createTask({ title: "Forward Parent", steps: [draft("A", "step-002"), draft("B")] }),
+      (error) => isTaskError(error) && error.code === "INVALID_ARGUMENT",
+    );
+    await assert.rejects(
+      service.createTask({ title: "Self Draft", steps: [draft("A", "step-001")] }),
+      (error) => isTaskError(error) && error.code === "INVALID_ARGUMENT",
+    );
+    const created = await service.createTask({ title: "Draft Parent", steps: [draft("A"), draft("B", "step-001")] });
+    assert.equal(created.task.steps[1].parent, "step-001");
+    assert.equal((await readTaskJson(root, created.taskId)).steps[1].parent, "step-001");
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("parent-done-propagates-to-children", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Down Prop", "--tasks-root", root, "--json"]).status, 0);
+    assert.equal(addStepCli(root, "down-prop", "Parent").status, 0);
+    assert.equal(addStepCli(root, "down-prop", "Child A", ["--parent", "step-001"]).status, 0);
+    assert.equal(addStepCli(root, "down-prop", "Child B", ["--parent", "step-001"]).status, 0);
+    assert.equal(addStepCli(root, "down-prop", "Other").status, 0);
+    const first = parseJson(runCli(["next", "done", "step-002", "--task", "down-prop", "--tasks-root", root, "--json"]));
+    assert.deepEqual(first.autoCompletedStepIds, []);
+    assert.equal(first.revision, 6);
+    const result = runCli(["next", "done", "step-001", "--task", "down-prop", "--tasks-root", root, "--json"]);
+    assert.equal(result.status, 0, result.stdout);
+    const json = parseJson(result);
+    assert.equal(json.changed, true);
+    assert.equal(json.revision, 7);
+    assert.deepEqual(json.autoCompletedStepIds, ["step-003"]);
+    const stored = await readTaskJson(root, "down-prop");
+    assert.equal(stored.revision, 7);
+    assert.deepEqual(stored.steps.map((step) => step.status), ["done", "done", "done", "pending"]);
+    assert.equal(typeof stored.steps[2].declaredDoneAt, "string");
+    assert.deepEqual(stored.steps.map((step) => step.parent ?? null), [null, "step-001", "step-001", null]);
+    const again = parseJson(runCli(["next", "done", "step-001", "--task", "down-prop", "--tasks-root", root, "--json"]));
+    assert.equal(again.changed, false);
+    assert.deepEqual(again.autoCompletedStepIds, []);
+    assert.equal(again.revision, 7);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("child-done-completes-parent-when-all-done", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Up Prop", "--tasks-root", root, "--json"]).status, 0);
+    assert.equal(addStepCli(root, "up-prop", "Parent").status, 0);
+    assert.equal(addStepCli(root, "up-prop", "Child A", ["--parent", "step-001"]).status, 0);
+    assert.equal(addStepCli(root, "up-prop", "Child B", ["--parent", "step-001"]).status, 0);
+    const first = parseJson(runCli(["next", "done", "step-002", "--task", "up-prop", "--tasks-root", root, "--json"]));
+    assert.deepEqual(first.autoCompletedStepIds, []);
+    assert.equal((await readTaskJson(root, "up-prop")).steps[0].status, "pending");
+    const text = runCli(["next", "done", "step-003", "--task", "up-prop", "--tasks-root", root]);
+    assert.equal(text.status, 0, text.stderr);
+    assert.equal(text.stdout.includes("step-001"), true, text.stdout);
+    const stored = await readTaskJson(root, "up-prop");
+    assert.equal(stored.revision, 6);
+    assert.equal(stored.status, "done");
+    assert.deepEqual(stored.steps.map((step) => step.status), ["done", "done", "done"]);
+    assert.equal(typeof stored.steps[0].declaredDoneAt, "string");
+
+    assert.equal(runCli(["init", "Up Json", "--tasks-root", root, "--json"]).status, 0);
+    assert.equal(addStepCli(root, "up-json", "Parent").status, 0);
+    assert.equal(addStepCli(root, "up-json", "Only child", ["--parent", "step-001"]).status, 0);
+    const json = parseJson(runCli(["next", "done", "step-002", "--task", "up-json", "--tasks-root", root, "--json"]));
+    assert.deepEqual(json.autoCompletedStepIds, ["step-001"]);
+    assert.equal(json.revision, 4);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("next-is-hierarchy-aware", async () => {
+  const root = await freshRoot();
+  try {
+    assert.equal(runCli(["init", "Hier Next", "--tasks-root", root, "--json"]).status, 0);
+    assert.equal(addStepCli(root, "hier-next", "Parent one").status, 0);
+    assert.equal(addStepCli(root, "hier-next", "Top two").status, 0);
+    assert.equal(addStepCli(root, "hier-next", "Late child", ["--parent", "step-001"]).status, 0);
+    const status = () => parseJson(runCli(["status", "--task", "hier-next", "--tasks-root", root, "--json"]));
+    assert.equal(status().nextStepId, "step-003");
+    assert.equal(parseJson(runCli(["next", "show", "--task", "hier-next", "--tasks-root", root, "--json"])).stepId, "step-003");
+    const done = parseJson(runCli(["next", "done", "step-003", "--task", "hier-next", "--tasks-root", root, "--json"]));
+    assert.deepEqual(done.autoCompletedStepIds, ["step-001"]);
+    assert.equal(status().nextStepId, "step-002");
+    assert.equal(runCli(["next", "done", "step-002", "--task", "hier-next", "--tasks-root", root, "--json"]).status, 0);
+    assert.equal(status().nextStepId, null);
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+await test("legacy-task-without-parent-unchanged", async () => {
+  const root = await freshRoot();
+  try {
+    await writeHandTask(root, "flat-task", [
+      handStep("step-001", "done", { declaredDoneAt: "2026-01-01T00:00:00.000Z" }),
+      handStep("step-002", "pending"),
+      handStep("step-003", "pending"),
+    ]);
+    const status = parseJson(runCli(["status", "--task", "flat-task", "--tasks-root", root, "--json"]));
+    assert.equal(status.nextStepId, "step-002");
+    for (const step of status.steps) assert.equal("parent" in step, false);
+    const text = runCli(["status", "--task", "flat-task", "--tasks-root", root]);
+    const stepLines = text.stdout.split("\n").filter((line) => /step-\d{3}  /.test(line));
+    assert.deepEqual(stepLines, ["✓ step-001  Title step-001", "○ step-002  Title step-002", "○ step-003  Title step-003"]);
+    const done = parseJson(runCli(["next", "done", "step-002", "--task", "flat-task", "--tasks-root", root, "--json"]));
+    assert.deepEqual(done.autoCompletedStepIds, []);
+    assert.equal(done.revision, 2);
+    const stored = await readTaskJson(root, "flat-task");
+    assert.deepEqual(stored.steps.map((step) => step.status), ["done", "done", "pending"]);
+    for (const step of stored.steps) assert.equal("parent" in step, false);
+    assert.equal(parseJson(runCli(["status", "--task", "flat-task", "--tasks-root", root, "--json"])).nextStepId, "step-003");
   } finally {
     await rm(root, { recursive: true, force: true });
   }

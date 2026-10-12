@@ -24,13 +24,13 @@ type Host = {
     getSessionTask(input: unknown): Promise<Snapshot | null>
   }): Promise<Registration> }
 }
-const instruction = "Skynex Tasks: vincula una vez la sesión con skynex_task_update {task:{id}}; no requiere status previo ni republicar pasos. El plugin consulta la CLI skynex task y refresca tras mutaciones. Consulta opcional/revisión: skynex task status --task <id> --json. Tasks es el único registro de progreso y recuperación: checkpoint show/set, sin registro paralelo. También se acepta el resumen completo CLI con reviews {security}. No inventes estados ni envíes cuerpos, instrucciones, evidencias, sesión ni ruta. Sin tarea asignada: task:null."
+const instruction = "Skynex Tasks: vincula una vez la sesión con skynex_task_update {task:{id}}; no requiere status previo ni republicar pasos. El plugin consulta la CLI skynex task y refresca tras mutaciones. Consulta opcional/revisión: skynex task status --task <id> --json. Tasks es el único registro de progreso y recuperación: checkpoint show/set, sin registro paralelo. También se acepta el resumen completo CLI (parent opcional, 1 nivel) con reviews {security}. No inventes estados ni envíes cuerpos, instrucciones, evidencias, sesión ni ruta. Sin tarea asignada: task:null."
 // L2: shell tool names whose `input.command` may run the CLI; refresh is event-driven, never timed.
 const shellTools = new Set(["bash", "shell"])
 // CLI VALUE_FLAGS consume the following value (including -h); only skip those
 // values when detecting help. This does not execute or validate a CLI command.
 const taskValueFlags = new Set(["--tasks-root", "--task", "--scope", "--done-when", "--evidence", "--instruction-file",
-  "--instruction", "--depends-on", "--expected-revision", "--security", "--reason", "--checkpoint"])
+  "--instruction", "--depends-on", "--parent", "--expected-revision", "--security", "--reason", "--checkpoint"])
 // A bounded lexer for simple shell command lists, not a shell interpreter. Quoted
 // arguments remain single words; unsupported expansion/redirection is not guessed.
 const mutatesTask = (command: string): boolean => {
@@ -138,7 +138,7 @@ export const createServer = (deps: { readTask: ReadTask; readSecurity: ReadSecur
     try {
       registrations.push(await ctx.tool.transform((editor) => editor.add({
         name: "skynex_task_update",
-        description: "Publica el resumen CLI y todos los pasos (id/title/status, orden CLI, máximo 999) de la tarea de esta sesión; task:null borra la asignación. No modifica la tarea CLI.",
+        description: "Publica el resumen CLI y todos los pasos (id/title/status y parent opcional, orden CLI, máximo 999) de la tarea de esta sesión; task:null borra la asignación. No modifica la tarea CLI.",
         input: updateSchema,
         async execute(input, context) {
           try {
