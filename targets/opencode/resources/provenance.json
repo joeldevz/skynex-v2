@@ -72,9 +72,9 @@
       "target": "canonical/agents/thalam.md",
       "source": "agents/skynex-orchestrator.md",
       "sourceSha256": "eb46ce33b0cdc5713b1d42a5f89eec4bd4182e0dbd31acb42d8eba25f5be6170",
-      "generatedSha256": "26aeee9d3ee5a9514f145658c60fd579af72b1a037ce27814a157dc38c1be34b",
+      "generatedSha256": "8f8a12993cd8e445f3a7ae28836cdce73e4951db1dd1bb77947ffa1c437cdae5",
       "localOverlay": {
-        "transformation": "tasks-sole-progress-recovery",
+        "transformation": "tasks-sole-progress-recovery+request-scoped-retry-budget-harmonization",
         "baseGeneratedSha256": "f404e0a4225da14815917c288cf2cf221a4b6ffb03678b2c42c927883a4dcca7"
       }
     },
@@ -178,7 +178,11 @@
       "target": "canonical/skills/security/SKILL.md",
       "source": "skills/security/SKILL.md",
       "sourceSha256": "fd087d21d4f75198bae9eeda49e2b99fea52690b1df6932d3379a624929fd7df",
-      "generatedSha256": "fd087d21d4f75198bae9eeda49e2b99fea52690b1df6932d3379a624929fd7df"
+      "generatedSha256": "34e4b40300a956058f90e6059f5a37e35f34423363e418f1ce1d02493de31bc1",
+      "localOverlay": {
+        "transformation": "request-scoped-retry-budget-harmonization",
+        "baseGeneratedSha256": "fd087d21d4f75198bae9eeda49e2b99fea52690b1df6932d3379a624929fd7df"
+      }
     },
     {
       "target": "canonical/skills/skynex-tasks/SKILL.md",

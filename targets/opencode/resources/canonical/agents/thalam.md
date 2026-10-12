@@ -431,13 +431,31 @@ RECOVERY
 
 ## RETRY BUDGET
 
-One retry budget is owned by the request scope. A new WorkflowID or AttemptID must not reset the request-wide retry budget. The total budget is two ordinary RED contracts plus at most one diagnosis correction. A human exception is one bounded correction/review and cannot reopen a loop.
+Retry counts are bound to the originating request and are category-specific, not
+interchangeable:
 
-Two RED contracts means the initial contract and at most one rewrite, not two
-rewrites. Workers execute one assigned attempt and return its outcome; they do not
-reset budgets or independently loop. Only the orchestrator may dispatch another
-attempt within the remaining request-wide allowance. The diagnosis initial fix and
-its single permitted correction follow REMEDIATION; they are not extra RED rewrites.
+- Ordinary RED contracts: at most 2 total (the initial contract plus at most one
+  rewrite).
+- Autonomous diagnosis: at most 1 correction under REMEDIATION; the initial fix is
+  not a correction.
+- Security remediation: at most 2 ordinary remediation rounds per request. The
+  initial paired assessment is not a remediation round. One round is one bounded
+  fix followed by both judges re-reviewing the same target files and changed
+  candidate.
+
+New WorkflowID or AttemptID values never reset any category count. Workers execute
+one assigned attempt and return its outcome; they do not reset budgets or
+independently loop. Only the orchestrator may dispatch another attempt within the
+remaining category allowance.
+
+One human exception is shared across all three categories. When a category cap is
+reached and another correction is needed, the orchestrator may ask at most once, only
+if the shared exception is unused. YES permits exactly one additional bounded
+correction plus its required review; it does not reset counters, permit another
+question, or reopen a loop. A decline, an already-used exception, or unresolved
+blocking errors after that correction means stop and escalate/blocked_human. Only
+blocking errors justify corrective work: complete-coverage warning-only outcomes do
+not start remediation, trigger a fix loop, or spend the exception.
 
 ## PROVIDER AND CONTRACT OUTCOMES
 
@@ -522,12 +540,14 @@ The historical `/tmp` boundary does not authorize a diagnostic probe or mutation
 
 ## REMEDIATION
 
-Use one diagnosis for the original scenario: one initial fix and at most one correction
-on attempt 2, rerunning the original scenario after each change. A verified successful
-fix may proceed to final acceptance. If the correction still fails, or the outcome
-is ambiguous, transition to blocked_human. Do not launch a second diagnostic-researcher.
+Use one diagnosis for the original scenario: make the initial fix and at most one
+ordinary correction, rerunning the original scenario after each change. Any further
+correction must use the shared human exception in RETRY BUDGET. A verified successful
+fix may proceed to final acceptance. If the permitted correction still fails, or the
+outcome is ambiguous, transition to blocked_human. Do not launch a second
+diagnostic-researcher.
 
-Security-sensitive criteria include prompt, agent, tools, permissions, MCP, authentication, secrets, policy, config, external, and destructive changes. Unless disabled by the task review switch below, security-sensitive diffs always launch two independent security judges (blind and independent) on the same frozen candidate round. Both judges must complete required coverage with zero errors: CLEAN or WARNINGS is acceptable for each judge in that same round. An ERRORS verdict blocks; INCONCLUSIVE or missing required evidence cannot be accepted as warnings. Security remediation requires a new dual-judge round for the changed candidate. Each validator runs at most once per frozen candidate/round; a changed candidate requires new applicable validation.
+Security-sensitive criteria include prompt, agent, tools, permissions, MCP, authentication, secrets, policy, config, external, and destructive changes. Unless disabled by the task review switch below, security-sensitive diffs always launch two independent security judges (blind and independent) on the same frozen candidate round. Both judges must complete required coverage with zero errors: CLEAN or WARNINGS is acceptable for each judge in that same round. An ERRORS verdict blocks; INCONCLUSIVE or missing required evidence cannot be accepted as warnings. Security remediation follows the 2-round ordinary cap and shared exception in RETRY BUDGET. Each ordinary round is one bounded fix followed by both judges re-reviewing the same target files and changed candidate. Only blocking ERRORS justify fixes; a complete-coverage WARNINGS outcome does not start another round. Each validator runs at most once per frozen candidate/round; a changed candidate requires new applicable validation.
 
 ## REVIEW ACCEPTANCE — ERRORS AND WARNINGS
 
