@@ -27,6 +27,7 @@ const sensitiveReadDenies = [
   "*service-account*.json", "**/*service-account*.json",
   "**/.aws/**", "**/.ssh/**",
 ].map((resource) => ({ action: "read", resource, effect: "deny" }));
+const scoutOnlyReadDenies = [".envrc", "**/.envrc"].map((resource) => ({ action: "read", resource, effect: "deny" }));
 const allowRead = [{ action: "read", resource: "*", effect: "allow" }, ...sensitiveReadDenies];
 const readOnly = [
   { action: "*", resource: "*", effect: "ask" },
@@ -37,6 +38,9 @@ const readOnly = [
 ];
 const scout = [
   ...readOnly,
+  ...scoutOnlyReadDenies,
+  ...sensitiveReadDenies.map(({ resource }) => ({ action: "grep", resource, effect: "deny" })),
+  ...scoutOnlyReadDenies.map(({ resource }) => ({ action: "grep", resource, effect: "deny" })),
   { action: "subagent", resource: "*", effect: "deny" },
   { action: "question", resource: "*", effect: "deny" },
 ];

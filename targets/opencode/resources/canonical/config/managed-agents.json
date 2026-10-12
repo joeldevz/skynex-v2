@@ -676,6 +676,116 @@
           "effect": "allow"
         },
         {
+          "action": "read",
+          "resource": ".envrc",
+          "effect": "deny"
+        },
+        {
+          "action": "read",
+          "resource": "**/.envrc",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": ".env",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": ".env.*",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "**/.env",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "**/.env.*",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": ".npmrc",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "**/.npmrc",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": ".netrc",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "**/.netrc",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "*.pem",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "**/*.pem",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "*.key",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "**/*.key",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "credentials.json",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "**/credentials.json",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "*service-account*.json",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "**/*service-account*.json",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "**/.aws/**",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "**/.ssh/**",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": ".envrc",
+          "effect": "deny"
+        },
+        {
+          "action": "grep",
+          "resource": "**/.envrc",
+          "effect": "deny"
+        },
+        {
           "action": "subagent",
           "resource": "*",
           "effect": "deny"

@@ -1,25 +1,39 @@
-# Skynex Tasks — especificación propuesta
+# Skynex Tasks — especificación original
 
-> **Estado: propuesta de diseño. Nada de lo descrito aquí está implementado.**
-> La CLI actual no expone `skynex task` (`apps/cli/src/index.ts`), no existe
-> `packages/tasks/` y no existe `verify:tasks`. Estos documentos son datos de
-> planificación: no conceden permisos de ejecución ni sustituyen una autorización.
+> Estos documentos conservan el diseño original; no son un inventario de estado ni
+> todo lo propuesto está implementado. Las funciones disponibles y las brechas
+> actuales se distinguen a continuación.
 
 Este conjunto de documentos es la versión **versionada y revisable** del diseño de
 Skynex Tasks. El borrador de trabajo previo permanece en el ámbito privado
 (`.skynex/tasks/skynex-tasks-spec/`, 2026-09-14) y no se sustituye ni se migra
 automáticamente.
 
-## Problema
+## Estado actual de implementación
 
-Hoy el trabajo se coordina con `status.json` heterogéneos dentro de `.skynex/tasks/`.
-Funcionan, pero:
+El árbol actual ya implementa un vertical local de Skynex Tasks:
 
-- una tarea mediana no tiene una forma uniforme de mostrar **en qué consiste cada
-  unidad de trabajo** ni **qué significa que está terminada**;
-- el término "checkpoint" se usa tanto para *un hito legible* como para *una
-  fotografía técnica de recuperación*, y esa ambigüedad confunde la revisión humana;
-- no existe una interfaz oficial: cada agente tiende a inventar rutas y JSON internos.
+- Libreta local de tareas y pasos, con la CLI `skynex task`: `init`, `list`,
+  `status`, `next show/add/start/block/done`, `checkpoint set/show` y `reviews set`.
+- Pasos hijos de un nivel mediante `next add --parent`; al completar un padre se
+  completan sus hijos y el último hijo completado completa el padre.
+- Persistencia y actualización de checkpoints, más publicación del estado en la
+  barra lateral de OpenCode mediante la integración de Tasks.
+- Paquete de dominio y `verify:tasks` para el comportamiento implementado.
+
+Siguen siendo propuestas, entre otras, la importación de evidencia (`evidence add`),
+las notas, el historial de checkpoints, la vinculación de sesiones y los comandos
+`resume`, `recover` y `close`. La especificación no implica que esas capacidades
+hayan salido.
+
+## Contexto histórico del diseño
+
+Al redactarse esta propuesta, el trabajo se coordinaba con archivos `status.json`
+heterogéneos dentro de `.skynex/tasks/` y no había una interfaz oficial. Esa
+descripción es contexto histórico, no el estado actual: ahora existe la libreta local
+y la CLI indicadas arriba. Los problemas de uniformidad y de ambigüedad entre pasos y
+checkpoints explican los objetivos del diseño original, no afirman que toda la
+solución propuesta esté entregada.
 
 ## Idea central
 
@@ -45,7 +59,7 @@ hecho de existir este módulo.
 | OpenCode | Sesiones, herramientas y presentación | Propiedad canónica de las tareas |
 | Instalador | Distribución y protección de recursos | Semántica de pasos, reintentos o planificación |
 
-## Alcance de la primera entrega
+## Alcance propuesto para la primera entrega
 
 - Registro local de tareas con pasos legibles y estados.
 - Evidencia con procedencia, ligada a paso e intento, y vínculo explícito al
