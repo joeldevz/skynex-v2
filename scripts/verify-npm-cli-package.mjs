@@ -9,8 +9,9 @@ import { tmpdir } from "node:os";
 
 const args = process.argv.slice(2);
 const mode = args[0];
-assert(["--contract", "--static-and-install", "--release", "--publish-dry-run"].includes(mode),
-  "usage: verify-npm-cli-package.mjs --contract|--static-and-install|--release|--publish-dry-run [tarball]");
+assert(["--contract", "--static-and-install", "--release", "--publish-dry-run", "--verify-tarball"].includes(mode),
+  "usage: verify-npm-cli-package.mjs --contract|--static-and-install|--release|--publish-dry-run [tarball]|--verify-tarball <path>");
+if (mode === "--verify-tarball") assert.equal(args.length, 2, "--verify-tarball requires exactly one tarball path");
 const repo = resolve(new URL("..", import.meta.url).pathname);
 const packageRoot = join(repo, "packages/npm-cli");
 const manifestPath = join(packageRoot, "package.json");
@@ -77,15 +78,16 @@ async function readContract() {
   assert.equal(typeof manifest.version, "string");
   assert.match(manifest.version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/, "release version must be a stable semver");
   assert.deepEqual({ name: manifest.name, version: manifest.version, description: manifest.description,
-    license: manifest.license, type: manifest.type, bin: manifest.bin, files: manifest.files,
+    license: manifest.license, repository: manifest.repository, type: manifest.type, bin: manifest.bin, files: manifest.files,
     engines: manifest.engines, publishConfig: manifest.publishConfig }, {
     name: "@skynex-ai/cli", version: manifest.version,
     description: "Install and manage Skynex resources for OpenCode 2", license: "Apache-2.0",
+    repository: { type: "git", url: "https://github.com/joeldevz/skynex-v2" },
     type: "module", bin: { skynex: "dist/cli.js" },
     files: ["dist/cli.js", "dist/resources", "README.md", "LICENSE"], engines: { node: ">=24" },
     publishConfig: { access: "public", registry: "https://registry.npmjs.org/" },
   });
-  for (const key of ["private", "repository", "bugs", "homepage"]) assert(!Object.hasOwn(manifest, key), `manifest must omit ${key}`);
+  for (const key of ["private", "bugs", "homepage"]) assert(!Object.hasOwn(manifest, key), `manifest must omit ${key}`);
   for (const key of lifecycle) assert(!Object.hasOwn(manifest.scripts ?? {}, key), `manifest must omit lifecycle script ${key}`);
   for (const section of ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"])
     for (const [name, range] of Object.entries(manifest[section] ?? {})) {
@@ -267,9 +269,9 @@ function parseTar(tgz) {
 
 function expectedDirectories(files) { const result = new Set(); for (const file of files) { let path = dirname(file); while (path !== ".") { result.add(`${path}/`); path = dirname(path); } } return result; }
 function assertManifestContract(packed, expected) {
-  for (const key of ["name", "version", "description", "license", "type", "bin", "files", "engines", "publishConfig"])
+  for (const key of ["name", "version", "description", "license", "repository", "type", "bin", "files", "engines", "publishConfig"])
     assert.deepEqual(packed[key], expected[key], `packed manifest ${key} drifted`);
-  for (const key of ["private", "repository", "bugs", "homepage"]) assert(!Object.hasOwn(packed, key), `packed manifest must omit ${key}`);
+  for (const key of ["private", "bugs", "homepage"]) assert(!Object.hasOwn(packed, key), `packed manifest must omit ${key}`);
   for (const key of lifecycle) assert(!Object.hasOwn(packed.scripts ?? {}, key));
   const dependencySections = ["dependencies", "devDependencies", "optionalDependencies", "peerDependencies"];
   for (const section of dependencySections) { assert.deepEqual(packed[section] ?? {}, expected[section] ?? {}, `packed ${section} drifted`); for (const [name, range] of Object.entries(packed[section] ?? {})) assert(!name.startsWith("@skynex-internal/") && !String(range).startsWith("workspace:")); }
@@ -385,6 +387,14 @@ async function exportAudit(packed) {
 const manifest = await readContract();
 if (mode === "--contract") { assert(manifest); const npmOutputFailures = verifyNpmPackageOutputContract(); await verifyCleanWorkspaceBuildContract(); await verifyBuiltDistributionAndTarball(await resourceAllowlist(), manifest); assert.deepEqual(npmOutputFailures, [], `npm error-bearing selected outputs were accepted: ${npmOutputFailures.join(", ")}`); console.log("PASS full npm CLI verifier contract entrypoint"); }
 else if (mode === "--publish-dry-run") await verifyPublishDryRun();
+else if (mode === "--verify-tarball") {
+  const tarballPath = resolve(args[1]);
+  const stat = await lstat(tarballPath);
+  assert(stat.isFile() && !stat.isSymbolicLink(), "tarball must be a regular non-symlink file");
+  const bytes = await readFile(tarballPath);
+  const audited = verifyArchive(parseTar(bytes), await resourceAllowlist(), manifest);
+  console.log(JSON.stringify({ ok: true, tarball: tarballPath, sha256: sha(bytes), normalizedSha256: audited.normalizedSha256 }));
+}
 else {
   const root = await mkdtemp(join(tmpdir(), "skynex-package-")); let evidencePath; try { const allowed = await resourceAllowlist(); await verifyBuild(allowed);
     const env = await isolatedEnv(root); const packed = await packTwice(root, env, allowed, manifest); const installed = await verifyInstall(packed.path, root, env, manifest);
