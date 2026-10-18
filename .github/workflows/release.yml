@@ -161,5 +161,5 @@ jobs:
           [[ -f "release-assets/$TARBALL.sha256" && ! -L "release-assets/$TARBALL.sha256" ]]
           cd release-assets
           sha256sum --check --strict "$TARBALL.sha256"
-          gh release create "$RELEASE_TAG" --verify-tag "$TARBALL" "$TARBALL.sha256" \
+          gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag "$TARBALL" "$TARBALL.sha256" \
             --title "$RELEASE_TAG" --generate-notes
