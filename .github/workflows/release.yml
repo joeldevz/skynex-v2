@@ -1,0 +1,165 @@
+name: Release npm CLI
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions: {}
+
+jobs:
+  build:
+    name: Version gate and build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      tarball: ${{ steps.package.outputs.tarball }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 10.15.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Require a stable package version matching the tag
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          const tag = process.env.RELEASE_TAG ?? '';
+          const tagVersion = tag.startsWith('v') ? tag.slice(1) : '';
+          const { version } = JSON.parse(await readFile('packages/npm-cli/package.json', 'utf8'));
+          if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) {
+            throw new Error(`package version is not stable semver: ${version}`);
+          }
+          if (tagVersion !== version) {
+            throw new Error(`tag version ${tagVersion || '<empty>'} does not match package version ${version}`);
+          }
+          NODE
+      - run: pnpm install --frozen-lockfile
+      - id: package
+        name: Build, pack, and validate the exact tarball
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/opencode/skynex-pack
+          pnpm pack:cli
+          mapfile -d '' tarballs < <(find /tmp/opencode/skynex-pack -maxdepth 1 -type f -name '*.tgz' -print0)
+          if [[ "${#tarballs[@]}" -ne 1 ]]; then
+            echo "Expected exactly one npm tarball, found ${#tarballs[@]}" >&2
+            exit 1
+          fi
+          tarball="${tarballs[0]}"
+          [[ -f "$tarball" && ! -L "$tarball" ]]
+          tarball_name="$(basename "$tarball")"
+          (
+            cd /tmp/opencode/skynex-pack
+            sha256sum "$tarball_name" > "$tarball_name.sha256"
+          )
+          node scripts/verify-npm-cli-package.mjs --verify-tarball "$tarball"
+          printf 'tarball=%s\n' "$tarball_name" >> "$GITHUB_OUTPUT"
+      - name: Recheck artifact digest immediately before upload
+        env:
+          TARBALL: ${{ steps.package.outputs.tarball }}
+        run: |
+          set -euo pipefail
+          test -n "$TARBALL"
+          [[ -f "/tmp/opencode/skynex-pack/$TARBALL" && ! -L "/tmp/opencode/skynex-pack/$TARBALL" ]]
+          [[ -f "/tmp/opencode/skynex-pack/$TARBALL.sha256" && ! -L "/tmp/opencode/skynex-pack/$TARBALL.sha256" ]]
+          (cd /tmp/opencode/skynex-pack && sha256sum --check --strict "$TARBALL.sha256")
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: npm-cli-release-package
+          path: |
+            /tmp/opencode/skynex-pack/${{ steps.package.outputs.tarball }}
+            /tmp/opencode/skynex-pack/${{ steps.package.outputs.tarball }}.sha256
+          if-no-files-found: error
+          compression-level: 0
+
+  npm-publish:
+    name: Publish with npm Trusted Publishing
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - name: Require npm with Trusted Publishing support
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import { execFileSync } from 'node:child_process';
+          const version = execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim();
+          const match = /^(\d+)\.(\d+)\.(\d+)$/.exec(version);
+          const actual = match?.slice(1).map(Number);
+          const minimum = [11, 5, 1];
+          const belowMinimum = !actual || actual.some((part, index) =>
+            part < minimum[index] && actual.slice(0, index).every((prior, priorIndex) => prior === minimum[priorIndex]));
+          if (belowMinimum) {
+            throw new Error(`npm >= 11.5.1 is required for Trusted Publishing; found ${version}`);
+          }
+          NODE
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: npm-cli-release-package
+          path: release-assets
+      - name: Verify downloaded tarball and sidecar
+        env:
+          TARBALL: ${{ needs.build.outputs.tarball }}
+        run: |
+          set -euo pipefail
+          [[ "$TARBALL" == *.tgz && "$TARBALL" != */* ]]
+          [[ -f "release-assets/$TARBALL" && ! -L "release-assets/$TARBALL" ]]
+          [[ -f "release-assets/$TARBALL.sha256" && ! -L "release-assets/$TARBALL.sha256" ]]
+          (cd release-assets && sha256sum --check --strict "$TARBALL.sha256")
+      - name: Publish the verified tarball to npm
+        env:
+          TARBALL: ${{ needs.build.outputs.tarball }}
+        run: |
+          set -euo pipefail
+          [[ -f "release-assets/$TARBALL" && ! -L "release-assets/$TARBALL" ]]
+          [[ -f "release-assets/$TARBALL.sha256" && ! -L "release-assets/$TARBALL.sha256" ]]
+          cd release-assets
+          sha256sum --check --strict "$TARBALL.sha256"
+          npm publish "./$TARBALL" --access public --provenance
+
+  github-release:
+    name: Create GitHub Release
+    needs: [build, npm-publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: npm-cli-release-package
+          path: release-assets
+      - name: Verify downloaded tarball and sidecar
+        env:
+          TARBALL: ${{ needs.build.outputs.tarball }}
+        run: |
+          set -euo pipefail
+          [[ "$TARBALL" == *.tgz && "$TARBALL" != */* ]]
+          [[ -f "release-assets/$TARBALL" && ! -L "release-assets/$TARBALL" ]]
+          [[ -f "release-assets/$TARBALL.sha256" && ! -L "release-assets/$TARBALL.sha256" ]]
+          (cd release-assets && sha256sum --check --strict "$TARBALL.sha256")
+      - name: Create release from the verified tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          TARBALL: ${{ needs.build.outputs.tarball }}
+        run: |
+          set -euo pipefail
+          [[ -f "release-assets/$TARBALL" && ! -L "release-assets/$TARBALL" ]]
+          [[ -f "release-assets/$TARBALL.sha256" && ! -L "release-assets/$TARBALL.sha256" ]]
+          cd release-assets
+          sha256sum --check --strict "$TARBALL.sha256"
+          gh release create "$RELEASE_TAG" --verify-tag "$TARBALL" "$TARBALL.sha256" \
+            --title "$RELEASE_TAG" --generate-notes

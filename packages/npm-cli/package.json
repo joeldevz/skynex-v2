@@ -3,6 +3,7 @@
   "version": "0.3.0",
   "description": "Install and manage Skynex resources for OpenCode 2",
   "license": "Apache-2.0",
+  "repository": { "type": "git", "url": "https://github.com/joeldevz/skynex-v2" },
   "type": "module",
   "bin": { "skynex": "dist/cli.js" },
   "files": ["dist/cli.js", "dist/resources", "README.md", "LICENSE"],
