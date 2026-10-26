@@ -1,6 +1,6 @@
 ---
 name: grill-me
-description: Use when the user requests a non-trivial feature, change, or design decision before writing a PRD or plan. Do NOT use for trivial bug fixes, typos, or tasks crystal-clear from context.
+description: Use when the user requests a non-trivial feature, change, or design decision before planning it. Do NOT use for trivial bug fixes, typos, or tasks crystal-clear from context.
 license: Complete terms in LICENSE.txt
 ---
 
@@ -23,13 +23,13 @@ Write `design-tree.md` (or update if exists) at the repo root or `docs/specs/<fe
 - D1: <decision> — <rationale>
 - D2: <decision> — <rationale>
 
-## Open assumptions (validate before PRD)
+## Open assumptions (validate before planning)
 - A1: <assumption> — <impact if wrong>
 
 ## Out of scope (explicit)
 - <thing not addressed>
 
-## Ready for PRD
+## Ready for planning
 ✅ yes / ⚠️ pending: <list>
 ```
 
@@ -38,9 +38,9 @@ Write `design-tree.md` (or update if exists) at the repo root or `docs/specs/<fe
 1. **One question at a time**. Never dump a list.
 2. **Always provide a recommended answer**. The user can agree, modify, or override — but you take the cognitive load of suggesting first.
 3. **Skip the obvious**. If Neurox already has the answer, surface it instead of asking.
-4. **No premature PRD**. Do not generate a PRD inside this skill — that's the next step (PRD skill).
+4. **No premature plan**. Do not write the implementation plan inside this skill. The orchestrator routes the resolved design tree to `tech-planner`, which owns `PLAN.md`.
 5. **No premature code**. Do not write code in this skill, even pseudocode.
-6. **Stop when ready**. The user can say "just do it" or "ya, escribe el PRD" and you exit cleanly.
+6. **Stop when ready**. The user can say "just do it" or "ya, planifica" and you exit cleanly.
 
 ## When NOT to use this skill
 

@@ -12,7 +12,7 @@
       "target": "canonical/agents/diagnostic-researcher.md",
       "source": "agents/diagnostic-researcher.md",
       "sourceSha256": "4d399e88d0f1d2668a566aa78c91f5e3205747124d926653dc1656c6dc537e7c",
-      "generatedSha256": "ad430f70309ef0b60b6366f1e44f4007b64b12570ebf9eb81117e28f2d249913"
+      "generatedSha256": "609f133d3c9d401a21a93f8fa9134c83935c660dce4f757a6cdd9d3ee2f62a3a"
     },
     {
       "target": "canonical/agents/infrastructure-engineer.md",
@@ -72,7 +72,7 @@
       "target": "canonical/agents/thalam.md",
       "source": "agents/skynex-orchestrator.md",
       "sourceSha256": "eb46ce33b0cdc5713b1d42a5f89eec4bd4182e0dbd31acb42d8eba25f5be6170",
-      "generatedSha256": "8f8a12993cd8e445f3a7ae28836cdce73e4951db1dd1bb77947ffa1c437cdae5",
+      "generatedSha256": "9fa03da43b09769a014d206bfcce323cbf15f2b2a5b1268b979aec440b5a37cc",
       "localOverlay": {
         "transformation": "tasks-sole-progress-recovery+request-scoped-retry-budget-harmonization",
         "baseGeneratedSha256": "f404e0a4225da14815917c288cf2cf221a4b6ffb03678b2c42c927883a4dcca7"
@@ -88,7 +88,7 @@
       "target": "canonical/config/managed-agents.json",
       "source": "generated",
       "sourceSha256": null,
-      "generatedSha256": "eb282046d7a455eb315f08c720216482e20a12ae3022e3aab191448713cbd451"
+      "generatedSha256": "9a93cdf8c8203cd0fbb9f0d49eebb6e6cb81c95c8e736b4e964ebff368179df0"
     },
     {
       "target": "canonical/skills/_shared/advisor-protocol.md",
@@ -136,13 +136,13 @@
       "target": "canonical/skills/diagnose/SKILL.md",
       "source": "skills/diagnose/SKILL.md",
       "sourceSha256": "28886402bbfa0470248086eab9106a103b964b76ae9496e63ff0c8a6761b6d13",
-      "generatedSha256": "de5836265d1012f6bea5e8c54d3ab059d552362237888c686bf127d2902d1b4e"
+      "generatedSha256": "e29acd20f234400dfe18562f4d6453003ace7c664e2d101ced60135463a2d159"
     },
     {
       "target": "canonical/skills/grill-me/SKILL.md",
       "source": "skills/grill-me/SKILL.md",
-      "sourceSha256": "63fd65417afdd2e57e7efb07dbef5ebb40188581d7ae70d824a1683e4fd04cbb",
-      "generatedSha256": "63fd65417afdd2e57e7efb07dbef5ebb40188581d7ae70d824a1683e4fd04cbb"
+      "sourceSha256": "6f411ed3bc579507c15f5dfaeb7a51cce188b45d61c08719f595d53ed192af1f",
+      "generatedSha256": "6f411ed3bc579507c15f5dfaeb7a51cce188b45d61c08719f595d53ed192af1f"
     },
     {
       "target": "canonical/skills/infrastructure-quality-tooling/SKILL.md",
@@ -151,22 +151,10 @@
       "generatedSha256": "f427ab66a448547523cbce99c112e53a764668a09309d5cb00b888d519a76f09"
     },
     {
-      "target": "canonical/skills/prd/references/prd-workflow.md",
-      "source": "skills/prd/references/prd-workflow.md",
-      "sourceSha256": "a997e6fa015159393b2dde2b78b6bfe403d5172c5d67d32f3f8712389cf9fe8f",
-      "generatedSha256": "a997e6fa015159393b2dde2b78b6bfe403d5172c5d67d32f3f8712389cf9fe8f"
-    },
-    {
-      "target": "canonical/skills/prd/references/schema.md",
-      "source": "skills/prd/references/schema.md",
-      "sourceSha256": "58b690f84e9425e87bc6766f30869ab41f9073fe45c8cdfa6c988e791060b9f4",
-      "generatedSha256": "58b690f84e9425e87bc6766f30869ab41f9073fe45c8cdfa6c988e791060b9f4"
-    },
-    {
-      "target": "canonical/skills/prd/SKILL.md",
-      "source": "skills/prd/SKILL.md",
-      "sourceSha256": "3e969f70c6756573613b1355d7de4708474b0fa5306c2f381f362c18be61bcfe",
-      "generatedSha256": "3e969f70c6756573613b1355d7de4708474b0fa5306c2f381f362c18be61bcfe"
+      "target": "canonical/skills/no-comments/SKILL.md",
+      "source": "skills/no-comments/SKILL.md",
+      "sourceSha256": "c1077f3948381ca62557c5cb55e40a276036d228e511f6f64d6599dd4490ec78",
+      "generatedSha256": "c1077f3948381ca62557c5cb55e40a276036d228e511f6f64d6599dd4490ec78"
     },
     {
       "target": "canonical/skills/review-pr/SKILL.md",
@@ -196,48 +184,6 @@
       "source": "skills/tdd-discipline/SKILL.md",
       "sourceSha256": "b69d4b8c19d9ffc06393cc27c4b9b4ec7cae9f6eff2e30b29cc661a398932afc",
       "generatedSha256": "b69d4b8c19d9ffc06393cc27c4b9b4ec7cae9f6eff2e30b29cc661a398932afc"
-    },
-    {
-      "target": "canonical/skills/triage/AGENT-BRIEF.md",
-      "source": "skills/triage/AGENT-BRIEF.md",
-      "sourceSha256": "1c71c747aa97d938f75ec7a4b8fe87451763b38a3ce6348acf2b222e5819b2e5",
-      "generatedSha256": "1c71c747aa97d938f75ec7a4b8fe87451763b38a3ce6348acf2b222e5819b2e5"
-    },
-    {
-      "target": "canonical/skills/triage/OUT-OF-SCOPE.md",
-      "source": "skills/triage/OUT-OF-SCOPE.md",
-      "sourceSha256": "8ed8cf27833444060c81b3961a83c0e3d8e6cf2fcb2ddf6f8b07c6655cbb0d85",
-      "generatedSha256": "8ed8cf27833444060c81b3961a83c0e3d8e6cf2fcb2ddf6f8b07c6655cbb0d85"
-    },
-    {
-      "target": "canonical/skills/triage/SKILL.md",
-      "source": "skills/triage/SKILL.md",
-      "sourceSha256": "b819f0285e4e5814ac6472d0217f07dc9f23d2fdae3ebb0dd31d98360d8ac029",
-      "generatedSha256": "b819f0285e4e5814ac6472d0217f07dc9f23d2fdae3ebb0dd31d98360d8ac029"
-    },
-    {
-      "target": "canonical/skills/visual-recap/README.md",
-      "source": "skills/visual-recap/README.md",
-      "sourceSha256": "d95833763f9016aab50324bed21f5372a1e550b4d2baac140dde629b2733fc69",
-      "generatedSha256": "d95833763f9016aab50324bed21f5372a1e550b4d2baac140dde629b2733fc69"
-    },
-    {
-      "target": "canonical/skills/visual-recap/references/recap-workflow.md",
-      "source": "skills/visual-recap/references/recap-workflow.md",
-      "sourceSha256": "11a1824c1e1b55f301fc97fd29c44e20afce814e8abc9efab3996936fb54869a",
-      "generatedSha256": "11a1824c1e1b55f301fc97fd29c44e20afce814e8abc9efab3996936fb54869a"
-    },
-    {
-      "target": "canonical/skills/visual-recap/references/wireframe.md",
-      "source": "skills/visual-recap/references/wireframe.md",
-      "sourceSha256": "877692d708dcf88020af4bbfced76fb42215f3aec8aba11c8025c8f83dbb09ad",
-      "generatedSha256": "877692d708dcf88020af4bbfced76fb42215f3aec8aba11c8025c8f83dbb09ad"
-    },
-    {
-      "target": "canonical/skills/visual-recap/SKILL.md",
-      "source": "skills/visual-recap/SKILL.md",
-      "sourceSha256": "641736a819c15a99ec690e64765b7ff0973c49dc42dd09a72459fbbdbd02db2c",
-      "generatedSha256": "641736a819c15a99ec690e64765b7ff0973c49dc42dd09a72459fbbdbd02db2c"
     },
     {
       "target": "canonical/skills/write-a-skill/SKILL.md",

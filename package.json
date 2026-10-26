@@ -16,6 +16,7 @@
     "start": "pnpm --filter @skynex-internal/cli start",
     "verify:installer": "node scripts/verify-installer.mjs",
     "verify:real-resources": "node scripts/verify-real-resources.mjs",
+    "verify:agent-recovery": "node --test scripts/verify-agent-recovery.mjs",
     "verify:sky-agents": "node scripts/verify-sky-agents.mjs",
     "verify:tasks": "node scripts/verify-tasks.mjs",
     "verify:review-gate": "node scripts/verify-review-gate.mjs",

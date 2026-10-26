@@ -345,44 +345,16 @@
       ]
     },
     {
-      "id": "skills.prd",
+      "id": "skills.no-comments",
       "kind": "skill",
       "version": "0.1.0",
       "origin": "canonical",
-      "sourcePath": "canonical/skills/prd/SKILL.md",
+      "sourcePath": "canonical/skills/no-comments/SKILL.md",
       "component": "skills",
       "targets": [
         {
           "id": "opencode-v2",
-          "relativePath": "skills/prd/SKILL.md"
-        }
-      ]
-    },
-    {
-      "id": "skills.prd.references.prd-workflow",
-      "kind": "skill",
-      "version": "0.1.0",
-      "origin": "canonical",
-      "sourcePath": "canonical/skills/prd/references/prd-workflow.md",
-      "component": "skills",
-      "targets": [
-        {
-          "id": "opencode-v2",
-          "relativePath": "skills/prd/references/prd-workflow.md"
-        }
-      ]
-    },
-    {
-      "id": "skills.prd.references.schema",
-      "kind": "skill",
-      "version": "0.1.0",
-      "origin": "canonical",
-      "sourcePath": "canonical/skills/prd/references/schema.md",
-      "component": "skills",
-      "targets": [
-        {
-          "id": "opencode-v2",
-          "relativePath": "skills/prd/references/schema.md"
+          "relativePath": "skills/no-comments/SKILL.md"
         }
       ]
     },
@@ -439,104 +411,6 @@
         {
           "id": "opencode-v2",
           "relativePath": "skills/tdd-discipline/SKILL.md"
-        }
-      ]
-    },
-    {
-      "id": "skills.triage",
-      "kind": "skill",
-      "version": "0.1.0",
-      "origin": "canonical",
-      "sourcePath": "canonical/skills/triage/SKILL.md",
-      "component": "skills",
-      "targets": [
-        {
-          "id": "opencode-v2",
-          "relativePath": "skills/triage/SKILL.md"
-        }
-      ]
-    },
-    {
-      "id": "skills.triage.agent-brief",
-      "kind": "skill",
-      "version": "0.1.0",
-      "origin": "canonical",
-      "sourcePath": "canonical/skills/triage/AGENT-BRIEF.md",
-      "component": "skills",
-      "targets": [
-        {
-          "id": "opencode-v2",
-          "relativePath": "skills/triage/AGENT-BRIEF.md"
-        }
-      ]
-    },
-    {
-      "id": "skills.triage.out-of-scope",
-      "kind": "skill",
-      "version": "0.1.0",
-      "origin": "canonical",
-      "sourcePath": "canonical/skills/triage/OUT-OF-SCOPE.md",
-      "component": "skills",
-      "targets": [
-        {
-          "id": "opencode-v2",
-          "relativePath": "skills/triage/OUT-OF-SCOPE.md"
-        }
-      ]
-    },
-    {
-      "id": "skills.visual-recap",
-      "kind": "skill",
-      "version": "0.1.0",
-      "origin": "canonical",
-      "sourcePath": "canonical/skills/visual-recap/SKILL.md",
-      "component": "skills",
-      "targets": [
-        {
-          "id": "opencode-v2",
-          "relativePath": "skills/visual-recap/SKILL.md"
-        }
-      ]
-    },
-    {
-      "id": "skills.visual-recap.readme",
-      "kind": "skill",
-      "version": "0.1.0",
-      "origin": "canonical",
-      "sourcePath": "canonical/skills/visual-recap/README.md",
-      "component": "skills",
-      "targets": [
-        {
-          "id": "opencode-v2",
-          "relativePath": "skills/visual-recap/README.md"
-        }
-      ]
-    },
-    {
-      "id": "skills.visual-recap.references.recap-workflow",
-      "kind": "skill",
-      "version": "0.1.0",
-      "origin": "canonical",
-      "sourcePath": "canonical/skills/visual-recap/references/recap-workflow.md",
-      "component": "skills",
-      "targets": [
-        {
-          "id": "opencode-v2",
-          "relativePath": "skills/visual-recap/references/recap-workflow.md"
-        }
-      ]
-    },
-    {
-      "id": "skills.visual-recap.references.wireframe",
-      "kind": "skill",
-      "version": "0.1.0",
-      "origin": "canonical",
-      "sourcePath": "canonical/skills/visual-recap/references/wireframe.md",
-      "component": "skills",
-      "targets": [
-        {
-          "id": "opencode-v2",
-          "relativePath": "skills/visual-recap/references/wireframe.md"
         }
       ]
     },
