@@ -1,6 +1,6 @@
 ---
 name: no-comments
-description: Use before review or merge of a code change to find comments that restate code, narrate steps, lie, or hide a constraint that a check could enforce. Read-only review; the coordinator applies accepted deletions.
+description: Finds comments that restate code, narrate steps, lie, or hide a constraint that a check could enforce. Use when the user asks for a comment review, before opening a pull request or merging, or at the final review of a MEDIUM or HIGH candidate; not on direct LOW changes. Read-only review; the coordinator applies accepted deletions.
 ---
 
 # No Comments — comment hygiene before review

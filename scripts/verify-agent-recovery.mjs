@@ -5,11 +5,15 @@ import { managedAgents, normalizeAgent, transformSkill } from "./lib/real-resour
 
 const resources = new URL("../targets/opencode/resources/canonical/", import.meta.url);
 const read = (path) => readFile(new URL(path, resources), "utf8");
-const [thalam, diagnostic, diagnose, configText, generator] = await Promise.all([
+const [thalam, diagnostic, diagnose, configText, generator, recoverySkill, validationSkill] = await Promise.all([
   read("agents/thalam.md"), read("agents/diagnostic-researcher.md"),
   read("skills/diagnose/SKILL.md"), read("config/managed-agents.json"),
   readFile(new URL("./lib/real-resource-transforms.mjs", import.meta.url), "utf8"),
+  read("skills/thalam-recovery/SKILL.md"), read("skills/thalam-validation/SKILL.md"),
 ]);
+// Thalam's recovery and validation procedures live in on-demand skills; the policy
+// Thalam operates with once they are loaded is the prompt plus both skills.
+const policy = `${thalam}\n${recoverySkill}\n${validationSkill}`;
 const config = JSON.parse(configText);
 const generated = managedAgents(config.agents.map(({ id }) => id));
 
@@ -131,7 +135,7 @@ const clauses = [
     /phase.{0,60}operation.{0,60}component.{0,60}error_kind.{0,60}error_code.{0,60}locus.{0,60}invariant.{0,60}exit_status/i,
     /(?:signature|eight).{0,200}(?:comparison|compare).{0,200}(?:not|never).{0,100}(?:identity|ProblemID)/i,
   ]],
-  ["A3 two comparable completed failures without validated discriminating evidence trigger diagnosis", [
+  ["A3 two comparable completed failures trigger diagnosis only within remaining block allowance", [
     /(?:two|2).{0,100}comparable.{0,100}(?:completed|finalized).{0,60}failures.{0,200}(?:without|no).{0,80}validated.{0,80}(?:new|discriminating).{0,80}evidence.{0,200}diagnos/i,
     /(?:changed|different|new).{0,60}hypothesis.{0,180}(?:rerun|re.run|same test).{0,160}(?:not|alone|itself).{0,100}(?:no.progress|stagnation)|(?:rerun|re.run|same test).{0,120}(?:changed|different|new).{0,60}hypothesis.{0,160}(?:not|alone|itself).{0,100}(?:no.progress|stagnation)/i,
   ]],
@@ -146,14 +150,16 @@ const clauses = [
     /(?:parent|orchestrator).{0,200}reconcile.{0,120}(?:live|writer|process).{0,160}before.{0,100}(?:retry|reassign|dispatch)/i,
     /Workers execute one assigned attempt/i,
   ]],
-  ["A4 one fresh read-only diagnosis per stable problem with a discriminating handoff", [
-    /(?:one|1|single).{0,80}fresh.{0,80}read.only.{0,80}diagnos.{0,120}(?:stable problem|ProblemID|per problem)/i,
+  ["A4 diagnosis is limited per approved block; a continuation requires approval, new evidence and history", [
+    /one read.only diagnosis per stable ProblemID per approved block/i,
+    /newly and explicitly approved continuation block.{0,180}(?:material new evidence|uninvestigated discriminating question)/i,
+    /complete bounded history of prior diagnoses and attempts/i,
     /(?:intent|objective).{0,150}expected.{0,80}observed/i,
     /failed hypotheses/i, /partial diff/i, /next discriminating read/i,
-    /(?:no|never|do not).{0,80}second.{0,80}(?:blind|diagnos).{0,120}(?:same problem|ProblemID)/i,
+    /(?:no|never|do not).{0,80}blind retry.{0,100}(?:lifetime ban|ProblemID)/i,
   ]],
-  ["A4 at most two postdiagnosis corrections, each a distinct evidence-backed hypothesis, rerun original scenario", [
-    /(?:at most|maximum|max).{0,20}(?:two|2).{0,100}(?:post.diagnos|after diagnos)|(?:post.diagnos|after diagnos).{0,100}(?:at most|maximum|max).{0,20}(?:two|2)/i,
+  ["A4 postdiagnosis corrections fit the current block allowance and use distinct evidence-backed hypotheses", [
+    /current block.{0,100}remaining repair allowance/i,
     /(?:each|every).{0,80}correction.{0,120}distinct.{0,80}evidence.backed.{0,80}hypothesis/i,
     /rerun(?:ning)?.{0,30}(?:the )?original scenario/i,
   ]],
@@ -161,30 +167,26 @@ const clauses = [
     /(?:preserve|must not rewrite).{0,100}(?:approved|accepted).{0,60}(?:RED|test).{0,80}intent/i,
     /(?:rewritten|rewrite|changed).{0,80}(?:RED|contract).{0,160}test-reviewer.{0,120}(?:accept|review).{0,100}before.{0,80}implementation|test-reviewer.{0,120}(?:accept|review).{0,120}(?:rewritten|rewrite|changed).{0,80}(?:RED|contract).{0,100}before.{0,80}implementation/i,
   ]],
-  ["A5 request-wide caps are three diagnosis handoffs and six nonsecurity repair/rewrite dispatches", [
-    /(?:request.wide|global).{0,140}(?:max(?:imum)?|at most|cap).{0,20}(?:three|3).{0,80}diagnos/i,
-    /(?:request.wide|global).{0,140}(?:max(?:imum)?|at most|cap).{0,20}(?:six|6).{0,100}non.security.{0,80}(?:repair|rewrite)/i,
-    /initial planned implementations.{0,100}(?:excluded|do not count|not counted)|(?:exclude|do not count).{0,100}initial planned implementations/i,
+  ["A5 initial ordinary caps are six repairs and three diagnoses, with a two-repair/one-diagnosis approved continuation", [
+    /initial ordinary work.{0,100}shared ceiling of six repair dispatches and three diagnosis handoffs/i,
+    /one concrete continuation block.{0,100}at most two additional repairs and one diagnosis/i,
+    /no automatic renewal.{0,100}silence or decline means no execution/i,
+    /initial planned implementations.{0,100}excluded/i,
   ]],
-  ["A5 completed blocking repair dispatches include prediagnosis retries and charge once", [
-    /(?:pre.diagnos|before diagnos).{0,120}(?:retry|retries).{0,120}(?:count|charge)|(?:count|charge).{0,120}(?:pre.diagnos|before diagnos).{0,120}(?:retry|retries)/i,
-    /(?:repair|rewrite).{0,120}(?:completed blocking failure|completed.{0,40}blocking.{0,40}failure)/i,
-    /(?:once|no duplicate|never double|do not double).{0,150}(?:dispatch|charg)|(?:dispatch|charg).{0,150}(?:once|no duplicate|never double|do not double)/i,
+  ["A5 repairs count once; ownership and lineage changes do not reset counts", [
+    /count repairs for completed blocking failures once/i,
+    /(?:those changes never reset totals|changing those identities never resets a counter)/i,
   ]],
-  ["A5 initial attempt plus one retry before diagnosis; global cap wins without renaming reset", [
-    /initial attempt.{0,80}(?:one|1).{0,30}retry.{0,120}before.{0,40}diagnos/i,
-    /global cap.{0,60}(?:wins|takes precedence|overrides)/i,
-    /(?:never|no|do not).{0,100}(?:renam|restart).{0,120}(?:evade|reset|bypass).{0,80}(?:budget|count|cap)/i,
-  ]],
-  ["A5 security remains two request-wide rounds and does not spend the new recovery envelope", [
+  ["A5 security remains independent and ordinary blocks never renew it", [
     /Security remediation: at most 2 ordinary remediation rounds per request/i,
-    /security.{0,200}(?:do not|does not|must not|never).{0,100}(?:spend|consume|charge).{0,100}(?:recovery|non.security).{0,60}(?:envelope|budget|dispatch)/i,
+    /ordinary recovery blocks never renew or extend security/i,
+    /unknown history must be reconciled rather than assumed unused/i,
     /ProblemID.{0,160}(?:not|never|cannot).{0,100}(?:security|provider)|(?:not|never|cannot).{0,100}(?:security|provider).{0,160}ProblemID/i,
   ]],
-  ["A5 shared single human exception authorizes an exact bounded action, never resets counters", [
-    /One human exception is shared/i,
-    /(?:exactly one|one additional).{0,60}bounded.{0,60}(?:correction|action)/i,
-    /does not reset counters/i,
+  ["A5 security exception remains a single specific bounded human exception", [
+    /existing one specific bounded human exception/i,
+    /previously spent exception history stays spent/i,
+    /ordinary recovery blocks never renew or extend security/i,
     /Provider\/auth\/environment failures do not auto-retry/i,
   ]],
   ["A6 preserve partial changes and checkpoint; reconcile before reassignment", [
@@ -206,7 +208,87 @@ const clauses = [
   ]],
 ];
 
-const compact = thalam.replace(/\s+/g, " ");
+const compact = policy.replace(/\s+/g, " ");
+test("A9 Thalam starts on the code and discovers deferred memory tools before batching [static wording only]", () => {
+  const prompt = thalam.replace(/\s+/g, " ");
+  assert.match(prompt, /FIRST ACTIONS AND TOOL TURNS/);
+  assert.match(prompt, /Do not run `pwd`, `git status`, `git rev-parse` or other repository inspection, do not list or read MCP resources, and do not search for tools, unless the task itself needs them/);
+  assert.match(prompt, /issue every read, search or inspection that does not depend on another result in the same turn/);
+  assert.match(prompt, /first make one targeted discovery call for session start, context\/recall, save and session end/);
+  assert.match(prompt, /Read the returned paths and signatures, then call them in a subsequent invocation/);
+  assert.match(prompt, /do not assume that discovery makes a tool callable inside the same running script/);
+  assert.match(prompt, /batch independent memory calls in one script per phase when their returned signatures and dependencies permit/);
+  assert.match(prompt, /This changes how the calls are made, never whether: the MEMORY HANDOFF below stays mandatory/);
+  assert.match(prompt, /Never guess names, namespace syntax or arguments/);
+  assert.match(prompt, /rediscover its exact path once, then retry that rejected call once in a later invocation/);
+  assert.match(prompt, /never retry provider\/auth\/environment failures through this name-correction path/);
+  assert.match(prompt, /When the Neurox tools are not available in the session, skip the memory scripts entirely/);
+  assert.match(prompt, /Batching saves turns, never checks: the work still ends only after the existing tests of the touched module pass on the final state/);
+  assert.match(prompt, /never run git or shell commands to compute it/);
+  assert.match(prompt, /Establish basis \(registered or delegated work only; direct work skips this step except the pre-edit baseline/);
+  assert.match(prompt, /Pre-edit baseline: before your first edit, check the files you are about to change for pre-existing uncommitted modifications in one call/);
+  assert.match(prompt, /never discard or overwrite them silently; this is the explicit-adoption principle applied to direct work/);
+  assert.match(prompt, /`git diff HEAD -- <paths>` when any is staged or modified; a file listed as untracked is adopted whole/);
+});
+test("A8 Thalam loads its recovery and validation procedures as skills at their triggers [static wording only]", () => {
+  const prompt = thalam.replace(/\s+/g, " ");
+  assert.match(prompt, /PROCEDURE SKILLS ON DEMAND/);
+  assert.match(prompt, /`thalam-recovery`: load when a delegated worker or review returns blocked or failed, when your own attempt on a slice reaches a completed blocking failure as defined above, at any provider, auth or environment failure, at an interruption or owner change, and before re-dispatching a worker or authorizing a diagnosis handoff or directed correction/);
+  assert.match(prompt, /A failing test, build or lint run inside your own edit-check loop is ordinary iteration, not a trigger/);
+  assert.match(prompt, /completed blocking failure after three consecutive fix cycles without progress, whatever the failure's wording, or after six fix cycles on one slice in total/);
+  assert.match(prompt, /a changed error message alone is not progress/);
+  assert.match(recoverySkill, /six fix cycles on one slice in total/);
+  assert.match(recoverySkill, /not for a failing test, build or lint run inside the agent's own edit-check loop/);
+  assert.match(prompt, /`thalam-validation`: load before freezing a candidate, before scheduling the final validators or security judges, and before accepting or rejecting any reviewer verdict/);
+  assert.match(prompt, /Warnings alone, inconclusive checks and ordinary green results trigger neither skill/);
+  assert.match(prompt, /do not reconstruct its rules from memory or skip it because the situation looks simple/);
+  assert.match(prompt, /retry budget of the `thalam-recovery` skill/);
+  assert.match(prompt, /frozen acceptance rules of the `thalam-validation` skill/);
+  assert.match(prompt, /dual security review rule of the `thalam-validation` skill/);
+  assert.match(prompt, /DIAGNOSIS HANDOFF of the `thalam-recovery` skill/);
+  for (const [name, skill, headings] of [
+    ["thalam-recovery", recoverySkill, ["## RETRY BUDGET", "## PROVIDER AND CONTRACT OUTCOMES", "## RECOVERY AND OWNERSHIP", "## AUTONOMOUS DIAGNOSIS", "## ARTIFACT CONTRACT", "## CIRCUIT EVALUATION", "## DIAGNOSIS HANDOFF", "## REMEDIATION"]],
+    ["thalam-validation", validationSkill, ["## FROZEN ACCEPTANCE MATRIX", "## DUAL SECURITY REVIEW", "## REVIEW ACCEPTANCE — ERRORS AND WARNINGS"]],
+  ]) {
+    const frontmatter = skill.match(/^---\nname: ([a-z-]+)\ndescription: (.+)\n---\n/);
+    assert(frontmatter, `${name}: SKILL.md frontmatter`);
+    assert.equal(frontmatter[1], name);
+    assert.match(frontmatter[2], /\. Use when /);
+    assert(frontmatter[2].length <= 1024, `${name}: description length`);
+    for (const heading of headings) {
+      assert.equal(skill.split(`${heading}\n`).length, 2, `${name}: exactly one ${heading}`);
+      assert.doesNotMatch(thalam, new RegExp(`^${heading.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "m"), `prompt must not duplicate ${heading}`);
+    }
+  }
+  assert.match(validationSkill, /Security-sensitive criteria include prompt, agent, tools, permissions, MCP/);
+  assert.match(validationSkill, /two independent security judges/);
+  assert.match(thalam, /^## INSTALLATION AND GLOBAL CONFIGURATION$/m);
+  assert.match(thalam, /^## LIMITATIONS$/m);
+  assert.match(thalam, /^TASK REVIEW SWITCHES$/m);
+});
+test("A6 workers persist to green, diagnosis has a default scope, Thalam declares regressions [static wording only]", async () => {
+  const coder = (await read("agents/coder.md")).replace(/\s+/g, " ");
+  assert.match(coder, /One assigned attempt is a full work session on the slice, not a single edit pass/);
+  assert.match(coder, /A large or multi-file slice is not a blocker/);
+  assert.match(coder, /three consecutive fix cycles on the same failure without progress/);
+  assert.match(coder, /a missing RED contract is never a blocker there/);
+  assert.match(coder, /never return with zero changes because the slice is broad/);
+  assert.match(compact, /redispatch it once stating that reason is invalid, and if it refuses again, implement the slice directly within the same scope/);
+  const researcher = diagnostic.replace(/\s+/g, " ");
+  assert.match(researcher, /A missing explicit allowlist is not a blocker/);
+  assert.match(researcher, /this default never includes sensitive files, and the native read deny rules still apply/);
+  assert.match(compact, /Do not end the request as blocked, or ask for authorization, while that allowance remains and a concrete next step is known/);
+  assert.match(compact, /measurably advances the required checks .{0,160}progress, not a completed blocking failure/);
+  assert.match(compact, /Report every check that passed at the basis and now fails as a regression/);
+  assert.match(compact, /a missing allowlist never blocks the diagnosis/);
+});
+test("A5 recovery lifecycle is bound to Tasks without the retired shared exception [static wording only]", () => {
+  assert.match(recoverySkill, /skynex task recovery record/);
+  assert.match(recoverySkill, /skynex task recovery history/);
+  assert.match(compact, /Preserve BlockID with WorkflowID and ProblemID/);
+  assert.match(compact, /reserve each attempt before its first direct action or delegation/);
+  assert.doesNotMatch(policy, /single shared exception|cap and shared exception/);
+});
 for (const [name, patterns] of clauses) {
   test(`${name} [static wording only]`, () => {
     for (const pattern of patterns) {
@@ -215,7 +297,7 @@ for (const [name, patterns] of clauses) {
   });
 }
 
-for (const [label, source] of [["Thalam", thalam], ["diagnostic-researcher", diagnostic], ["diagnose", diagnose], ["generator", generator]]) {
+for (const [label, source] of [["Thalam", thalam], ["thalam-recovery", recoverySkill], ["thalam-validation", validationSkill], ["diagnostic-researcher", diagnostic], ["diagnose", diagnose], ["generator", generator]]) {
   test(`A7 ${label}: no active gateway-exclusive diagnostic tool contract`, () => {
     assert.doesNotMatch(source, /\bdiagnostic_(?:read|glob|grep)\b|gateway.only|gateway capabilities|Never substitute native tools|native read\/glob\/grep are not substitutes/i);
   });
@@ -232,7 +314,7 @@ function assertReadGlobOnly(source) {
 }
 
 test("A1 Thalam diagnostic contract: native read+glob only; query-resource grep cannot protect sensitive files [static wording only]", () => {
-  assertReadGlobOnly(thalam);
+  assertReadGlobOnly(recoverySkill);
 });
 
 test("A1/A4 diagnostic prompt: native read+glob only, not scenario execution or delegated probes [static wording only]", () => {

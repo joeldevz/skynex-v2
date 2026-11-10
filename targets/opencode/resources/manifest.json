@@ -462,7 +462,7 @@
       ],
       "transformation": "v2-adaptation",
       "sourceReferences": [],
-      "generatedSha256": "43a8edcb41f8185a912ae50042c0120d34c3fbe5a4888399ebfa7670000760a2"
+      "generatedSha256": "2a365358153ec2db2dd57774cafe4721106c735067c4dacc047c1f6173db04a3"
     },
     {
       "id": "skynex-sky-agents-core-catalog",
@@ -1036,6 +1036,34 @@
       "transformation": "v2-adaptation",
       "sourceReferences": [],
       "generatedSha256": "09973c97db080122667d3261f276182574e6434c73c69a0475398b0aee9abb60"
+    },
+    {
+      "id": "skills.thalam-recovery",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/thalam-recovery/SKILL.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/thalam-recovery/SKILL.md"
+        }
+      ]
+    },
+    {
+      "id": "skills.thalam-validation",
+      "kind": "skill",
+      "version": "0.1.0",
+      "origin": "canonical",
+      "sourcePath": "canonical/skills/thalam-validation/SKILL.md",
+      "component": "skills",
+      "targets": [
+        {
+          "id": "opencode-v2",
+          "relativePath": "skills/thalam-validation/SKILL.md"
+        }
+      ]
     }
   ]
 }
