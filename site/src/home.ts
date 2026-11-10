@@ -24,7 +24,7 @@ const TASKS: Task[] = [
   {
     title: 'Arreglar el inicio de sesión con Google',
     steps: [
-      { title: 'Entender qué se pide', agent: 'thalam', evidence: 'riesgo medio → escribir primero el test' },
+      { title: 'Entender qué se pide', agent: 'thalam', evidence: 'comportamiento de alto riesgo + falta prueba de regresión → TDD' },
       { title: 'Encontrar dónde falla', agent: 'scout', evidence: 'auth/callback.ts:42 no guarda el estado' },
       { title: 'Escribir el test que lo demuestra', agent: 'test-engineer', evidence: '1 test en rojo por el motivo esperado' },
       { title: 'Corregir el código', agent: 'coder', evidence: '18 de 18 tests en verde' },

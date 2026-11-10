@@ -19,7 +19,10 @@ node scripts/paisaje.mjs  # regenera public/paisaje.svg
 ## Publicación
 
 `.github/workflows/pages.yml` la publica en GitHub Pages en cada push a `main`
-y en cada etiqueta `v*` (o a mano desde Actions). En CI se construye con `SITE_BASE=/skynex-v2/` y el changelog se
-regenera desde el historial y las etiquetas del repositorio.
+y vuelve a generarla desde `main` cuando termina correctamente `Release npm CLI`.
+También se puede ejecutar a mano desde Actions, seleccionando `main`. Las
+ejecuciones de otras ramas o etiquetas y las publicaciones fallidas no despliegan.
+En CI se construye con `SITE_BASE=/skynex-v2/` y el changelog se regenera desde
+el historial y las etiquetas del repositorio.
 
 Esta carpeta no forma parte del workspace de pnpm del repo: instala con `pnpm install --ignore-workspace`.

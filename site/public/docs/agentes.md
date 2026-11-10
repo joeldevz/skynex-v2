@@ -81,13 +81,15 @@ actualizado, dónde está la copia de seguridad y el resultado de `doctor`.
 3. Pedirle lo que necesite con sus palabras, por ejemplo:
    «El botón de guardar del perfil no hace nada en Safari. Arréglalo.»
 
-Thalam mide el riesgo, crea una tarea si hay varios pasos, reparte el trabajo entre
-los agentes y solo da un paso por hecho cuando hay evidencia. La tarea se ve en la
-barra lateral de OpenCode.
+Thalam mide el riesgo, usa el trabajo directo por defecto y crea una tarea si hay
+varios pasos. TDD se reserva para cuando se pide explícitamente o para cambios lógicos
+de alto riesgo donde falte una prueba de regresión necesaria. La delegación y las
+comprobaciones dependen del alcance y el riesgo; los pasos se cierran con la evidencia
+que requieren. La tarea se ve en la barra lateral de OpenCode.
 
 ## Opcional: memoria con Neurox
 
-Sin Neurox, Skynex funciona igual pero cada sesión empieza de cero. Instálalo solo
+Sin Neurox, Skynex funciona sin memoria persistente de Neurox. Instálalo solo
 si el usuario lo quiere:
 
 ```sh
@@ -145,6 +147,8 @@ comando, no fuerces nada: explícale qué archivo es y deja que decida.
 | `skynex backup list` | Copias de seguridad, una por transacción |
 | `skynex backup restore <id>` | Vuelve a esa transacción |
 | `skynex task …` | Tareas y pasos en `.skynex/tasks` |
+| `skynex task recovery record` | Registra una recuperación en el historial de la tarea |
+| `skynex task recovery history` | Consulta el historial de recuperación |
 
 Opciones comunes: `--dry-run` (vista previa), `--yes` (sin confirmación, solo cambios
 seguros), `--components configuration,agents,skills,commands,plugins`,
