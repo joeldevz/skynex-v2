@@ -261,6 +261,17 @@ async function releaseVerifierEnforcesRepository(verifierSource, packageManifest
     await writeFile(join(distResources, "templates/.gitkeep"), "");
     await chmod(distResources, 0o755);
     await chmod(join(distResources, "templates"), 0o755);
+    async function normalizeFixtureModes(path) {
+      const entries = await (await import("node:fs/promises")).readdir(path, { withFileTypes: true });
+      await chmod(path, 0o755);
+      for (const entry of entries) {
+        const child = join(path, entry.name);
+        if (entry.isDirectory()) await normalizeFixtureModes(child);
+        else await chmod(child, child === join(distRoot, "cli.js") ? 0o755 : 0o644);
+      }
+    }
+    await normalizeFixtureModes(packageRoot);
+    await normalizeFixtureModes(join(fixtureRoot, "targets/opencode/resources"));
 
     const npmLookup = spawnSync("which", ["npm"], { encoding: "utf8", timeout: 5000 });
     assert.equal(npmLookup.error, undefined, `could not resolve npm for the isolated --contract fixture: ${npmLookup.error ?? ""}`);
@@ -342,16 +353,16 @@ function releaseTagTrigger(workflow) {
 }
 
 function expectedVersionGuard(step) {
-  const lines = normalizedRun(step.run).split("\n");
-  return step.fields.get("shell") && scalar(step.fields.get("shell").parsed.value) === "bash"
-    && JSON.stringify(lines) === JSON.stringify([
-      'tag_version="${GITHUB_REF_NAME#v}"',
-      'package_version="$(node -p \'require("./packages/npm-cli/package.json").version\')"',
-      'if [[ "$tag_version" != "$package_version" ]]; then',
-      'echo "Tag version does not match package version" >&2',
-      "exit 1",
-      "fi",
-    ]);
+  const run = normalizedRun(step.run);
+  return step.env.get("RELEASE_TAG") === "${{ github.ref_name }}"
+    && /(?:^|\n)set -euo pipefail(?:\n|$)/.test(run)
+    && /node --input-type=module <<'NODE'/.test(run)
+    && /const tag = process\.env\.RELEASE_TAG \?\? '';/s.test(run)
+    && /const tagVersion = tag\.startsWith\('v'\) \? tag\.slice\(1\) : '';/s.test(run)
+    && /const \{ version \} = JSON\.parse\(await readFile\('packages\/npm-cli\/package\.json', 'utf8'\)\);/s.test(run)
+    && /if \(!\/\^\(0\|\[1-9\]\\d\*\)\\\.\(0\|\[1-9\]\\d\*\)\\\.\(0\|\[1-9\]\\d\*\)\$\/\.test\(version\)\)\s*\{\s*throw new Error\(/s.test(run)
+    && /if \(tagVersion !== version\)\s*\{\s*throw new Error\(/s.test(run)
+    && /\nNODE(?:\n|$)/.test(run);
 }
 
 function parseActionPin(uses) {
@@ -364,36 +375,211 @@ function parseActionPin(uses) {
 
 function permissionsRecord(job) {
   const header = job.fields.get("permissions");
-  return header ? Object.fromEntries(mapping(job.lines, header).entries().sort(([a], [b]) => a.localeCompare(b))) : null;
+  return header ? Object.fromEntries(Array.from(mapping(job.lines, header).entries()).sort(([a], [b]) => a.localeCompare(b))) : null;
+}
+
+function completePrivilegedRun(step) {
+  return normalizedRun(step.run).replace(/[ \t]*\\\n[ \t]*/g, " ").split("\n").map((line) => line.trim()).filter(Boolean);
+}
+
+function approvedPublisherRun() {
+  return [
+    "set -euo pipefail",
+    '[[ -f "release-assets/$TARBALL" && ! -L "release-assets/$TARBALL" ]]',
+    '[[ -f "release-assets/$TARBALL.sha256" && ! -L "release-assets/$TARBALL.sha256" ]]',
+    "cd release-assets",
+    'sha256sum --check --strict "$TARBALL.sha256"',
+    'npm publish "./$TARBALL" --access public --provenance',
+  ];
+}
+
+function approvedGitHubReleaseRun() {
+  return [
+    "set -euo pipefail",
+    '[[ -f "release-assets/$TARBALL" && ! -L "release-assets/$TARBALL" ]]',
+    '[[ -f "release-assets/$TARBALL.sha256" && ! -L "release-assets/$TARBALL.sha256" ]]',
+    "cd release-assets",
+    'sha256sum --check --strict "$TARBALL.sha256"',
+    'gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag "$TARBALL" "$TARBALL.sha256" --title "$RELEASE_TAG" --generate-notes',
+  ];
+}
+
+function assertCompletePrivilegedRun(step, approved, label) {
+  assert.deepEqual(completePrivilegedRun(step), approved,
+    `${label} run body must equal the complete approved command sequence (no additional shell commands)`);
+}
+
+function verifyPrivilegedRunNegativeFixtures(publishStep, releaseStep) {
+  assert.doesNotThrow(() => assertCompletePrivilegedRun(publishStep, approvedPublisherRun(), "npm publisher"));
+  assert.doesNotThrow(() => assertCompletePrivilegedRun(releaseStep, approvedGitHubReleaseRun(), "GitHub Release"));
+  const publishCommand = 'npm publish "./$TARBALL" --access public --provenance';
+  for (const suffix of [
+    "; npm publish attacker", " && npm publish attacker", " || npm publish attacker",
+    " | npm publish attacker", "\necho unapproved",
+  ]) {
+    const changed = { ...publishStep, run: publishStep.run.replace(publishCommand, `${publishCommand}${suffix}`) };
+    assert.throws(() => assertCompletePrivilegedRun(changed, approvedPublisherRun(), "npm publisher"), /complete approved/,
+      `publisher must reject appended command ${JSON.stringify(suffix)}`);
+  }
+  const duplicatePublish = { ...publishStep, run: publishStep.run.replace(publishCommand, `${publishCommand}; npm publish attacker`) };
+  assert.throws(() => assertCompletePrivilegedRun(duplicatePublish, approvedPublisherRun(), "npm publisher"), /complete approved/,
+    "publisher must reject a second same-line publication");
+  for (const suffix of [
+    "; gh release create attacker", " && gh release create attacker", " || gh release create attacker",
+    " | gh release create attacker", "\necho unapproved",
+  ]) {
+    const changed = { ...releaseStep, run: releaseStep.run.replace(/(--generate-notes)(\s*)$/, `$1${suffix}$2`) };
+    assert.throws(() => assertCompletePrivilegedRun(changed, approvedGitHubReleaseRun(), "GitHub Release"), /complete approved/,
+      `GitHub Release must reject appended command ${JSON.stringify(suffix)}`);
+  }
+}
+
+function assertFieldKeys(record, expected, label, optional = []) {
+  const keys = [...record.keys()].sort();
+  const allowed = [...expected, ...optional].sort();
+  assert(keys.every((key) => allowed.includes(key)) && expected.every((key) => keys.includes(key)),
+    `${label} fields must be exactly ${expected.join(", ")}${optional.length ? ` with optional ${optional.join(", ")}` : ""}`);
+}
+
+function assertExactMap(actual, expected, label) {
+  assert.deepEqual(Object.fromEntries(actual), expected, `${label} must have exactly the approved values`);
+}
+
+function assertActionStep(step, uses, withValues, label) {
+  assertFieldKeys(step.fields, ["uses", "with"], label);
+  assert.equal(step.uses, uses, `${label} must use its approved pinned action`);
+  assertExactMap(step.with, withValues, `${label} inputs`);
+  assertExactMap(step.env, {}, `${label} environment`);
+}
+
+function assertRunStep(step, { name, env = {}, lines, label }) {
+  assertFieldKeys(step.fields, env && Object.keys(env).length ? ["name", "env", "run"] : ["name", "run"], label, ["shell"]);
+  assert.equal(fieldValue(step.fields, "name"), name, `${label} name must match the approved step`);
+  if (step.fields.has("shell")) assert.equal(fieldValue(step.fields, "shell"), "bash", `${label} shell must be bash`);
+  assertExactMap(step.env, env, `${label} environment`);
+  assert.deepEqual(completePrivilegedRun(step), lines, `${label} run body must match the approved complete template`);
+}
+
+const npmVersionCheckRun = [
+  "set -euo pipefail",
+  "node --input-type=module <<'NODE'",
+  "import { execFileSync } from 'node:child_process';",
+  "const version = execFileSync('npm', ['--version'], { encoding: 'utf8' }).trim();",
+  "const match = /^(\\d+)\\.(\\d+)\\.(\\d+)$/.exec(version);",
+  "const actual = match?.slice(1).map(Number);",
+  "const minimum = [11, 5, 1];",
+  "const belowMinimum = !actual || actual.some((part, index) =>",
+  "part < minimum[index] && actual.slice(0, index).every((prior, priorIndex) => prior === minimum[priorIndex]));",
+  "if (belowMinimum) {",
+  "throw new Error(`npm >= 11.5.1 is required for Trusted Publishing; found ${version}`);",
+  "}",
+  "NODE",
+];
+
+const checksumRun = [
+  "set -euo pipefail",
+  '[[ "$TARBALL" == *.tgz && "$TARBALL" != */* ]]',
+  '[[ -f "release-assets/$TARBALL" && ! -L "release-assets/$TARBALL" ]]',
+  '[[ -f "release-assets/$TARBALL.sha256" && ! -L "release-assets/$TARBALL.sha256" ]]',
+  '(cd release-assets && sha256sum --check --strict "$TARBALL.sha256")',
+];
+
+function assertPrivilegedJobs(workflow, publisher, release) {
+  const topKeys = workflow.lines.filter((line) => line.indentation === 0 && line.parsed).map((line) => line.parsed.key);
+  assert.deepEqual(topKeys, ["name", "on", "permissions", "jobs"],
+    "release workflow top-level structure must not add env/defaults or another shell context");
+  assert.equal(scalar(findTop(workflow.lines, "name")?.parsed.value ?? ""), "Release npm CLI");
+
+  const commonKeys = ["name", "needs", "runs-on", "permissions", "steps"];
+  for (const [job, id, name, needs] of [
+    [publisher, "npm-publish", "Publish with npm Trusted Publishing", ["build"]],
+    [release, "github-release", "Create GitHub Release", ["build", "npm-publish"]],
+  ]) {
+    assert.equal(job.id, id);
+    assertFieldKeys(job.fields, commonKeys, `${id} job`);
+    assert.equal(fieldValue(job.fields, "name"), name);
+    assert.equal(fieldValue(job.fields, "runs-on"), "ubuntu-latest", `${id} runner must remain the approved hosted Ubuntu runner`);
+    assert.deepEqual(needsFor(job), needs, `${id} dependency chain must remain explicit`);
+    assert.equal(job.env.size, 0, `${id} must not inherit job-level environment variables`);
+  }
+
+  assert.equal(publisher.steps.length, 5, "npm publisher must have exactly five approved steps in order");
+  assertActionStep(publisher.steps[0], `actions/setup-node@${verifiedActions.get("actions/setup-node")}`,
+    { "node-version": "24" }, "npm publisher Node setup");
+  assertRunStep(publisher.steps[1], { name: "Require npm with Trusted Publishing support", lines: npmVersionCheckRun, label: "npm version guard" });
+  assertActionStep(publisher.steps[2], `actions/download-artifact@${verifiedActions.get("actions/download-artifact")}`,
+    { name: "npm-cli-release-package", path: "release-assets" }, "npm artifact download");
+  assertRunStep(publisher.steps[3], {
+    name: "Verify downloaded tarball and sidecar", env: { TARBALL: "${{ needs.build.outputs.tarball }}" },
+    lines: checksumRun, label: "npm downloaded artifact check",
+  });
+  assertRunStep(publisher.steps[4], {
+    name: "Publish the verified tarball to npm", env: { TARBALL: "${{ needs.build.outputs.tarball }}" },
+    lines: approvedPublisherRun(), label: "npm publish step",
+  });
+
+  assert.equal(release.steps.length, 3, "GitHub Release job must have exactly three approved steps in order");
+  assertActionStep(release.steps[0], `actions/download-artifact@${verifiedActions.get("actions/download-artifact")}`,
+    { name: "npm-cli-release-package", path: "release-assets" }, "GitHub Release artifact download");
+  assertRunStep(release.steps[1], {
+    name: "Verify downloaded tarball and sidecar", env: { TARBALL: "${{ needs.build.outputs.tarball }}" },
+    lines: checksumRun, label: "GitHub Release downloaded artifact check",
+  });
+  assertRunStep(release.steps[2], {
+    name: "Create release from the verified tarball",
+    env: { GH_TOKEN: "${{ github.token }}", RELEASE_TAG: "${{ github.ref_name }}", TARBALL: "${{ needs.build.outputs.tarball }}" },
+    lines: approvedGitHubReleaseRun(), label: "GitHub Release step",
+  });
+}
+
+function verifyPrivilegedJobNegativeFixtures(workflow, publisher, release) {
+  assert.doesNotThrow(() => assertPrivilegedJobs(workflow, publisher, release));
+  const shellStep = {
+    fields: new Map([["name", { parsed: { value: "custom shell" } }], ["shell", { parsed: { value: "bash -c" } }], ["run", { parsed: { value: "npm publish attacker" } }]]),
+    name: "", uses: "", with: new Map(), env: new Map(), run: "npm publish attacker",
+  };
+  const withExtraStep = { ...publisher, steps: [shellStep, ...publisher.steps] };
+  assert.throws(() => assertPrivilegedJobs(workflow, withExtraStep, release), /exactly five approved steps/,
+    "custom shell step before the approved publisher body must be rejected");
+  const withJobDefaults = { ...publisher, fields: new Map([...publisher.fields, ["defaults", { parsed: { value: "" } }]]) };
+  assert.throws(() => assertPrivilegedJobs(workflow, withJobDefaults, release), /fields must be exactly/,
+    "inherited job shell defaults must be rejected");
+  const defaultsLine = { index: workflow.lines.length, source: "defaults:", content: "defaults:", indentation: 0,
+    parsed: { key: "defaults", value: "", listItem: false }, effectiveIndentation: 0 };
+  const withWorkflowDefaults = { ...workflow, lines: [...workflow.lines, defaultsLine] };
+  assert.throws(() => assertPrivilegedJobs(withWorkflowDefaults, publisher, release), /top-level structure/,
+    "inherited workflow shell defaults must be rejected");
+  const envPublishStep = { ...shellStep, fields: new Map([["name", { parsed: { value: "env publish" } }], ["run", { parsed: { value: "env npm publish attacker" } }]]),
+    run: "env npm publish attacker" };
+  assert.throws(() => assertPrivilegedJobs(workflow, { ...publisher, steps: [envPublishStep, ...publisher.steps] }, release), /exactly five approved steps/,
+    "an extra env-prefixed npm publish step must be rejected");
+  const wrappedGhStep = { ...shellStep, run: 'bash -c "gh release create attacker"' };
+  assert.throws(() => assertPrivilegedJobs(workflow, publisher, { ...release, steps: [...release.steps, wrappedGhStep] }), /exactly three approved steps/,
+    "an extra wrapped GitHub Release command must be rejected");
+  for (const variable of ["BASH_ENV", "ENV"]) {
+    const withShellEnv = { ...publisher, fields: new Map([...publisher.fields, ["env", { parsed: { value: "" } }]]),
+      env: new Map([[variable, "attacker.sh"]]) };
+    assert.throws(() => assertPrivilegedJobs(workflow, withShellEnv, release), /fields must be exactly/,
+      `job-level ${variable} injection must be rejected`);
+  }
 }
 
 function publisherTarget(job) {
-  const publishSteps = job.steps.filter((step) => normalizedRun(step.run).split("\n").some((line) => /^npm\s+publish(?:\s|$)/.test(line)));
-  assert.equal(publishSteps.length, 1, "npm publisher must have exactly one publish step");
-  const step = publishSteps[0];
-  assert.equal(normalizedRun(step.run).split("\n").length, 1, "npm publish must be an unconditional direct command");
-  const words = shellWords(normalizedRun(step.run));
-  assert.deepEqual(words.slice(0, 2), ["npm", "publish"], "npm publication must use the documented npm CLI OIDC path");
-  const target = words[2] ?? "";
-  assert.match(target, /^\.\/[^/]+\.tgz$/, "npm publish must consume one local .tgz file");
-  assert(words.includes("--provenance"), "npm publish must request provenance for Trusted Publishing OIDC");
-  assert(!words.includes("--dry-run"), "release publisher must perform the tag-triggered npm publish");
-  return target;
+  const commands = job.steps.filter((step) => completePrivilegedRun(step).some((line) => line.startsWith("npm publish ")));
+  assert.equal(commands.length, 1, "npm publisher must have exactly one complete publication step");
+  const step = commands[0];
+  assertCompletePrivilegedRun(step, approvedPublisherRun(), "npm publisher");
+  const words = shellWords(completePrivilegedRun(step).at(-1));
+  return words[2];
 }
 
 function releaseTarget(job) {
-  const releaseSteps = job.steps.filter((step) => normalizedRun(step.run).split("\n").some((line) => /^gh\s+release\s+create(?:\s|$)/.test(line)));
-  assert.equal(releaseSteps.length, 1, "GitHub Release job must create exactly one release");
-  const step = releaseSteps[0];
-  assert.equal(normalizedRun(step.run).split("\n").length, 1, "GitHub Release creation must be a direct command");
-  const words = shellWords(normalizedRun(step.run));
-  assert.deepEqual(words.slice(0, 3), ["gh", "release", "create"]);
-  const tag = words[3] ?? "";
-  assert(["$GITHUB_REF_NAME", "${GITHUB_REF_NAME}", "${{ github.ref_name }}"].includes(tag),
-    "GitHub Release must use the pushed tag as its release tag");
-  const assets = words.slice(4).filter((word) => /\.tgz$/i.test(word));
-  assert.equal(assets.length, 1, "GitHub Release must attach exactly one .tgz asset");
-  return assets[0];
+  const commands = job.steps.filter((step) => completePrivilegedRun(step).some((line) => line.startsWith("gh release create ")));
+  assert.equal(commands.length, 1, "GitHub Release job must have exactly one complete release step");
+  const step = commands[0];
+  assertCompletePrivilegedRun(step, approvedGitHubReleaseRun(), "GitHub Release");
+  const words = shellWords(completePrivilegedRun(step).at(-1));
+  return words[7];
 }
 
 function artifactPaths(value) {
@@ -402,9 +588,93 @@ function artifactPaths(value) {
   return value.split(/\r?\n/).map((line) => line.trim().replace(/^[-]\s+/, "")).filter(Boolean);
 }
 
+function expectedUploadedArtifactPaths(outputExpression) {
+  return [
+    `/tmp/opencode/skynex-pack/${outputExpression}`,
+    `/tmp/opencode/skynex-pack/${outputExpression}.sha256`,
+  ];
+}
+
+function assertUploadedArtifactPaths(actual, outputExpression) {
+  assert.match(outputExpression, /^\$\{\{ steps\.package\.outputs\.tarball \}\}$/,
+    "artifact filename must come from the designated package step output");
+  assert.deepEqual(actual, expectedUploadedArtifactPaths(outputExpression),
+    "artifact must contain only the package step's tarball and its matching SHA-256 sidecar");
+}
+
+function verifyVersionGuardNegativeFixtures(build) {
+  const guard = build.steps.find(expectedVersionGuard);
+  assert(guard, "fixture setup requires the valid RELEASE_TAG version guard");
+  const comparison = "if (tagVersion !== version)";
+  const mismatch = { ...guard, run: guard.run.replace(comparison, "if (tagVersion === version)") };
+  assert(!expectedVersionGuard(mismatch), "a guard that accepts mismatched tags must be rejected");
+  const missing = { ...guard, run: guard.run.replace(/\s*if \(tagVersion !== version\)[\s\S]*?\nNODE/, "\nNODE") };
+  assert(!expectedVersionGuard(missing), "a guard with no tag/package comparison must be rejected");
+  const unbound = { ...guard, env: new Map() };
+  assert(!expectedVersionGuard(unbound), "a guard not bound to github.ref_name must be rejected");
+}
+
+function verifyArtifactMappingNegativeFixtures() {
+  const output = "${{ steps.package.outputs.tarball }}";
+  const correct = expectedUploadedArtifactPaths(output);
+  assert.doesNotThrow(() => assertUploadedArtifactPaths(correct, output));
+  assert.throws(() => assertUploadedArtifactPaths(
+    correct.map((path) => path.replace("steps.package.outputs.tarball", "steps.other.outputs.tarball")), output),
+  /artifact must contain only/);
+  assert.throws(() => assertUploadedArtifactPaths(
+    [correct[0], `${correct[0]}.other.sha256`], output), /artifact must contain only/);
+  assert.throws(() => assertUploadedArtifactPaths(correct, "${{ steps.other.outputs.tarball }}"), /designated package step/);
+}
+
+function verifyPackageStepPublishesSingleTarballOutput(step) {
+  const run = normalizedRun(step.run);
+  assert.equal(run.split("\n").filter((line) => line === "pnpm pack:cli").length, 1,
+    "the package step must execute pnpm pack:cli exactly once");
+  assert.match(run, /mapfile -d '' tarballs < <\(find \/tmp\/opencode\/skynex-pack -maxdepth 1 -type f -name '\*\.tgz' -print0\)/,
+    "package step must enumerate only top-level .tgz files in the pack directory");
+  assert.match(run, /if \[\[ "\$\{#tarballs\[@\]\}" -ne 1 \]\]; then[\s\S]*?exit 1[\s\S]*?fi/,
+    "package step must fail unless exactly one tarball exists");
+  assert.match(run, /tarball="\$\{tarballs\[0\]\}"[\s\S]*?tarball_name="\$\(basename "\$tarball"\)"/,
+    "package output must be the basename of the single discovered tarball");
+  assert.match(run, /node scripts\/verify-npm-cli-package\.mjs --verify-tarball "\$tarball"/,
+    "the exact discovered tarball must be verified before output");
+  assert.match(run, /printf 'tarball=%s\\n' "\$tarball_name" >> "\$GITHUB_OUTPUT"/,
+    "the verified tarball basename must be exported as the package step output");
+  const archiveVerification = run.indexOf("node scripts/verify-npm-cli-package.mjs --verify-tarball \"$tarball\"");
+  const outputExport = run.indexOf("printf 'tarball=%s\\n' \"$tarball_name\" >> \"$GITHUB_OUTPUT\"");
+  assert(run.indexOf("pnpm pack:cli") < archiveVerification,
+    "the package must be built before archive verification");
+  assert(archiveVerification >= 0 && archiveVerification < outputExport,
+    "only the verified archive may be exported to downstream jobs");
+  assert(run.indexOf('sha256sum "$tarball_name" > "$tarball_name.sha256"') < archiveVerification,
+    "the matching sidecar must be created from the discovered tarball before verification/upload");
+}
+
+function verifyDynamicChecksumCreation(step) {
+  const run = normalizedRun(step.run);
+  assert.match(run, /cd \/tmp\/opencode\/skynex-pack[\s\S]*sha256sum "\$tarball_name" > "\$tarball_name\.sha256"/,
+    "checksum must be generated from the exact verified tarball basename");
+  assert(hasUnconditionalFailure(step), "tarball checksum creation must fail the build if hashing fails");
+}
+
+function verifyDynamicChecksumCheck(step, consumer, expectedExpression) {
+  assert.equal(step.env.get("TARBALL"), expectedExpression, `${consumer.id} must bind checksum verification to the shared tarball output`);
+  const run = normalizedRun(step.run);
+  assert.match(run, /\[\[ "\$TARBALL" == \*\.tgz && "\$TARBALL" != \*\/\* \]\]/,
+    `${consumer.id} must reject non-tarball and path-bearing artifact names`);
+  assert.match(run, /-f ["']?release-assets\/\$TARBALL["']?[^\n]*! -L ["']?release-assets\/\$TARBALL["']?/,
+    `${consumer.id} must reject missing or symlinked tarballs`);
+  assert.match(run, /sha256sum --check --strict "\$TARBALL\.sha256"/,
+    `${consumer.id} must strictly recheck the matching downloaded sidecar`);
+  assert(hasUnconditionalFailure(step), `${consumer.id} checksum verification must fail closed`);
+}
+
 function checksumCreationStep(job, tarballName, sidecarName) {
   const candidates = job.steps.filter((step) => normalizedRun(step.run).split("\n")
     .some((line) => /\bsha256sum\b/.test(line)));
+  assert(candidates.length >= 1, "build must create a SHA-256 sidecar for the release tarball");
+  const dynamic = candidates.find((step) => /\$tarball_name/.test(normalizedRun(step.run)));
+  if (dynamic) return dynamic;
   assert.equal(candidates.length, 1, "build must create exactly one SHA-256 sidecar for the release tarball");
   const step = candidates[0];
   assert.deepEqual(shellWords(normalizedRun(step.run)), [
@@ -417,6 +687,9 @@ function checksumCreationStep(job, tarballName, sidecarName) {
 function checksumCheckStep(job, sidecarName) {
   const candidates = job.steps.filter((step) => normalizedRun(step.run).split("\n")
     .some((line) => /\bsha256sum\b/.test(line)));
+  assert(candidates.length >= 1, `${job.id} must verify a downloaded SHA-256 sidecar`);
+  const dynamic = candidates.find((step) => /\$TARBALL\.sha256/.test(normalizedRun(step.run)));
+  if (dynamic) return dynamic;
   assert.equal(candidates.length, 1, `${job.id} must verify exactly one downloaded SHA-256 sidecar`);
   const step = candidates[0];
   assert.deepEqual(shellWords(normalizedRun(step.run)), ["sha256sum", "--check", "--", sidecarName],
@@ -485,7 +758,8 @@ if (inputs.release === null) {
       assert(hasUnconditionalFailure(build), "version-check job must not be conditionally skipped or continue on error");
       const guards = build.steps.filter(expectedVersionGuard);
       assert.equal(guards.length, 1,
-        "build job must explicitly exit 1 when GITHUB_REF_NAME with leading v removed differs from package.json version");
+        "build job must reject a missing/mismatched RELEASE_TAG after removing the leading v and comparing stable package semver");
+      verifyVersionGuardNegativeFixtures(build);
       assert(hasUnconditionalFailure(guards[0]), "tag/version guard step must be unconditional and fail its job");
       assert(guards[0].index < build.steps.findIndex((step) => uploadSteps({ steps: [step] }).length),
         "tag/version mismatch must fail before artifact upload");
@@ -525,6 +799,8 @@ if (inputs.release === null) {
     check("R5 shared verified tarball and OIDC", () => {
       assert.equal(publishers.length, 1, "one npm publisher is required");
       assert.equal(releases.length, 1, "one GitHub Release asset job is required");
+      assertPrivilegedJobs(workflow, publisher, release);
+      verifyPrivilegedJobNegativeFixtures(workflow, publisher, release);
       assert.equal(artifactJobs.length, 1, "exactly one job may upload the release tarball artifact");
       assert(build && build.id !== publisher.id && build.id !== release.id,
         "tarball build/verification must be separate from both publishers");
@@ -532,53 +808,58 @@ if (inputs.release === null) {
       const upload = uploadSteps(build)[0];
       const artifactName = stepInput(upload, "name");
       const uploadedPaths = artifactPaths(stepInput(upload, "path"));
-      const tarballPath = `/tmp/opencode/skynex-pack/${releaseFileName}`;
-      const sidecarName = `${releaseFileName}.sha256`;
-      const sidecarPath = `/tmp/opencode/skynex-pack/${sidecarName}`;
+      const tarballOutput = "${{ steps.package.outputs.tarball }}";
+      const tarballPath = `/tmp/opencode/skynex-pack/${tarballOutput}`;
+      const sidecarName = `${tarballOutput}.sha256`;
+      verifyArtifactMappingNegativeFixtures();
       assert.match(artifactName, /^[A-Za-z0-9_.-]+$/, "artifact must have one explicit stable name");
-      assert.deepEqual(uploadedPaths, [tarballPath, sidecarPath],
-        "one artifact must upload only the exact verified .tgz and its matching SHA-256 sidecar together");
+      assertUploadedArtifactPaths(uploadedPaths, tarballOutput);
       assert.equal(stepInput(upload, "if-no-files-found"), "error", "artifact upload must fail if the tarball is absent");
       assert.match(inputs.rootPackage.scripts?.["pack:cli"] ?? "", /--pack-destination\s+\/tmp\/opencode\/skynex-pack(?:\s|$)/,
         "root pack:cli script must emit the tarball into the checked release directory");
-      const packSteps = build.steps.filter((step) => ["pnpm pack:cli", "pnpm run pack:cli"].includes(normalizedRun(step.run)));
-      assert.equal(packSteps.length, 1, "build job must execute pnpm pack:cli exactly once");
-      assert(hasUnconditionalFailure(packSteps[0]), "packing must run unconditionally and fail the build on error");
+      const packageStep = build.steps.find((step) => scalar(step.fields.get("id")?.parsed.value ?? "") === "package");
+      assert(packageStep, "build job must expose the exact package step that creates the shared tarball");
+      verifyPackageStepPublishesSingleTarballOutput(packageStep);
+      assert(hasUnconditionalFailure(packageStep), "packing and archive verification must run unconditionally and fail the build on error");
+      const outputRechecks = build.steps.filter((step) => step.env.get("TARBALL") === tarballOutput);
+      assert.equal(outputRechecks.length, 1, "build must recheck the exact package output once immediately before upload");
+      const recheckRun = normalizedRun(outputRechecks[0].run);
+      assert.match(recheckRun, /test -n "\$TARBALL"/);
+      assert.match(recheckRun, /sha256sum --check --strict "\$TARBALL\.sha256"/);
+      assert(hasUnconditionalFailure(outputRechecks[0]), "pre-upload digest recheck must fail closed");
+      assert(outputRechecks[0].index < upload.index, "digest recheck must precede artifact upload");
 
       assert.equal(publishers.length, 1);
       assert.equal(releases.length, 1);
-      const verifierScript = inputs.rootPackage.scripts?.["verify:package:release"];
-      assert.equal(verifierScript, "node scripts/verify-npm-cli-package.mjs --release",
-        "root release verifier script must invoke the packed-package release verifier");
-      const verifierSteps = build.steps.filter((step) => [
-        "pnpm verify:package:release", "pnpm run verify:package:release",
-        "node scripts/verify-npm-cli-package.mjs --release",
-      ].includes(normalizedRun(step.run)));
-      assert.equal(verifierSteps.length, 1, "build job must execute the actual packed-package release verifier exactly once");
-      assert(hasUnconditionalFailure(verifierSteps[0]), "packed-package release verifier must execute unconditionally and fail the build on error");
-      assert(packSteps[0].index < verifierSteps[0].index && verifierSteps[0].index < upload.index,
-        "pack and packed-package verification must both run before the artifact is uploaded");
+      assert(packageStep.index < upload.index,
+        "pack and exact archive verification must both run before the artifact is uploaded");
       assert(hasUnconditionalFailure(upload), "artifact upload must not be conditionally skipped or ignore failures");
       const checksumCreation = checksumCreationStep(build, releaseFileName, sidecarName);
-      assert(verifierSteps[0].index < checksumCreation.index && checksumCreation.index < upload.index,
-        "SHA-256 sidecar must be created from the already verified tarball before the pair is uploaded");
+      verifyDynamicChecksumCreation(checksumCreation);
+      assert(packageStep.index === checksumCreation.index && checksumCreation.index < upload.index,
+        "SHA-256 sidecar creation and archive verification must finish in the package step before the pair is uploaded");
 
       for (const consumer of [publisher, release]) {
         assert(hasUnconditionalFailure(consumer), `${consumer.id} must not conditionally bypass its verified build dependency`);
         assert.equal(downloadSteps(consumer).length, 1, `${consumer.id} must download the shared artifact exactly once`);
         const download = downloadSteps(consumer)[0];
         assert.equal(stepInput(download, "name"), artifactName, `${consumer.id} must download uploaded artifact ${artifactName}`);
-        assert.equal(stepInput(download, "path"), ".", `${consumer.id} must download the single tarball at the workspace root`);
+        assert([".", "release-assets"].includes(stepInput(download, "path")),
+          `${consumer.id} must download the shared tarball into the verified local assets directory`);
         assert(needsFor(consumer).includes(build.id), `${consumer.id} must depend on verified tarball job ${build.id}`);
         assert(hasUnconditionalFailure(download), `${consumer.id} artifact download must run unconditionally and fail on error`);
         assert(!consumer.steps.some((step) => /\b(?:npm|pnpm)\s+pack\b/i.test(normalizedRun(step.run))),
           `${consumer.id} must consume, not rebuild, the downloaded tarball`);
+        const checksumVerifier = checksumCheckStep(consumer, sidecarName);
+        verifyDynamicChecksumCheck(checksumVerifier, consumer, "${{ needs.build.outputs.tarball }}");
+        assert(download.index < checksumVerifier.index, `${consumer.id} must checksum only after download`);
       }
 
       const publishedTarget = publisherTarget(publisher);
       const releasedTarget = releaseTarget(release);
-      const publishStep = publisher.steps.find((step) => normalizedRun(step.run).startsWith("npm publish"));
-      const releaseStep = release.steps.find((step) => normalizedRun(step.run).startsWith("gh release create"));
+      const publishStep = publisher.steps.find((step) => normalizedRun(step.run).split("\n").some((line) => /^npm publish(?:\s|$)/.test(line)));
+      const releaseStep = release.steps.find((step) => normalizedRun(step.run).split("\n").some((line) => /^gh release create(?:\s|$)/.test(line)));
+      verifyPrivilegedRunNegativeFixtures(publishStep, releaseStep);
       const publisherChecksum = checksumCheckStep(publisher, sidecarName);
       const releaseChecksum = checksumCheckStep(release, sidecarName);
       assert(downloadSteps(publisher)[0].index < publishStep.index,
@@ -589,10 +870,14 @@ if (inputs.release === null) {
         "npm publisher must verify the downloaded tarball after download and before npm publish");
       assert(downloadSteps(release)[0].index < releaseChecksum.index && releaseChecksum.index < releaseStep.index,
         "GitHub Release job must verify the downloaded tarball after download and before attaching it");
-      assert.equal(publishedTarget, `./${basename(tarballPath)}`,
+      assert.equal(publishedTarget, "./$TARBALL",
         "npm publish must consume the exact filename bound by the uploaded checksum sidecar");
-      assert.equal(releasedTarget, publishedTarget,
+      assert.equal(releasedTarget.replace(/^\.\//, ""), publishedTarget.replace(/^\.\//, ""),
         "GitHub Release and npm publish must consume the same uploaded .tgz path");
+      const releaseStepEnv = releaseStep.env.get("RELEASE_TAG");
+      const releaseJobEnv = release.env.get("RELEASE_TAG");
+      assert(releaseStepEnv === "${{ github.ref_name }}" || releaseJobEnv === "${{ github.ref_name }}",
+        "GitHub Release must bind its tag to the pushed github.ref_name");
       assert(hasUnconditionalFailure(publishStep),
         "npm publish step must not be conditionally skipped or ignore failure");
       const nodeSetup = publisher.steps.find((step) => step.uses === `actions/setup-node@${verifiedActions.get("actions/setup-node")}`);
