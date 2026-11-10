@@ -13,6 +13,7 @@ import {
   isReviewMode,
   isTaskError,
   parseCheckpoint,
+  parseRecoveryInput,
 } from "@skynex-internal/tasks";
 import type {
   ReviewMode,
@@ -43,7 +44,9 @@ type CommandLabel =
   | "task.next.block"
   | "task.checkpoint.set"
   | "task.checkpoint.show"
-  | "task.reviews.set";
+  | "task.reviews.set"
+  | "task.recovery.record"
+  | "task.recovery.history";
 
 const HELP_FLAGS = ["--help", "-h"] as const;
 const VALUE_FLAGS = new Set<string>([
@@ -60,6 +63,9 @@ const VALUE_FLAGS = new Set<string>([
   "--security",
   "--reason",
   "--checkpoint",
+  "--event",
+  "--after-sequence",
+  "--limit",
 ]);
 const KNOWN_FLAGS = new Set<string>([...HELP_FLAGS, "--json", ...VALUE_FLAGS]);
 const COMMON_FLAGS = ["--tasks-root", "--json", ...HELP_FLAGS];
@@ -87,6 +93,8 @@ const ALLOWED_FLAGS: Readonly<Record<CommandLabel, ReadonlySet<string>>> = {
   "task.checkpoint.set": new Set([...COMMON_FLAGS, "--task", "--expected-revision", "--checkpoint"]),
   "task.checkpoint.show": new Set([...COMMON_FLAGS, "--task"]),
   "task.reviews.set": new Set([...COMMON_FLAGS, "--task", "--expected-revision"]),
+  "task.recovery.record": new Set([...COMMON_FLAGS, "--task", "--expected-revision", "--event"]),
+  "task.recovery.history": new Set([...COMMON_FLAGS, "--task", "--after-sequence", "--limit"]),
 };
 
 const EXIT_CODES: Readonly<Record<TaskErrorCode, number>> = {
@@ -119,6 +127,8 @@ Commands:
   skynex task next done <stepId> [--checkpoint <JSON>] [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
   skynex task checkpoint set --checkpoint <JSON> [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
   skynex task checkpoint show [--task <id>] [--tasks-root <dir>] [--json]
+  skynex task recovery record --event <JSON> --expected-revision <n> [--task <id>] [--tasks-root <dir>] [--json]
+  skynex task recovery history [--after-sequence <n>] [--limit <n>] [--task <id>] [--tasks-root <dir>] [--json]
   skynex task reviews set security=on|off|auto [--task <id>] [--expected-revision <n>] [--tasks-root <dir>] [--json]
 
 Options:
@@ -178,6 +188,7 @@ function labelFor(argv: readonly string[]): CommandLabel | "task" {
   }
   if (first === "checkpoint" && (argv[1] === "set" || argv[1] === "show")) return `task.checkpoint.${argv[1]}`;
   if (first === "reviews" && argv[1] === "set") return "task.reviews.set";
+  if (first === "recovery" && (argv[1] === "record" || argv[1] === "history")) return `task.recovery.${argv[1]}`;
   return "task";
 }
 
@@ -195,6 +206,10 @@ function resolveCommand(argv: readonly string[]): CommandLabel {
   }
   if (first === "reviews") {
     if (argv[1] === "set") return "task.reviews.set";
+    throw new TaskError("INVALID_ARGUMENT", `Unknown task subcommand: ${argv.slice(0, 2).join(" ")}`);
+  }
+  if (first === "recovery") {
+    if (argv[1] === "record" || argv[1] === "history") return `task.recovery.${argv[1]}`;
     throw new TaskError("INVALID_ARGUMENT", `Unknown task subcommand: ${argv.slice(0, 2).join(" ")}`);
   }
   throw new TaskError("INVALID_ARGUMENT", `Unknown task command: ${String(first)}`);
@@ -548,7 +563,7 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
 
     const commandLabel = resolveCommand(argv);
     label = commandLabel;
-    const tokens = commandLabel.startsWith("task.next.") || commandLabel.startsWith("task.checkpoint.") || commandLabel === "task.reviews.set"
+    const tokens = commandLabel.startsWith("task.next.") || commandLabel.startsWith("task.checkpoint.") || commandLabel === "task.reviews.set" || commandLabel.startsWith("task.recovery.")
       ? argv.slice(2)
       : argv.slice(1);
     const parsed = tokenize(tokens);
@@ -565,6 +580,29 @@ export async function runTaskCommand(argv: readonly string[], options?: TaskCliO
     });
     const store = createFileTaskStore({ tasksRoot });
     const service = createTaskService({ store, clock: systemClock, ids: uuidIds });
+
+    if (commandLabel === "task.recovery.record" || commandLabel === "task.recovery.history") {
+      expectAtMost(parsed.positionals, 0);
+      const taskId = requiredValue(parsed.values, "--task");
+      if (commandLabel === "task.recovery.record") {
+        const raw = requiredValue(parsed.values, "--event");
+        let event: unknown;
+        try { event = JSON.parse(raw); } catch { throw new TaskError("INVALID_ARGUMENT", "--event must be valid JSON"); }
+        const expectedRevision = parseExpectedRevision(parsed.values);
+        if (expectedRevision === undefined) throw new TaskError("INVALID_ARGUMENT", "Missing required --expected-revision");
+        const result = await service.appendRecoveryEvent(taskId, parseRecoveryInput(event), { expectedRevision });
+        out(json ? `${JSON.stringify({ ok: true, command: commandLabel, ...result })}\n` : `Recovery event ${result.changed ? "recorded" : "unchanged"} (revision ${result.revision})\n`);
+      } else {
+        const positive = (flag: string, fallback: string): number => {
+          const value = lastValue(parsed.values, flag) ?? fallback;
+          if (!/^\d+$/.test(value) || !Number.isSafeInteger(Number(value))) throw new TaskError("INVALID_ARGUMENT", `${flag} must be an integer`);
+          return Number(value);
+        };
+        const page = await service.getRecoveryHistory(taskId, { afterSequence: positive("--after-sequence", "0"), limit: positive("--limit", "20") });
+        out(json ? `${JSON.stringify({ ok: true, command: commandLabel, taskId, ...page })}\n` : `${page.events.length} recovery event(s)\n`);
+      }
+      return 0;
+    }
 
     if (commandLabel === "task.init") {
       expectAtMost(parsed.positionals, 1);

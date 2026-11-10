@@ -12,6 +12,7 @@ import {
 } from "./task.js";
 import { DEFAULT_REVIEWS, assertParentRelation, assertReviewsPatch } from "./task.js";
 import type { Step, StepStatus, Task, TaskReviews, TaskStatus } from "./task.js";
+import { parseRecoveryLog, recoveryReserveBytes } from "./recovery.js";
 
 const STEP_STATUSES: readonly StepStatus[] = ["pending", "in_progress", "done", "blocked"];
 const TASK_STATUSES: readonly TaskStatus[] = ["open", "in_progress", "done", "blocked"];
@@ -33,7 +34,7 @@ export function parseTask(text: string, expectedId: string): Task {
     throw new TaskError("LEGACY_FORMAT", "Task file has no schemaVersion; the legacy format is not supported");
   }
   const schemaVersion = raw["schemaVersion"];
-  if (schemaVersion !== SCHEMA_VERSION && schemaVersion !== 2) {
+  if (schemaVersion !== SCHEMA_VERSION && schemaVersion !== 2 && schemaVersion !== 3) {
     throw new TaskError("UNSUPPORTED_SCHEMA", `Unsupported schemaVersion: ${JSON.stringify(raw["schemaVersion"])}`);
   }
   const hasCheckpoint = Object.prototype.hasOwnProperty.call(raw, "checkpoint");
@@ -41,6 +42,8 @@ export function parseTask(text: string, expectedId: string): Task {
     throw new TaskError("UNSUPPORTED_SCHEMA", "Checkpoint requires schemaVersion 2");
   }
   const checkpoint = hasCheckpoint ? parseCheckpoint(raw["checkpoint"]) : undefined;
+  const recovery = schemaVersion === 3 ? parseRecoveryLog(raw["recovery"]) : undefined;
+  if (schemaVersion !== 3 && raw["recovery"] !== undefined) throw new TaskError("UNSUPPORTED_SCHEMA", "Recovery requires schemaVersion 3");
 
   const id = requireString(raw, "id");
   if (!SLUG_PATTERN.test(id)) {
@@ -97,11 +100,12 @@ export function parseTask(text: string, expectedId: string): Task {
     schemaVersion, id, title, status, revision, createdAt, updatedAt, steps,
     ...(reviews === undefined ? {} : { reviews }),
     ...(checkpoint === undefined ? {} : { checkpoint }),
+    ...(recovery === undefined ? {} : { recovery }),
   };
 }
 
 export function serializeTask(task: Task): string {
-  if ((task.schemaVersion !== 1 && task.schemaVersion !== 2) || (task.schemaVersion === 1 && task.checkpoint !== undefined)) {
+  if ((task.schemaVersion !== 1 && task.schemaVersion !== 2 && task.schemaVersion !== 3) || (task.schemaVersion === 1 && task.checkpoint !== undefined) || (task.schemaVersion === 3 && task.recovery === undefined) || (task.schemaVersion !== 3 && task.recovery !== undefined)) {
     throw new TaskError("UNSUPPORTED_SCHEMA", "Unsupported task schema/checkpoint combination");
   }
   const serialized = {
@@ -115,10 +119,12 @@ export function serializeTask(task: Task): string {
     steps: task.steps.map(serializeStep),
     ...(task.reviews === undefined ? {} : { reviews: { security: task.reviews.security } }),
     ...(task.checkpoint === undefined ? {} : { checkpoint: parseCheckpoint(task.checkpoint) }),
+    ...(task.recovery === undefined ? {} : { recovery: parseRecoveryLog(task.recovery) }),
   };
   const text = `${JSON.stringify(serialized, null, 2)}\n`;
-  if (utf8ByteLength(text) > MAX_TASK_JSON_BYTES) {
-    throw new TaskError("FILE_TOO_LARGE", `Task JSON exceeds ${MAX_TASK_JSON_BYTES} bytes`);
+  const reserve = task.recovery === undefined ? 0 : recoveryReserveBytes(task.recovery.events);
+  if (utf8ByteLength(text) + reserve > MAX_TASK_JSON_BYTES) {
+    throw new TaskError("FILE_TOO_LARGE", `Task JSON exceeds ${MAX_TASK_JSON_BYTES} bytes including recovery capacity reserve`);
   }
   return text;
 }

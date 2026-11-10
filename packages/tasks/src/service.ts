@@ -37,6 +37,8 @@ import type {
   TaskStatusView,
 } from "./task.js";
 import type { InstructionFile, TaskReader, TaskServiceDependencies, TaskStore } from "./ports.js";
+import { appendRecovery, getRecoveryPage } from "./recovery.js";
+import type { RecoveryEventInput, RecoveryPage } from "./recovery.js";
 
 export interface TaskService {
   createTask(input: CreateTaskInput): Promise<{
@@ -76,6 +78,8 @@ export interface TaskService {
     patch: TaskReviewsPatch,
     options?: { readonly expectedRevision?: number },
   ): Promise<SetReviewsResult>;
+  appendRecoveryEvent(taskId: string, event: RecoveryEventInput, options: { readonly expectedRevision: number }): Promise<{ readonly taskId: string; readonly changed: boolean; readonly revision: number }>;
+  getRecoveryHistory(taskId: string, options: { readonly afterSequence: number; readonly limit: number }): Promise<RecoveryPage>;
 }
 
 const MAX_COLLISION_ATTEMPTS = 100;
@@ -384,6 +388,23 @@ export function createTaskService(deps: TaskServiceDependencies): TaskService {
       await store.save(newTask, task.revision);
       return { taskId: task.id, reviews, revision: newTask.revision };
     },
+
+    async appendRecoveryEvent(taskId, event, options) {
+      const task = await load(taskId);
+      if (options.expectedRevision !== task.revision) throw new TaskError("REVISION_CONFLICT", `Expected revision ${options.expectedRevision} but current revision is ${task.revision}`);
+      const updated = appendRecovery(task, event, options.expectedRevision, clock.nowIso());
+      if (updated === task) return { taskId: task.id, changed: false, revision: task.revision };
+      const next: Task = { ...updated, revision: task.revision + 1, updatedAt: clock.nowIso() };
+      serializeTask(next);
+      await store.save(next, task.revision);
+      return { taskId: task.id, changed: true, revision: next.revision };
+    },
+
+    async getRecoveryHistory(taskId, options) {
+      const task = await load(taskId);
+      if (task.schemaVersion !== 3 || task.recovery === undefined) throw new TaskError("UNSUPPORTED_SCHEMA", "Task has no schema 3 recovery history");
+      return getRecoveryPage(task.recovery, options.afterSequence, options.limit);
+    },
   };
 }
 
@@ -402,7 +423,7 @@ function checkpointChanged(task: Task, checkpoint: RecoveryCheckpoint | undefine
 }
 
 function withCheckpoint(task: Task, checkpoint: RecoveryCheckpoint | undefined): Task {
-  return checkpoint === undefined ? task : { ...task, schemaVersion: 2, checkpoint };
+  return checkpoint === undefined ? task : { ...task, schemaVersion: task.schemaVersion === 3 ? 3 : 2, checkpoint };
 }
 
 /** Read-only facade for UIs which must not receive task mutation capabilities. */
