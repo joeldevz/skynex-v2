@@ -57,7 +57,7 @@
             <p class="font-mono text-xs text-stone">Así trabaja</p>
             <h2 class="mt-3 text-4xl leading-[1.05] sm:text-5xl">Pides el resultado. Thalam se encarga del camino.</h2>
             <p class="mt-5 text-lg leading-relaxed text-stone">
-              No tienes que saber qué agente hace qué ni qué comando escribir. Lo pides como se lo pedirías a una persona; Thalam divide el trabajo en pasos, se los reparte al equipo y solo marca uno como hecho cuando hay evidencia: un test, una ruta del código o una revisión.
+              No tienes que saber qué agente hace qué ni qué comando escribir. Lo pides como se lo pedirías a una persona; Thalam resuelve directamente lo acotado y divide o delega cuando hace falta. Cierra el trabajo con la evidencia pertinente: tests, compilación o revisión según el cambio.
             </p>
             <div class="mt-8 space-y-1.5" role="tablist" aria-label="Tareas de ejemplo" data-task-tabs></div>
           </div>
@@ -73,7 +73,7 @@
         <p class="font-mono text-xs text-stone">Por qué</p>
         <h2 class="mt-3 max-w-4xl text-4xl leading-[1.05] sm:text-6xl">La mayoría de sesiones con agentes no fallan por el modelo, sino por cómo trabajan.</h2>
         <p class="mt-6 max-w-2xl text-lg leading-relaxed text-stone">
-          Un buen modelo sin método escribe mucho, comprueba poco y se aprueba a sí mismo. Skynex no cambia de modelo ni sustituye a OpenCode: le da al agente que ya usas un equipo con papeles separados, límites claros y la obligación de enseñar pruebas.
+          Un buen modelo sin método escribe mucho, comprueba poco y se aprueba a sí mismo. Skynex no cambia de modelo ni sustituye a OpenCode: le da al agente que ya usas un equipo con papeles claros, límites explícitos y comprobaciones acordes al cambio.
         </p>
         <ul class="mt-16 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <li class="flex flex-col rounded-3xl bg-white/80 p-7 ring-1 ring-line">
@@ -96,8 +96,8 @@
             <h3 class="text-xl leading-snug tracking-tight">«Los tests pasan», y te lo tienes que creer.</h3>
             <p class="mt-2 mb-6 leading-relaxed text-stone">Comprobar llega al final, o no llega, y su palabra es la única prueba.</p>
             <div class="mt-auto border-t border-line pt-5">
-              <p class="flex items-center gap-2 font-medium"><svg viewBox="0 0 20 20" class="size-5 shrink-0" aria-hidden="true"><rect x="1" y="1" width="18" height="18" rx="5" fill="#f5c48a" /><path d="m5.5 10.5 3 3 6-7" fill="none" stroke="#1c1917" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>Primero un test que falle.</p>
-              <p class="mt-2 text-sm leading-relaxed text-stone">Se ve fallar por el motivo correcto antes de tocar el código, y otro agente revisa que no pueda pasar por casualidad.</p>
+              <p class="flex items-center gap-2 font-medium"><svg viewBox="0 0 20 20" class="size-5 shrink-0" aria-hidden="true"><rect x="1" y="1" width="18" height="18" rx="5" fill="#f5c48a" /><path d="m5.5 10.5 3 3 6-7" fill="none" stroke="#1c1917" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>Pruebas según el cambio.</p>
+              <p class="mt-2 text-sm leading-relaxed text-stone">TDD se usa si lo pides o si un cambio lógico de alto riesgo podría ocultar una regresión sin test; el trabajo directo también ejecuta las comprobaciones existentes pertinentes.</p>
             </div>
           </li>
           <li class="flex flex-col rounded-3xl bg-white/80 p-7 ring-1 ring-line">
@@ -112,8 +112,8 @@
             <h3 class="text-xl leading-snug tracking-tight">Se aprueba a sí mismo.</h3>
             <p class="mt-2 mb-6 leading-relaxed text-stone">El mismo agente escribe el cambio, lo revisa y decide que está bien.</p>
             <div class="mt-auto border-t border-line pt-5">
-              <p class="flex items-center gap-2 font-medium"><svg viewBox="0 0 20 20" class="size-5 shrink-0" aria-hidden="true"><rect x="1" y="1" width="18" height="18" rx="5" fill="#f5c48a" /><path d="m5.5 10.5 3 3 6-7" fill="none" stroke="#1c1917" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>Nadie se aprueba a sí mismo.</p>
-              <p class="mt-2 text-sm leading-relaxed text-stone">Las comprobaciones finales y la revisión las hacen agentes distintos, sobre el mismo resultado.</p>
+              <p class="flex items-center gap-2 font-medium"><svg viewBox="0 0 20 20" class="size-5 shrink-0" aria-hidden="true"><rect x="1" y="1" width="18" height="18" rx="5" fill="#f5c48a" /><path d="m5.5 10.5 3 3 6-7" fill="none" stroke="#1c1917" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>Revisión según el riesgo.</p>
+              <p class="mt-2 text-sm leading-relaxed text-stone">Las comprobaciones y revisiones se ajustan al alcance y al riesgo, y se valoran sobre el resultado final.</p>
             </div>
           </li>
           <li class="flex flex-col rounded-3xl bg-white/80 p-7 ring-1 ring-line">
@@ -121,7 +121,7 @@
             <p class="mt-2 mb-6 leading-relaxed text-stone">Un push, un borrado o una migración, sin preguntarte antes.</p>
             <div class="mt-auto border-t border-line pt-5">
               <p class="flex items-center gap-2 font-medium"><svg viewBox="0 0 20 20" class="size-5 shrink-0" aria-hidden="true"><rect x="1" y="1" width="18" height="18" rx="5" fill="#f5c48a" /><path d="m5.5 10.5 3 3 6-7" fill="none" stroke="#1c1917" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" /></svg>Lo irreversible espera tu permiso.</p>
-              <p class="mt-2 text-sm leading-relaxed text-stone">Publicar, borrar, migrar o tocar secretos siempre se detiene a pedirte confirmación, y lo delicado pasa dos revisiones de seguridad.</p>
+              <p class="mt-2 text-sm leading-relaxed text-stone">Las instrucciones exigen autorización para acciones externas o destructivas y dos revisiones para cambios sensibles, salvo desactivación explícita de seguridad por tu parte.</p>
             </div>
           </li>
         </ul>
@@ -149,10 +149,31 @@
             <li class="border-t border-ink pt-6">
               <p class="font-mono text-xs text-stone">03</p>
               <h3 class="mt-3 text-2xl tracking-tight">Elige la ruta más corta que funciona</h3>
-              <p class="mt-3 leading-relaxed text-stone">Lo pequeño y claro, directo. Si cambia el comportamiento, primero un test que falle y luego el código. Si hay dudas, te pregunta. Si es delicado o externo, te pide permiso antes de tocar nada.</p>
+              <p class="mt-3 leading-relaxed text-stone">Lo pequeño y claro va directo. TDD se usa si lo pides o si un cambio lógico de alto riesgo carece de una prueba de regresión necesaria. Ante ambigüedad material, pide aclaración; las acciones externas o destructivas requieren autorización conforme a los controles del entorno.</p>
             </li>
           </ol>
         </div>
+      </section>
+
+      <section id="novedades" class="mx-auto max-w-6xl border-t border-line px-6 py-24 sm:py-32">
+        <p class="font-mono text-xs text-stone">Novedades · 0.4.0</p>
+        <h2 class="mt-3 max-w-4xl text-4xl leading-[1.05] sm:text-6xl">Menos ceremonia. Más continuidad.</h2>
+        <p class="mt-6 max-w-2xl text-lg leading-relaxed text-stone">Trabajo directo por defecto, TDD selectivo y comprobaciones sobre el resultado final. Sin prometer que todas las tareas serán más rápidas.</p>
+        <div class="mt-12 grid gap-5 md:grid-cols-3">
+          <article class="rounded-3xl bg-white/80 p-7 ring-1 ring-line">
+            <h3 class="text-2xl tracking-tight">Menos pasos innecesarios</h3>
+            <p class="mt-3 leading-relaxed text-stone">Agrupa lecturas independientes, delega con un motivo concreto y carga las skills de recuperación y validación solo cuando se necesitan.</p>
+          </article>
+          <article class="rounded-3xl bg-white/80 p-7 ring-1 ring-line">
+            <h3 class="text-2xl tracking-tight">Tus cambios, identificados</h3>
+            <p class="mt-3 leading-relaxed text-stone">Comprueba las modificaciones locales antes de editar y exige adoptarlas explícitamente. Los tests existentes del módulo afectado se ejecutan después de la última edición.</p>
+          </article>
+          <article class="rounded-3xl bg-white/80 p-7 ring-1 ring-line">
+            <h3 class="text-2xl tracking-tight">Memoria y recuperación útiles</h3>
+            <p class="mt-3 leading-relaxed text-stone">Descubre las herramientas de memoria antes de usarlas y guarda hallazgos verificables. Tasks permite registrar y consultar recuperaciones acotadas: es un cuaderno, no un ejecutor.</p>
+          </article>
+        </div>
+        <p class="mt-8"><a href="%BASE_URL%docs/#version-040" class="btn-ghost">Ver las mejoras y actualizar a 0.4.0</a></p>
       </section>
 
       <!-- Por dentro: los nombres tienen su porqué -->
@@ -193,7 +214,7 @@
               <p class="mt-6 font-mono text-sm text-stone">neurox</p>
               <h3 class="mt-2 text-2xl tracking-tight">Recuerda lo que ya decidiste</h3>
               <p class="mt-3 leading-relaxed text-stone">
-                Neurox es la memoria de los agentes. Al empezar una tarea, Thalam consulta qué se decidió antes en el proyecto; al acabar, guarda las decisiones, los errores resueltos y tus preferencias. Todo queda en un archivo SQLite en tu equipo.
+                Neurox aporta memoria persistente opcional. Cuando la integración está disponible, Thalam descubre sus herramientas, consulta contexto del proyecto y contrasta los recuerdos con el código actual. Guarda hechos reutilizables con sus archivos y comandos de verificación, no secretos ni registros largos.
               </p>
             </article>
             <article class="flex flex-col rounded-3xl bg-white/80 p-7 ring-1 ring-line">
@@ -204,7 +225,7 @@
               <p class="mt-6 font-mono text-sm text-stone">skynet → skynex</p>
               <h3 class="mt-2 text-2xl tracking-tight">Sí, es un guiño a Skynet</h3>
               <p class="mt-3 leading-relaxed text-stone">
-                La IA de Terminator decidía por su cuenta. Skynex va al revés: por defecto los agentes piden permiso para todo lo que no sea leer, y no dan nada por terminado sin enseñarte las pruebas.
+                La IA de Terminator decidía por su cuenta. Skynex define rutas de autorización y comprobaciones; su aplicación efectiva también depende del entorno y de las herramientas habilitadas.
               </p>
             </article>
           </div>
@@ -292,7 +313,7 @@
             </details>
             <details class="group py-5">
               <summary class="flex cursor-pointer list-none items-center justify-between gap-6 text-lg tracking-tight [&::-webkit-details-marker]:hidden">¿Hará más lentas las tareas pequeñas?<span class="font-mono text-stone transition group-open:rotate-45" aria-hidden="true">+</span></summary>
-              <p class="mt-3 leading-relaxed text-stone">No debería. Lo pequeño y claro va directo, sin plan ni revisores extra. El proceso solo crece cuando el riesgo lo pide: tests primero para cambios de comportamiento y revisión de seguridad para lo delicado.</p>
+              <p class="mt-3 leading-relaxed text-stone">Lo pequeño y claro va directo, sin plan ni revisores extra. TDD se reserva para cuando lo pides o para cambios lógicos de alto riesgo donde falte una prueba de regresión; la revisión de seguridad depende del riesgo y de la configuración de la tarea.</p>
             </details>
             <details class="group py-5">
               <summary class="flex cursor-pointer list-none items-center justify-between gap-6 text-lg tracking-tight [&::-webkit-details-marker]:hidden">¿Qué toca en mi máquina y cómo lo deshago?<span class="font-mono text-stone transition group-open:rotate-45" aria-hidden="true">+</span></summary>
@@ -300,11 +321,11 @@
             </details>
             <details class="group py-5">
               <summary class="flex cursor-pointer list-none items-center justify-between gap-6 text-lg tracking-tight [&::-webkit-details-marker]:hidden">¿Dónde vive la memoria? ¿Es obligatoria?<span class="font-mono text-stone transition group-open:rotate-45" aria-hidden="true">+</span></summary>
-              <p class="mt-3 leading-relaxed text-stone">Neurox guarda los recuerdos en un archivo SQLite en tu equipo, nunca secretos ni tokens. Es opcional: sin él Skynex funciona igual, pero cada sesión empieza de cero.</p>
+              <p class="mt-3 leading-relaxed text-stone">Neurox es opcional y guarda memoria local. Skynex contrasta lo recuperado con el estado actual del proyecto; la disponibilidad y el guardado dependen de Neurox y de las herramientas habilitadas. Sin Neurox, las sesiones no comparten esos recuerdos.</p>
             </details>
             <details class="group py-5">
               <summary class="flex cursor-pointer list-none items-center justify-between gap-6 text-lg tracking-tight [&::-webkit-details-marker]:hidden">¿Los agentes pueden hacer cosas sin preguntar?<span class="font-mono text-stone transition group-open:rotate-45" aria-hidden="true">+</span></summary>
-              <p class="mt-3 leading-relaxed text-stone">Por defecto piden permiso para todo lo que no sea leer. Las acciones externas o destructivas, como un push o borrar archivos, siempre esperan tu confirmación.</p>
+              <p class="mt-3 leading-relaxed text-stone">Los permisos dependen del entorno y su configuración. La guía de Skynex instruye a detenerse para acciones externas o destructivas y solicitar autorización; las instrucciones del agente no sustituyen los controles de permisos del entorno.</p>
             </details>
             <details class="group py-5">
               <summary class="flex cursor-pointer list-none items-center justify-between gap-6 text-lg tracking-tight [&::-webkit-details-marker]:hidden">¿Es de código abierto?<span class="font-mono text-stone transition group-open:rotate-45" aria-hidden="true">+</span></summary>

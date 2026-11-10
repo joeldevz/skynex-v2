@@ -25,6 +25,8 @@ export const commands: Command[] = [
   { cmd: 'skynex task next add "<paso>" …', desc: 'Añade un paso con --scope, --done-when y --evidence.' },
   { cmd: 'skynex task next done <paso>', desc: 'Marca un paso como hecho.' },
   { cmd: 'skynex task status [--json]', desc: 'Muestra la tarea y sus pasos.' },
+  { cmd: 'skynex task recovery record', desc: 'Registra una recuperación en el historial de la tarea.' },
+  { cmd: 'skynex task recovery history', desc: 'Consulta el historial de recuperación de la tarea.' },
 ];
 
 export const flags: Command[] = [

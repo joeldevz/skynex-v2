@@ -1,7 +1,126 @@
 {
   "source": "skynex-v2",
-  "generatedAt": "2026-09-29",
+  "generatedAt": "2026-11-10",
   "releases": [
+    {
+      "version": "v0.4.0",
+      "date": "2026-11-10",
+      "unreleased": false,
+      "changes": [
+        {
+          "hash": "414c44e",
+          "date": "2026-11-10",
+          "type": "chore",
+          "scope": "release",
+          "summary": "prepare 0.4.0 and verify release and preview contracts"
+        },
+        {
+          "hash": "805b72c",
+          "date": "2026-11-10",
+          "type": "feat",
+          "scope": "thalam",
+          "summary": "streamline routing and strengthen memory and recovery"
+        },
+        {
+          "hash": "18e75c0",
+          "date": "2026-11-10",
+          "type": "feat",
+          "scope": "tasks",
+          "summary": "add bounded recovery history and CLI commands"
+        },
+        {
+          "hash": "e441db7",
+          "date": "2026-10-26",
+          "type": "feat",
+          "scope": null,
+          "summary": "update agents, skills, and verification"
+        },
+        {
+          "hash": "1f2c1c5",
+          "date": "2026-10-18",
+          "type": "fix",
+          "scope": null,
+          "summary": "provide repository context for GitHub release creation"
+        }
+      ]
+    },
+    {
+      "version": "v0.3.0",
+      "date": "2026-10-18",
+      "unreleased": false,
+      "changes": [
+        {
+          "hash": "3518975",
+          "date": "2026-10-18",
+          "type": "ci",
+          "scope": null,
+          "summary": "add npm trusted publishing release workflow"
+        },
+        {
+          "hash": "8c165f4",
+          "date": "2026-10-13",
+          "type": "chore",
+          "scope": "release",
+          "summary": "prepare v0.3.0"
+        },
+        {
+          "hash": "b96c9a5",
+          "date": "2026-10-13",
+          "type": "docs",
+          "scope": "security",
+          "summary": "armoniza límites de reintentos"
+        },
+        {
+          "hash": "318067b",
+          "date": "2026-10-12",
+          "type": "fix",
+          "scope": "scout",
+          "summary": "enable external search with sensitive guards"
+        },
+        {
+          "hash": "e8f7bdd",
+          "date": "2026-10-12",
+          "type": "feat",
+          "scope": "tasks",
+          "summary": "unify Thalam tracking in Tasks"
+        },
+        {
+          "hash": "e6c60c2",
+          "date": "2026-10-12",
+          "type": "feat",
+          "scope": "tasks",
+          "summary": "group substeps under parent steps in CLI and sidebar"
+        },
+        {
+          "hash": "fc2e6bd",
+          "date": "2026-10-01",
+          "type": "docs",
+          "scope": "site",
+          "summary": "la guía para agentes instala Skynex de forma global"
+        },
+        {
+          "hash": "86cbcb6",
+          "date": "2026-10-01",
+          "type": "docs",
+          "scope": "site",
+          "summary": "la guía para agentes hace la instalación completa"
+        },
+        {
+          "hash": "02abf28",
+          "date": "2026-10-01",
+          "type": "feat",
+          "scope": "site",
+          "summary": "enlace Inicio, textos de la home y guía para agentes"
+        },
+        {
+          "hash": "ee5475d",
+          "date": "2026-09-29",
+          "type": "feat",
+          "scope": "site",
+          "summary": "product page on GitHub Pages"
+        }
+      ]
+    },
     {
       "version": "v0.2.2",
       "date": "2026-09-29",

@@ -105,36 +105,34 @@
         </p>
         <p>Con cada petición, Thalam:</p>
         <ol>
-          <li>Mide el riesgo y decide la ruta: hacerlo directamente, escribir primero un test, preguntarte algo o pedirte permiso.</li>
+          <li>Mide el riesgo y decide la ruta: trabajo directo por defecto, TDD si lo pides o si un cambio lógico de alto riesgo carece de una prueba de regresión necesaria, aclaración si hay ambigüedad material o permiso para acciones externas o destructivas.</li>
           <li>Si hay más de un paso, crea una tarea con un «hecho cuando» y la evidencia que espera para cada uno.</li>
-          <li>Reparte cada paso al agente que corresponde: <code>scout</code> para buscar, <code>coder</code> para cambiar código, <code>verifier</code> para comprobar…</li>
-          <li>Revisa la evidencia y decide si la tarea está terminada. Nadie da por bueno su propio trabajo.</li>
+          <li>Resuelve directamente lo acotado; delega cuando hay trabajo independiente, exploración amplia o una revisión especializada necesaria.</li>
+          <li>Revisa la evidencia del resultado final y decide si la tarea está terminada. La profundidad y la independencia de la revisión dependen del riesgo.</li>
         </ol>
 
         <h3>Neurox, la memoria</h3>
         <p>
-          Los agentes olvidan todo al cerrar la sesión. <a href="https://github.com/joeldevz/neurox">Neurox</a> les da memoria: guarda observaciones
-          (decisiones, errores resueltos, patrones del código y tus preferencias) y las recupera cuando vuelven a ser útiles. Es un único binario y
+          Los agentes no comparten automáticamente el contexto entre sesiones. <a href="https://github.com/joeldevz/neurox">Neurox</a> puede aportar memoria: almacena observaciones
+          (decisiones, errores resueltos, patrones del código y preferencias) y permite recuperarlas cuando son útiles. Es un único binario y
           un único archivo SQLite en tu equipo; no necesita Docker, Node ni Python.
         </p>
         <p>Cómo lo usa Skynex:</p>
         <ul>
-          <li>Al empezar una tarea, Thalam consulta lo que ya se sabe del proyecto y se lo pasa resumido a los agentes que trabajan.</li>
-          <li>Cuando se toma una decisión o se resuelve un error, guarda un resumen breve: qué, por qué, dónde y qué aprender.</li>
-          <li>Lo que recuerda es una pista, no una orden: siempre se contrasta con el código actual, y el código gana.</li>
-          <li>Nunca guarda secretos, tokens ni registros largos.</li>
+          <li>Cuando la integración está disponible, Thalam descubre sus herramientas y consulta contexto del proyecto antes de investigar.</li>
+          <li>Guarda hallazgos reutilizables verificados con los archivos de referencia y el comando que permitió comprobarlos, para poder confirmarlos en otra sesión.</li>
+          <li>La memoria es una pista, no una orden: contrástala con el código actual; el código gana.</li>
+          <li>Las instrucciones prohíben guardar secretos, tokens o registros largos; no sustituyen los controles técnicos de cada integración.</li>
         </ul>
         <p>
-          Los recuerdos pasan por tres capas: <code>buffer</code> (lo nuevo), <code>working</code> (lo que ha resultado útil) y <code>core</code> (lo
-          que se consulta a menudo y lleva tiempo siendo cierto). Si cambias un archivo vinculado a un recuerdo, Neurox lo marca como desactualizado.
+          Neurox organiza recuerdos en capas de reciente a estable. Los resultados dependen de la integración y configuración disponibles; no garantizan exactitud ni sustituyen la comprobación del repositorio.
         </p>
-        <p>Neurox es opcional. Sin él, Skynex funciona igual, pero cada sesión empieza de cero. Para instalarlo:</p>
+        <p>Neurox es opcional. Sin él, Skynex funciona sin memoria persistente de Neurox. Para instalarlo:</p>
         <div class="mt-4 space-y-2" data-code="brew install joeldevz/tap/neurox|neurox setup opencode"></div>
 
         <h3>¿Por qué «Skynex»?</h3>
         <p>
-          Es un guiño a Skynet, la IA de Terminator que tomaba decisiones por su cuenta. Skynex va al revés: por defecto, los agentes piden permiso para
-          todo lo que no sea leer, las acciones delicadas pasan por revisión y nada se da por terminado sin pruebas.
+          Es un guiño a Skynet, la IA de Terminator que tomaba decisiones por su cuenta. Skynex define límites de trabajo, comprobaciones y rutas de autorización; los controles efectivos dependen también del entorno de ejecución.
         </p>
 
         <h2 id="tareas">Tareas</h2>
@@ -143,6 +141,16 @@
           evidencia que lo demuestra. Thalam las gestiona por ti, pero también puedes usarlas a mano:
         </p>
         <div class="mt-4 space-y-2" data-code='skynex task init "Migrar el login a OAuth"|skynex task next add "Test del callback" --scope "auth/" --done-when "el test pasa" --evidence "salida de vitest"|skynex task next done step-001|skynex task status'></div>
+        <h3 id="version-040">Skynex 0.4.0</h3>
+        <p>La versión 0.4.0 añade <code>skynex task recovery record</code> y <code>skynex task recovery history</code> para registrar y consultar un historial de recuperación acotado. También afina el enrutamiento de Thalam: trabajo directo por defecto, TDD bajo las condiciones anteriores y skills de recuperación y validación bajo demanda.</p>
+        <ul>
+          <li>Menos lecturas y llamadas repetidas: agrupa consultas independientes y delega solo con un motivo concreto.</li>
+          <li>Antes de editar, identifica los cambios locales existentes; no debe incorporarlos ni descartarlos silenciosamente.</li>
+          <li>El trabajo directo sigue ejecutando los tests existentes del módulo afectado después de la última edición. Un lint o un test nuevo no sustituyen esa comprobación.</li>
+          <li>Las recuperaciones distinguen progreso real de bucles sin avance y conservan intentos y resultados acotados.</li>
+          <li>Tasks es un cuaderno pasivo de progreso y recuperación, no un planificador, ejecutor ni fuente de autorización.</li>
+        </ul>
+        <div class="mt-4 space-y-2" data-code="skynex task recovery record --help|skynex task recovery history --help"></div>
         <h3>Revisión de seguridad por tarea</h3>
         <p>
           Por defecto (<code>auto</code>) los dos revisores de seguridad solo entran cuando el cambio lo requiere. Puedes forzarlos o apagarlos para una tarea:
@@ -151,6 +159,7 @@
 
         <h2 id="actualizar">Actualizar y desinstalar</h2>
         <div class="mt-4 space-y-2" data-code="skynex update|skynex uninstall"></div>
+        <p>Instala la última versión publicada con <code>npm install --global @skynex-ai/cli@latest</code>; para fijar esta versión usa <code>npm install --global @skynex-ai/cli@0.4.0</code>.</p>
         <p>
           Si has modificado a mano un agente, una skill o un comando que instaló Skynex, <code>update</code> se detiene y te lo indica. Nunca resuelve el
           conflicto por su cuenta.
