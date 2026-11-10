@@ -82,7 +82,7 @@ shorter labels, collapsibility and a visible count of remaining work.
 - S4: Store the bounded projection in OpenCode plugin storage keyed by verified project/location and execution-context session ID. Publishing tools cannot accept a caller-selected session ID or root path. Sidebar RPC reads only the requested session after checking its location, with no task mutations.
 - S5: No filesystem task reads, directory scans, native addon, new native dependencies, shell execution, instruction/evidence bodies, raw errors or provider calls in the sidebar plugin. Missing/corrupt state must not fall back to a project task.
 - S6: Refresh the current session projection on mount/session change and at a bounded interval; clear stale data immediately, reject superseded async responses and clean up timers/subscriptions. UI is read-only.
-- S7: Verify two-session isolation, persistence, empty/error/updated states, payload bounds, prototype/path-like inputs and actual OpenCode sidebar rendering. Preserve global classifier:false and validate-tests on installation, with a backup. No CLI-wide reader safety claim.
+- S7: Verify two-session isolation, persistence, empty/error/updated states, payload bounds, prototype/path-like inputs and actual OpenCode sidebar rendering. Preserve validate-tests on installation, with a backup; the retired classification option is absent. No CLI-wide reader safety claim.
 
 The user explicitly chose automatic assignment by Thalam. Earlier project-board and native-reader prototypes are historical, excluded from this delivery; their failed contracts cannot serve as proof of this corrected implementation.
 

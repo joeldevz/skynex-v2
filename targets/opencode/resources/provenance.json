@@ -6,13 +6,13 @@
       "target": "canonical/agents/coder.md",
       "source": "agents/coder.md",
       "sourceSha256": "bc330513d8b3fa760b06b69942cf8e10388015ddcee2afe8c3361f5bed1e6714",
-      "generatedSha256": "bda823203f901db2a3ffdc2c86c26935061ecc85a3842a59377b7d1d4ed8836b"
+      "generatedSha256": "62a7f1f0c17fe4ac712c785a2c1e7aa8cb235aa444da13ca71a6c30c0c06ec71"
     },
     {
       "target": "canonical/agents/diagnostic-researcher.md",
       "source": "agents/diagnostic-researcher.md",
       "sourceSha256": "4d399e88d0f1d2668a566aa78c91f5e3205747124d926653dc1656c6dc537e7c",
-      "generatedSha256": "609f133d3c9d401a21a93f8fa9134c83935c660dce4f757a6cdd9d3ee2f62a3a"
+      "generatedSha256": "b5daa8fb26edf19766d9b3fd0ab67884843abb9b6c2ede80c7feeae9b5914131"
     },
     {
       "target": "canonical/agents/infrastructure-engineer.md",
@@ -48,7 +48,7 @@
       "target": "canonical/agents/skill-validator.md",
       "source": "agents/skill-validator.md",
       "sourceSha256": "e46be0762de44e0f5b545d9bb0e5547b492de45702ba9ca3def376640deff44d",
-      "generatedSha256": "74b010f9608c9cbe15fc5bfe8163192a008c15ed7d9153d1785f3b631b662961"
+      "generatedSha256": "8ea3811833c7677ab3682e544370f6b622df118689b459bd81540233de9fe757"
     },
     {
       "target": "canonical/agents/tech-planner.md",
@@ -72,9 +72,9 @@
       "target": "canonical/agents/thalam.md",
       "source": "agents/skynex-orchestrator.md",
       "sourceSha256": "eb46ce33b0cdc5713b1d42a5f89eec4bd4182e0dbd31acb42d8eba25f5be6170",
-      "generatedSha256": "9fa03da43b09769a014d206bfcce323cbf15f2b2a5b1268b979aec440b5a37cc",
+      "generatedSha256": "be753e7d2e2c8cd58450f0435acb6e42ec8f509b91c7087ff8594fa6c9a9a84b",
       "localOverlay": {
-        "transformation": "tasks-sole-progress-recovery+request-scoped-retry-budget-harmonization",
+        "transformation": "tasks-sole-progress-recovery+request-scoped-retry-budget-harmonization+direct-work-skills-delegation-memory-regression-closure+procedures-extracted-to-skills+recovery-trigger-excludes-own-edit-loop+first-actions-batching-memory-scripts+tests-over-turns-mandatory-handoff-conditional-startup+canonical-memory-tool-names+discover-deferred-tools-before-invocation",
         "baseGeneratedSha256": "f404e0a4225da14815917c288cf2cf221a4b6ffb03678b2c42c927883a4dcca7"
       }
     },
@@ -88,7 +88,7 @@
       "target": "canonical/config/managed-agents.json",
       "source": "generated",
       "sourceSha256": null,
-      "generatedSha256": "9a93cdf8c8203cd0fbb9f0d49eebb6e6cb81c95c8e736b4e964ebff368179df0"
+      "generatedSha256": "2de73bfa52bc319eda1a5cc462fb3acdefcb911db3c66a6baffafb5656d6b88f"
     },
     {
       "target": "canonical/skills/_shared/advisor-protocol.md",
@@ -136,7 +136,7 @@
       "target": "canonical/skills/diagnose/SKILL.md",
       "source": "skills/diagnose/SKILL.md",
       "sourceSha256": "28886402bbfa0470248086eab9106a103b964b76ae9496e63ff0c8a6761b6d13",
-      "generatedSha256": "e29acd20f234400dfe18562f4d6453003ace7c664e2d101ced60135463a2d159"
+      "generatedSha256": "fa60777a976bbdf5a7546559fc1d705f27c29708e919ce27ef0f131ef651a65c"
     },
     {
       "target": "canonical/skills/grill-me/SKILL.md",
@@ -154,7 +154,11 @@
       "target": "canonical/skills/no-comments/SKILL.md",
       "source": "skills/no-comments/SKILL.md",
       "sourceSha256": "c1077f3948381ca62557c5cb55e40a276036d228e511f6f64d6599dd4490ec78",
-      "generatedSha256": "c1077f3948381ca62557c5cb55e40a276036d228e511f6f64d6599dd4490ec78"
+      "generatedSha256": "59255e639ea18a5eb1949e7a3fd1b1d6b5c61cc4b791da3b24ce5413d8a4a700",
+      "localOverlay": {
+        "transformation": "trigger-narrowed-to-review-time",
+        "baseGeneratedSha256": "c1077f3948381ca62557c5cb55e40a276036d228e511f6f64d6599dd4490ec78"
+      }
     },
     {
       "target": "canonical/skills/review-pr/SKILL.md",
@@ -175,7 +179,7 @@
     {
       "target": "canonical/skills/skynex-tasks/SKILL.md",
       "source": "repository-authored",
-      "generatedSha256": "5f4dea95d60449a41e29cd860e74e5e722bb85d50e4c65bf73376e3ae7b4ed90",
+      "generatedSha256": "eeb6b086505ef5c6bc6fb8823b41ced4938fcb09ff306ba7edabf440e431c611",
       "transformation": "authored-managed-skill",
       "sourceReferences": []
     },
@@ -183,7 +187,7 @@
       "target": "canonical/skills/tdd-discipline/SKILL.md",
       "source": "skills/tdd-discipline/SKILL.md",
       "sourceSha256": "b69d4b8c19d9ffc06393cc27c4b9b4ec7cae9f6eff2e30b29cc661a398932afc",
-      "generatedSha256": "b69d4b8c19d9ffc06393cc27c4b9b4ec7cae9f6eff2e30b29cc661a398932afc"
+      "generatedSha256": "9657fd58ac457b56dac1d04a05f5db8946235af0d50cad85ac874a82f4c5dfb5"
     },
     {
       "target": "canonical/skills/write-a-skill/SKILL.md",
@@ -525,10 +529,30 @@
     {
       "target": "native/plugins/skynex-runtime.ts",
       "source": "native/plugins/skynex-runtime.ts",
-      "sourceSha256": "43a8edcb41f8185a912ae50042c0120d34c3fbe5a4888399ebfa7670000760a2",
-      "generatedSha256": "43a8edcb41f8185a912ae50042c0120d34c3fbe5a4888399ebfa7670000760a2",
+      "sourceSha256": "2a365358153ec2db2dd57774cafe4721106c735067c4dacc047c1f6173db04a3",
+      "generatedSha256": "2a365358153ec2db2dd57774cafe4721106c735067c4dacc047c1f6173db04a3",
       "transformation": "v2-adaptation",
       "sourceReferences": []
+    },
+    {
+      "target": "canonical/skills/thalam-recovery/SKILL.md",
+      "source": "agents/skynex-orchestrator.md",
+      "sourceSha256": "eb46ce33b0cdc5713b1d42a5f89eec4bd4182e0dbd31acb42d8eba25f5be6170",
+      "generatedSha256": "b8791cb92778201840053ba19cda1e33959ce19b3352c6c70fd470c774c729f7",
+      "localOverlay": {
+        "transformation": "thalam-procedures-extracted-to-on-demand-skill+recovery-trigger-excludes-own-edit-loop",
+        "baseGeneratedSha256": "f404e0a4225da14815917c288cf2cf221a4b6ffb03678b2c42c927883a4dcca7"
+      }
+    },
+    {
+      "target": "canonical/skills/thalam-validation/SKILL.md",
+      "source": "agents/skynex-orchestrator.md",
+      "sourceSha256": "eb46ce33b0cdc5713b1d42a5f89eec4bd4182e0dbd31acb42d8eba25f5be6170",
+      "generatedSha256": "f4abe152449274713628bea23437cd7ae27174da994252e2b4162ad5ec786a71",
+      "localOverlay": {
+        "transformation": "thalam-procedures-extracted-to-on-demand-skill",
+        "baseGeneratedSha256": "f404e0a4225da14815917c288cf2cf221a4b6ffb03678b2c42c927883a4dcca7"
+      }
     }
   ]
 }

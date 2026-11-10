@@ -206,16 +206,35 @@ try {
      const updateEnvelope = await rpcRequest(base, "skynex.sky-agents", "updateProfile", { profile: mutationProfile });
      assert.deepEqual(updateEnvelope.output, { ok: true }, "updateProfile must return an explicit JSON success envelope");
      assert.deepEqual((await rpcRequest(base, "skynex.sky-agents", "getProfile", { name: mutationProfile.name })).output, mutationProfile, "updateProfile mutation must be observable");
+     const previewConfigPath = join(configDir, configName);
+     const beforePreview = await regularFile(previewConfigPath);
+     const previewEnvelope = await rpcRequest(base, "skynex.sky-agents", "previewProfileApply", {
+       name: mutationProfile.name, config: configName.endsWith(".jsonc") ? "jsonc" : "json",
+     });
+     const preview = previewEnvelope.output;
+     assert.deepEqual(preview.profile, mutationProfile, "Preview must resolve the existing profile");
+     assert.equal(preview.configPath, previewConfigPath, "Preview must target the isolated config");
+     assert.equal(preview.sourceDigest, digest(beforePreview), "Preview must describe current config bytes");
+     assert.match(preview.planDigest, /^[a-f0-9]{64}$/, "Preview must return a plan digest");
+     assert.deepEqual(preview.desired, mutationProfile.models, "Preview must contain the requested models");
+     const expectedChanges = Object.keys(mutationProfile.models).map((agent) => ({
+       agent, from: config.agents[agent].model ?? null, to: mutationProfile.models[agent],
+     }));
+     assert.deepEqual(preview.changes, expectedChanges.filter((change) => change.from !== change.to),
+       "Preview must enumerate the actual model changes");
+     assert.deepEqual(await regularFile(previewConfigPath), beforePreview, "Preview must not mutate config");
+     evidence.rpc.previewProfileApply = { called: true, validProfile: true, configUnchanged: true,
+       changes: preview.changes.length, planDigest: preview.planDigest };
      const deleteEnvelope = await rpcRequest(base, "skynex.sky-agents", "deleteProfile", { name: mutationProfile.name });
      assert.deepEqual(deleteEnvelope.output, { ok: true }, "deleteProfile must return an explicit JSON success envelope");
      assert.equal((await rpcRequest(base, "skynex.sky-agents", "getProfile", { name: mutationProfile.name })).output, null, "deleteProfile mutation must be observable");
      evidence.rpc.mutations = { save: saveEnvelope.output, update: updateEnvelope.output, delete: deleteEnvelope.output, observableCrud: true };
-    const previewEnvelope = await rpcRequest(base, "skynex.sky-agents", "previewProfileApply", { name: "missing-profile", config: "jsonc" }).then(
+    const missingPreview = await rpcRequest(base, "skynex.sky-agents", "previewProfileApply", { name: "missing-profile", config: "jsonc" }).then(
       (value) => ({ value }),
       (error) => ({ error: error.message }),
     );
-    evidence.rpc.previewProfileApply = { called: true, ...previewEnvelope };
-    assert(previewEnvelope.error?.includes("HTTP 500") || previewEnvelope.value, "Preview RPC must be callable");
+    evidence.rpc.missingProfilePreview = { called: true, rejected: Boolean(missingPreview.error) };
+    assert(missingPreview.error, "Preview must reject a missing profile instead of returning a plan");
     evidence.profileRoot = join(env.XDG_CONFIG_HOME, "skynex", "profiles");
   const tuiBytes = await regularFile(join(configDir, "skynex/plugins/sky-agents/tui.tsx"));
    const rpcBytes = await regularFile(join(configDir, "skynex/plugins/sky-agents/rpc.ts"));
@@ -267,7 +286,10 @@ try {
   assert.match(skillText, /more than one genuine/i, "Isolated project must load the managed Tasks skill");
    const thalam = (await regularFile(join(configDir, "agents/thalam.md"))).toString();
   assert.match(thalam, /MUST invoke the\s+`skynex-tasks` skill/i);
-  assert.match(thalam, /Automatic Tasks quick procedure/);
+  assert.match(thalam, /SKYNEX TASKS — AUTOMATIC COORDINATION FOR MULTI-STEP WORK/);
+  assert.match(thalam, /Decide eligibility from the request and minimal read-only inspection, without loading\s+the skill/);
+  assert.match(skillText, /Before implementation/);
+  assert.match(skillText, /skynex task list --json/);
   evidence.taskSkill = { path: skillPath, digest: digest(Buffer.from(skillText)), automaticRouting: true };
   evidence.integrationVerified = true;
 } catch (error) {

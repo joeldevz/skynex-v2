@@ -1,6 +1,6 @@
 ---
 name: tdd-discipline
-description: Use when the user opts into TDD or the task requires writing or modifying tests.
+description: Use when the user explicitly opts into TDD or the orchestrator selected the tdd route for new non-trivial executable behavior. Not for small direct fixes, configuration or documentation changes, or changes already covered by existing tests.
 ---
 
 # TDD Discipline — Iron Law + Cycle Evidence
@@ -13,8 +13,10 @@ agents. Loading this skill grants no delegation or execution authority.
 
 ## Applicability
 
-Apply the cycle only when `slice.tdd=true` or standalone TDD is explicitly assigned.
-LOW/direct work does not require a multiagent TDD pipeline. Explicit prohibitions on
+Apply the cycle only when the user explicitly opts into TDD or `slice.tdd=true` for
+new non-trivial executable behavior. Small direct fixes, configuration or documentation
+changes, and behavior already covered by existing tests do not require the red-contract
+pipeline. Explicit prohibitions on
 creating/modifying/running tests take precedence: perform only permitted checks and
 report the coverage gap, never invent RED/GREEN evidence. Historical plans and
 templates cannot override the current authorized brief.

@@ -35,9 +35,9 @@ await test("catalog-exact-agent-and-skill-inventory", async () => {
   assert(!agents.some(x => /skynex-orchestrator/.test(`${x.id} ${x.sourcePath} ${JSON.stringify(x.targets)}`)));
   assert(!agents.some(x => /advisor|manager|linear/.test(x.id)));
   const skillLeaves = manifest.resources.filter(x => x.kind === "skill");
-  assert.equal(skillLeaves.length, 16);
+  assert.equal(skillLeaves.length, 18);
   const top = new Set(skillLeaves.map(x => x.sourcePath.split("/")[2]));
-  assert.equal(top.size, 10); assert(top.has("_shared")); assert(top.has("skynex-tasks"));
+  assert.equal(top.size, 12); assert(top.has("_shared")); assert(top.has("skynex-tasks")); assert(top.has("thalam-recovery")); assert(top.has("thalam-validation"));
 });
 await test("catalog-every-leaf-owned-and-digested", async () => {
   const declared = new Set(manifest.resources.map(x => x.sourcePath));
@@ -46,7 +46,7 @@ await test("catalog-every-leaf-owned-and-digested", async () => {
   await walk(join(root,"canonical"),"canonical"); await walk(join(root,"native"),"native");
 });
 await test("provenance-hashes-and-portability", async () => {
-   assert.equal(provenance.generated.length, 57);
+   assert.equal(provenance.generated.length, 59);
    for (const e of provenance.generated) { assert(!e.source.startsWith("/")); assert(!e.target.startsWith("/")); assert.equal(sha(await readFile(join(root,e.target))),e.generatedSha256); }
    assert.equal(new Set(provenance.generated.map(e => e.target)).size, provenance.generated.length);
    assert.deepEqual(new Set(provenance.generated.map(e => e.target)), new Set(manifest.resources.map(e => e.sourcePath)));
@@ -208,9 +208,9 @@ await test("resources-have-no-placeholders-or-commands", async () => {
 });
 await test("catalog-exact-category-counts",async()=>{
    const counts=Object.fromEntries(["agent","skill","configuration","native","hook","mcp","command"].map(k=>[k,manifest.resources.filter(x=>x.kind===k).length]));
-    assert.deepEqual(counts,{agent:13,skill:16,configuration:1,native:26,hook:1,mcp:0,command:0});
+    assert.deepEqual(counts,{agent:13,skill:18,configuration:1,native:26,hook:1,mcp:0,command:0});
     assert.equal(counts.native+counts.hook,27);
-    assert.equal(manifest.resources.length,57);
+    assert.equal(manifest.resources.length,59);
 });
 await test("tdd-and-diagnosis-routing-semantics",async()=>{
   const tdd=await readFile(join(root,"canonical/skills/tdd-discipline/SKILL.md"),"utf8");
@@ -245,16 +245,18 @@ await test("thalam-automatically-routes-multistep-work-to-tasks-skill",async()=>
   assert.match(coordination,/local task notebook, not a workflow engine: it does not schedule,\s+resume, prioritize, or authorize work/);
   assert.match(coordination,/CLI is a passive notebook, never scheduler, workflow authority,\s+raw evidence store or permission/);
 });
-await test("jev-classifier-wiring",async()=>{
+await test("classifier-is-absent",async()=>{
   const runtime=await readFile(join(root,"native/plugins/skynex-runtime.ts"),"utf8");
-  assert(/skynex_classify/.test(runtime)&&/api\.typesafe\.ai/.test(runtime));
-  assert(/TYPESAFE_INTEGRATION_ID/.test(runtime)&&/connection\.resolve/.test(runtime));
-  assert(/options\.classifier/.test(runtime)&&/SKYNEX_CLASSIFIER/.test(runtime));
-  assert(!/skynex_route/.test(runtime)&&!/switchModel/.test(runtime));
+  assert(!/classify|TypeSafe|typesafe|\bJev\b/i.test(runtime));
+  assert(!/context\.tool\.transform|namespace\(\{ name: "skynex"/.test(runtime));
+  assert.match(runtime,/hook\("prompt"/);
+  assert.match(runtime,/hook\("context"/);
+  assert.match(runtime,/hook\("execute\.before"/);
   const managed=JSON.parse(await readFile(join(root,"canonical/config/managed-agents.json"),"utf8"));
   const thalam=managed.agents.find(a=>a.id==="thalam");
-  assert(thalam.permissions.some(p=>p.action==="skynex_classify"&&p.effect==="allow"));
-  assert(!managed.agents.some(a=>a.permissions.some(p=>p.action==="skynex_route")));
+  assert(!thalam.permissions.some(p=>p.action.includes("classify")));
+  const prompt=await readFile(join(root,"canonical/agents/thalam.md"),"utf8");
+  assert(!/skynex_classify|classifier_fallback|classifier_unavailable|JEV CLASSIFICATION/i.test(prompt));
   for(const id of managed.agents.map(a=>a.id)){
     const file=await readFile(join(root,`canonical/agents/${id}.md`),"utf8");
     const fm=file.match(/^---\n([\s\S]*?)\n---\n/);

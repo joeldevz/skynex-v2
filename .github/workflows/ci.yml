@@ -12,6 +12,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm build
+      - run: node scripts/verify-release-workflow.mjs
+      - run: pnpm verify:tasks
+      - run: pnpm verify:recovery
+      - run: pnpm verify:agent-recovery
+      - run: pnpm verify:review-gate
       - run: pnpm verify:installer
       - run: pnpm verify:real-resources
       - run: pnpm verify:sky-agents

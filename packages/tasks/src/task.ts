@@ -35,7 +35,7 @@ export interface Step {
 }
 
 export interface Task {
-  readonly schemaVersion: 1 | 2;
+  readonly schemaVersion: 1 | 2 | 3;
   readonly id: string;
   readonly title: string;
   readonly status: TaskStatus;
@@ -46,7 +46,23 @@ export interface Task {
   /** Optional review toggles; absent means every review is "auto". */
   readonly reviews?: TaskReviews;
   readonly checkpoint?: RecoveryCheckpoint;
+  readonly recovery?: RecoveryLog;
 }
+
+export interface RecoveryLog { readonly version: 1; readonly events: readonly RecoveryEvent[]; }
+export interface RecoveryEvent { readonly sequence: number; readonly eventId: string; readonly at: string; readonly type: RecoveryEventInput["type"]; readonly payload: Readonly<Record<string, unknown>>; }
+export type RecoveryEventInput =
+  | { readonly eventId: string; readonly type: "baseline.reconciled"; readonly payload: { readonly WorkflowID: string; readonly repairsUsed: number | null; readonly diagnosesUsed: number | null; readonly securityExceptionUsed: boolean | null; readonly evidenceRef: RecoveryEvidenceRef } }
+  | { readonly eventId: string; readonly type: "block.proposed"; readonly payload: { readonly BlockID: string; readonly ProblemIDs: readonly string[]; readonly previousBlockID: string | null; readonly baseOid: string; readonly scopePaths: readonly string[]; readonly acceptance: readonly string[]; readonly strategy: string; readonly evidenceRef: RecoveryEvidenceRef } }
+  | { readonly eventId: string; readonly type: "decision.recorded"; readonly payload: { readonly BlockID: string; readonly proposalEventId: string; readonly decision: "accepted" | "rejected"; readonly humanRef: RecoveryEvidenceRef } }
+  | { readonly eventId: string; readonly type: "attempt.reserved"; readonly payload: { readonly BlockID: string; readonly AttemptID: string; readonly NodeID: string; readonly ProblemID: string; readonly kind: "repair" | "diagnosis"; readonly mode: "direct" | "delegated"; readonly owner: string } }
+  | { readonly eventId: string; readonly type: "attempt.started"; readonly payload: { readonly AttemptID: string; readonly handle: string } }
+  | { readonly eventId: string; readonly type: "attempt.finished"; readonly payload: { readonly AttemptID: string; readonly outcome: "success" | "failure" | "blocked_environment" | "blocked_human"; readonly evidenceRef: RecoveryEvidenceRef } }
+  | { readonly eventId: string; readonly type: "attempt.uncertain"; readonly payload: { readonly AttemptID: string; readonly reason: string } }
+  | { readonly eventId: string; readonly type: "attempt.reconciled"; readonly payload: { readonly AttemptID: string; readonly outcome: "success" | "failure" | "not_started" | "blocked_environment" | "blocked_human"; readonly evidenceRef: RecoveryEvidenceRef } }
+  | { readonly eventId: string; readonly type: "attempt.cancelled"; readonly payload: { readonly AttemptID: string; readonly evidenceRef: RecoveryEvidenceRef } }
+  | { readonly eventId: string; readonly type: "block.closed"; readonly payload: { readonly BlockID: string; readonly reason: "accepted" | "budget" | "no_progress" | "cancelled" | "environment" | "human"; readonly evidenceRef: RecoveryEvidenceRef } };
+export interface RecoveryEvidenceRef { readonly id: string; readonly sha256: string; }
 
 export interface StepDraft {
   readonly title: string;

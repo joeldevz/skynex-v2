@@ -75,7 +75,11 @@ test("C01 A1: authoritative Tasks sections forbid a parallel recovery/fallback r
   assert.equal(typeof tasksSection, "string", "Inspect the authoritative Tasks policy, not an unrelated mention");
   assert.doesNotMatch(tasksSection, /bounded manual artifact contract|manual fallback|does not replace this\s+agent's lineage\/checkpoints/i);
   assert.doesNotMatch(agent.split("RUNTIME BOUNDARY — NO SKYNEX WORKFLOW")[1]?.split("SKYNEX TASKS")[0] ?? "", /existing task\/plan file/i);
-  assert.doesNotMatch(agent.split("## ARTIFACT CONTRACT")[1]?.split("## CIRCUIT EVALUATION")[0] ?? "", /Otherwise the orchestrator\s+writes a reviewable bounded/i);
+  const recovery = await readFile(join(repo, "targets/opencode/resources/canonical/skills/thalam-recovery/SKILL.md"), "utf8");
+  const artifactContract = recovery.split("## ARTIFACT CONTRACT")[1]?.split("## CIRCUIT EVALUATION")[0];
+  assert.equal(typeof artifactContract, "string", "The artifact contract lives in the on-demand thalam-recovery skill");
+  assert.doesNotMatch(artifactContract, /Otherwise the orchestrator\s+writes a reviewable bounded/i);
+  assert.doesNotMatch(agent, /^## ARTIFACT CONTRACT$/m, "Thalam's prompt no longer carries the artifact contract inline");
   assert.doesNotMatch(skill.split("## CLI unavailable or incompatible")[1] ?? "", /continue safely using[\s\S]{0,180}manual|fallback was used/i);
   for (const [name, text] of [["Thalam", tasksSection], ["Tasks skill", skill]]) {
     assert(text.split(/\n\s*\n/).some((paragraph) => /Tasks|notebook/i.test(paragraph) && /progress/i.test(paragraph) && /recovery/i.test(paragraph) && /sole|single|only|alone/i.test(paragraph)),
